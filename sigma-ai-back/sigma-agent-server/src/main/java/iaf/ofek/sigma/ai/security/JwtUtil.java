@@ -17,7 +17,7 @@ public class JwtUtil {
 
     private final SecretKey key;
 
-    public JwtUtil(@Value("${lc.jwt.secret}") String secret) {
+    public JwtUtil(@Value("${sa.jwt.secret}") String secret) {
         key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 

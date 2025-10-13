@@ -36,7 +36,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String servletPath = request.getServletPath();
 
         if (servletPath.startsWith("/auth/me") || servletPath.startsWith("/auth/refresh-token")
-                || (!servletPath.startsWith("/auth/") && !servletPath.startsWith("/oauth2/authorization/"))) {
+                || (!servletPath.startsWith("/auth/"))) {
             Optional<String> tokenOptional = getJwtFromCookies(request);
 
             tokenOptional.ifPresent(jwtToken -> {

@@ -3,7 +3,6 @@ package iaf.ofek.sigma.ai.controller;
 import iaf.ofek.sigma.ai.dto.LoginUserDto;
 import iaf.ofek.sigma.ai.dto.RegisterUserDto;
 import iaf.ofek.sigma.ai.dto.UserInfoDto;
-import iaf.ofek.sigma.ai.dto.VerificationInfoDto;
 import iaf.ofek.sigma.ai.entity.User;
 import iaf.ofek.sigma.ai.mapper.UserMapper;
 import iaf.ofek.sigma.ai.service.auth.*;
@@ -23,8 +22,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    private final RegisterVerificationService registerVerificationService;
-
     private final CookieUtil cookieUtil;
 
     private final UserService userService;
@@ -41,18 +38,10 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<VerificationInfoDto> registerUser(@RequestBody @Valid RegisterUserDto user) {
-        VerificationInfoDto verificationInfo = registerVerificationService.sendVerificationEmail(user);
+    public ResponseEntity<User> registerUser(@RequestBody @Valid RegisterUserDto user) {
+       User createdUser = userService.createUser(user);
 
-        return new ResponseEntity<>(verificationInfo, HttpStatus.OK);
-    }
-
-    @GetMapping("/verify")
-    public ResponseEntity<?> verifyEmail(@RequestParam String token, HttpServletResponse response) {
-        UUID userId = registerVerificationService.verifyAndSaveUser(token).getId();
-        cookieUtil.addCookies(response, userId);
-
-        return new ResponseEntity<>(HttpStatus.CREATED);
+       return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 
     @PostMapping("/refresh-token")

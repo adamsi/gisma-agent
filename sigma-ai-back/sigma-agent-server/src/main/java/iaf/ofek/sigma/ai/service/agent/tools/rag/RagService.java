@@ -71,13 +71,11 @@ public class RagService implements AgentTool {
 
     public String execute(String query) {
         String userId = authService.getCurrentUserId();
-        String filter = String.format("%s == '%s'", DocumentProcessor.USER_ID, userId);
 
         return chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
                 .user(query)
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
-                .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, filter))
                 .call()
                 .content();
     }

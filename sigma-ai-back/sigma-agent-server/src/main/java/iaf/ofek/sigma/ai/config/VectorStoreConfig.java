@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration
 public class VectorStoreConfig {
 
-    @Value("${legal-copilot.vector-store.schema-name}")
+    @Value("${spring.ai.vectorstore.pgvector.schema-name}")
     private String schema;
 
     @Bean("memoryVectorStore")

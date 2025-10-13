@@ -1,6 +1,5 @@
 package iaf.ofek.sigma.ai.exception.handler;
 
-import iaf.ofek.sigma.ai.exception.EmailSendingException;
 import iaf.ofek.sigma.ai.exception.ErrorResponse;
 import iaf.ofek.sigma.ai.exception.TokenProcessingException;
 import io.jsonwebtoken.JwtException;
@@ -100,13 +99,6 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse("Unauthorized", "Invalid JWT signature.");
 
         return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
-    }
-
-    @ExceptionHandler(EmailSendingException.class)
-    public ResponseEntity<ErrorResponse> handleEmailSending(EmailSendingException ex) {
-        ErrorResponse error = new ErrorResponse("Interval server error", ex.getMessage());
-
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)

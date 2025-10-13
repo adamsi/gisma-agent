@@ -18,8 +18,8 @@ public class CookieUtil {
     private final Map<String, Integer> cookies;
 
     public CookieUtil(JwtUtil jwtUtil,
-                      @Value("${lc.jwt.access-expiration-ms}") Integer accessTokenExpirationMs,
-                      @Value("${lc.jwt.refresh-expiration-ms}") Integer refreshTokenExpirationMs) {
+                      @Value("${sa.jwt.access-expiration-ms}") Integer accessTokenExpirationMs,
+                      @Value("${sa.jwt.refresh-expiration-ms}") Integer refreshTokenExpirationMs) {
         this.jwtUtil = jwtUtil;
         cookies = Map.of(
                 Token.ACCESS_TOKEN, accessTokenExpirationMs,
