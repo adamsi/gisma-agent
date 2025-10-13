@@ -6,7 +6,7 @@ const AuthRoute: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Sign In · Legal Copilot</title>
+        <title>Sign In · Sigma Agent</title>
       </Head>
       <AuthPage mode="signin" />
     </>

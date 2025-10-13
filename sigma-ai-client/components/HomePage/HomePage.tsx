@@ -45,13 +45,13 @@ const HomePage: React.FC = () => {
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
                     <img
-                      src="/lc-logo.png"
-                      alt="Legal Copilot Logo"
+                      src="/sa-logo.png"
+                      alt="Sigma Agent Logo"
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <h1 className="text-base sm:text-lg font-bold text-white">
-                    Legal Copilot
+                    Sigma Agent
                   </h1>
                 </div>
               </div>

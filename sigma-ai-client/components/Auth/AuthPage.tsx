@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { login, register, clearError } from '@/store/slices/authSlice';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { IconBrandGoogle, IconLock, IconMail, IconEye, IconEyeOff } from '@tabler/icons-react';
+import { IconBrandGoogle, IconLock, IconUser, IconEye, IconEyeOff, IconArrowLeft } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import { showToast } from '@/store/slices/toastSlice';
 import { LoginUserDto } from '@/types';
@@ -43,6 +43,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
     window.location.href = redirectUrl;
   };
 
+  const handleGoBack = () => {
+    router.push('/');
+  };
+
 
   const isSignIn = currentMode === 'signin';
 
@@ -58,7 +62,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
   const signUpSchema = useMemo(
     () =>
       Yup.object({
-        email: Yup.string().email('Invalid email address').required('Email is required'),
+        username: Yup.string().required('Username is required'),
         password: Yup.string()
           .min(6, 'Must be at least 6 characters')
           .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Must include upper, lower, and number')
@@ -77,11 +81,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
     }
   };
 
-  const handleSignUp = async (values: { email: string; password: string }) => {
-    const username = values.email.split('@')[0] || `user_${Date.now()}`;
-    const result = await dispatch(register({ email: values.email, password: values.password, username }));
+  const handleSignUp = async (values: { username: string; password: string }) => {
+    const result = await dispatch(register({ username: values.username, password: values.password }));
     if (register.fulfilled.match(result)) {
-      setPostSignUpMessage('Account created. Please check your email to verify your account.');
+      dispatch(showToast({message: 'User created successfully', type: 'success'}));
       setCurrentMode('signin');
     } else {
       dispatch(showToast({message: 'Registration failed', type: 'error'}));
@@ -106,10 +109,17 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
       {/* Left: Auth Form */}
       <div className="flex items-center justify-center py-10 md:py-0 px-6 sm:px-10 md:px-12 lg:px-16 md:h-screen">
         <div className="w-full max-w-md">
-          {/* Logo */}
-          <div className="mb-8 flex items-center">
+          {/* Go Back Button and Logo */}
+          <div className="mb-8 flex items-center justify-between">
+            <button
+              onClick={handleGoBack}
+              className="inline-flex items-center gap-2 text-blue-300 hover:text-white transition-colors duration-200"
+            >
+              <IconArrowLeft className="h-5 w-5" />
+              <span className="text-sm font-medium"></span>
+            </button>
             <div className="h-9 w-9 rounded-lg overflow-hidden">
-              <img src="/lc-logo.png" alt="Legal Copilot" width={36} height={36} />
+              <img src="/sa-logo.png" alt="Sigma Agent" width={36} height={36} />
             </div>
           </div>
 
@@ -161,7 +171,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
                           className="w-full pl-11 pr-4 py-3 rounded-xl bg-black/40 text-white placeholder-blue-300/60 ring-1 ring-white/10 focus:ring-2 focus:ring-blue-500 outline-none transition"
                           placeholder="Enter your username"
                         />
-                        <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-300" />
+                        <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-300" />
                       </div>
                       <ErrorMessage name="username" component="div" className="mt-1 text-sm text-red-400" />
                     </div>
@@ -212,27 +222,27 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
             ) : (
               <Formik
                 key="signup"
-                initialValues={{ email: '', password: '' }}
+                initialValues={{ username: '', password: '' }}
                 validationSchema={signUpSchema}
                 onSubmit={handleSignUp}
               >
                 {({ isSubmitting }) => (
                   <Form className="space-y-5">
                     <div>
-                      <label htmlFor="signupEmail" className="block text-sm font-medium text-blue-200 mb-2">
-                        Email
+                      <label htmlFor="signupUsername" className="block text-sm font-medium text-blue-200 mb-2">
+                        Username
                       </label>
                       <div className="relative">
                         <Field
-                          id="signupEmail"
-                          name="email"
-                          type="email"
+                          id="signupUsername"
+                          name="username"
+                          type="text"
                           className="w-full pl-11 pr-4 py-3 rounded-xl bg-black/40 text-white placeholder-blue-300/60 ring-1 ring-white/10 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                          placeholder="you@example.com"
+                          placeholder="Enter your username"
                         />
-                        <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-300" />
+                        <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-300" />
                       </div>
-                      <ErrorMessage name="email" component="div" className="mt-1 text-sm text-red-400" />
+                      <ErrorMessage name="username" component="div" className="mt-1 text-sm text-red-400" />
                     </div>
 
                     <div>

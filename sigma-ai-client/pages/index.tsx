@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { refreshToken, getUser, verifyRegister } from '@/store/slices/authSlice';
+import { refreshToken, getUser } from '@/store/slices/authSlice';
 import { showToast } from '@/store/slices/toastSlice';
 import { Chat } from '@/components/Chat/Chat';
 import { Chatbar } from '@/components/Chatbar/Chatbar';
@@ -10,7 +10,6 @@ import LoadingSpinner from '@/components/Global/LoadingSpinner';
 import { ChatBody, Conversation, Message } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
-import { LatestExportFormat, SupportedExportFormats } from '@/types/export';
 import { Folder, FolderType } from '@/types/folder';
 import {
   OpenAIModel,
@@ -18,8 +17,6 @@ import {
   OpenAIModels,
   fallbackModelID,
 } from '@/types/openai';
-import { Plugin, PluginKey } from '@/types/plugin';
-import { getEndpoint } from '@/utils/app/api';
 import {
   cleanConversationHistory,
   cleanSelectedConversation,
@@ -31,37 +28,28 @@ import {
   updateConversation,
 } from '@/utils/app/conversation';
 import { saveFolders } from '@/utils/app/folders';
-import { exportData, importData } from '@/utils/app/importExport';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
 import { GetServerSideProps } from 'next';
-import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
-import { api, handleAxiosError } from '@/utils/api';
-import axios, { AxiosError } from 'axios';
 
 interface HomeProps {
   serverSideApiKeyIsSet: boolean;
-  serverSidePluginKeysSet: boolean;
   defaultModelId: OpenAIModelID;
 }
 
 const Home: React.FC<HomeProps> = ({
   serverSideApiKeyIsSet,
-  serverSidePluginKeysSet,
   defaultModelId,
 }) => {
-  const { t } = useTranslation('chat');
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user } = useAppSelector((state) => state.auth);
 
   // STATE ----------------------------------------------
-  const [pluginKeys, setPluginKeys] = useState<PluginKey[]>([]);
   const [appLoading, setAppLoading] = useState<boolean>(false);
   const [lightMode, setLightMode] = useState<'dark' | 'light'>('dark');
   const [messageIsStreaming, setMessageIsStreaming] = useState<boolean>(false);
@@ -97,25 +85,6 @@ const Home: React.FC<HomeProps> = ({
     return () => clearInterval(refreshInterval);
   }, [dispatch]); // Add dispatch to dependency array
 
-  // REGISTRATION VERIFICATION EFFECT ----------------------------------------------
-  useEffect(() => {
-    const verifyToken = async () => {
-      const queryParams = new URLSearchParams(location.search);
-      const token = queryParams.get("register-token");
-      if (token) {
-        const result = await dispatch(verifyRegister(token));
-        if (result.meta.requestStatus === "fulfilled") {
-          router.push("/");
-          dispatch(showToast({ type: "success", message: "Sign up success!" }));
-          dispatch(getUser());
-        } else {
-          router.push("/");
-          dispatch(showToast({ type: "error", message: "Sign up failed" }));
-        }
-      }
-    };
-    verifyToken();
-  }, [dispatch, router]);
 
 
   // Note: Avoid early returns that change hook order. Render conditionally in JSX below.
@@ -124,7 +93,6 @@ const Home: React.FC<HomeProps> = ({
   const handleSend = async (
     message: Message,
     deleteCount = 0,
-    plugin: Plugin | null = null,
   ) => {
     if (selectedConversation) {
       let updatedConversation: Conversation;
@@ -157,31 +125,14 @@ const Home: React.FC<HomeProps> = ({
         prompt: updatedConversation.prompt,
       };
 
-      const endpoint = getEndpoint(plugin);
-      let body;
-
-      if (!plugin) {
-        body = JSON.stringify(chatBody);
-      } else {
-        body = JSON.stringify({
-          ...chatBody,
-          googleAPIKey: pluginKeys
-            .find((key) => key.pluginId === 'google-search')
-            ?.requiredKeys.find((key) => key.key === 'GOOGLE_API_KEY')?.value,
-          googleCSEId: pluginKeys
-            .find((key) => key.pluginId === 'google-search')
-            ?.requiredKeys.find((key) => key.key === 'GOOGLE_CSE_ID')?.value,
-        });
-      }
-
       const controller = new AbortController();
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         signal: controller.signal,
-        body,
+        body: JSON.stringify(chatBody),
       });
 
       if (!response.ok) {
@@ -199,130 +150,93 @@ const Home: React.FC<HomeProps> = ({
         return;
       }
 
-      if (!plugin) {
-        if (updatedConversation.messages.length === 1) {
-          const { content } = message;
-          const customName =
-            content.length > 30 ? content.substring(0, 30) + '...' : content;
-
-          updatedConversation = {
-            ...updatedConversation,
-            name: customName,
-          };
-        }
-
-        setAppLoading(false);
-
-        const reader = data.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-        let isFirst = true;
-        let text = '';
-
-        while (!done) {
-          if (stopConversationRef.current === true) {
-            controller.abort();
-            done = true;
-            break;
-          }
-          const { value, done: doneReading } = await reader.read();
-          done = doneReading;
-          const chunkValue = decoder.decode(value);
-
-          text += chunkValue;
-
-          if (isFirst) {
-            isFirst = false;
-            const updatedMessages: Message[] = [
-              ...updatedConversation.messages,
-              { role: 'assistant', content: chunkValue },
-            ];
-
-            updatedConversation = {
-              ...updatedConversation,
-              messages: updatedMessages,
-            };
-
-            setSelectedConversation(updatedConversation);
-          } else {
-            const updatedMessages: Message[] = updatedConversation.messages.map(
-              (message, index) => {
-                if (index === updatedConversation.messages.length - 1) {
-                  return {
-                    ...message,
-                    content: text,
-                  };
-                }
-
-                return message;
-              },
-            );
-
-            updatedConversation = {
-              ...updatedConversation,
-              messages: updatedMessages,
-            };
-
-            setSelectedConversation(updatedConversation);
-          }
-        }
-
-        saveConversation(updatedConversation);
-
-        const updatedConversations: Conversation[] = conversations.map(
-          (conversation) => {
-            if (conversation.id === selectedConversation.id) {
-              return updatedConversation;
-            }
-
-            return conversation;
-          },
-        );
-
-        if (updatedConversations.length === 0) {
-          updatedConversations.push(updatedConversation);
-        }
-
-        setConversations(updatedConversations);
-        saveConversations(updatedConversations);
-
-        setMessageIsStreaming(false);
-      } else {
-        const { answer } = await response.json();
-
-        const updatedMessages: Message[] = [
-          ...updatedConversation.messages,
-          { role: 'assistant', content: answer },
-        ];
+      if (updatedConversation.messages.length === 1) {
+        const { content } = message;
+        const customName =
+          content.length > 30 ? content.substring(0, 30) + '...' : content;
 
         updatedConversation = {
           ...updatedConversation,
-          messages: updatedMessages,
+          name: customName,
         };
-
-        setSelectedConversation(updatedConversation);
-        saveConversation(updatedConversation);
-
-        const updatedConversations: Conversation[] = conversations.map(
-          (conversation) => {
-            if (conversation.id === selectedConversation.id) {
-              return updatedConversation;
-            }
-
-            return conversation;
-          },
-        );
-
-        if (updatedConversations.length === 0) {
-          updatedConversations.push(updatedConversation);
-        }
-
-        setConversations(updatedConversations);
-        saveConversations(updatedConversations);
-
-        setAppLoading(false);
-        setMessageIsStreaming(false);
       }
+
+      setAppLoading(false);
+
+      const reader = data.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let isFirst = true;
+      let text = '';
+
+      while (!done) {
+        if (stopConversationRef.current === true) {
+          controller.abort();
+          done = true;
+          break;
+        }
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+
+        text += chunkValue;
+
+        if (isFirst) {
+          isFirst = false;
+          const updatedMessages: Message[] = [
+            ...updatedConversation.messages,
+            { role: 'assistant', content: chunkValue },
+          ];
+
+          updatedConversation = {
+            ...updatedConversation,
+            messages: updatedMessages,
+          };
+
+          setSelectedConversation(updatedConversation);
+        } else {
+          const updatedMessages: Message[] = updatedConversation.messages.map(
+            (message, index) => {
+              if (index === updatedConversation.messages.length - 1) {
+                return {
+                  ...message,
+                  content: text,
+                };
+              }
+
+              return message;
+            },
+          );
+
+          updatedConversation = {
+            ...updatedConversation,
+            messages: updatedMessages,
+          };
+
+          setSelectedConversation(updatedConversation);
+        }
+      }
+
+      saveConversation(updatedConversation);
+
+      const updatedConversations: Conversation[] = conversations.map(
+        (conversation) => {
+          if (conversation.id === selectedConversation.id) {
+            return updatedConversation;
+          }
+
+          return conversation;
+        },
+      );
+
+      if (updatedConversations.length === 0) {
+        updatedConversations.push(updatedConversation);
+      }
+
+      setConversations(updatedConversations);
+      saveConversations(updatedConversations);
+
+      setMessageIsStreaming(false);
     }
   };
 
@@ -333,58 +247,12 @@ const Home: React.FC<HomeProps> = ({
     localStorage.setItem('theme', mode);
   };
 
-  const handlePluginKeyChange = (pluginKey: PluginKey) => {
-    if (pluginKeys.some((key) => key.pluginId === pluginKey.pluginId)) {
-      const updatedPluginKeys = pluginKeys.map((key) => {
-        if (key.pluginId === pluginKey.pluginId) {
-          return pluginKey;
-        }
-
-        return key;
-      });
-
-      setPluginKeys(updatedPluginKeys);
-      localStorage.setItem('pluginKeys', JSON.stringify(updatedPluginKeys));
-    } else {
-      setPluginKeys([...pluginKeys, pluginKey]);
-      localStorage.setItem(
-        'pluginKeys',
-        JSON.stringify([...pluginKeys, pluginKey]),
-      );
-    }
-  };
-
-  const handleClearPluginKey = (pluginKey: PluginKey) => {
-    const updatedPluginKeys = pluginKeys.filter(
-      (key) => key.pluginId !== pluginKey.pluginId,
-    );
-
-    if (updatedPluginKeys.length === 0) {
-      setPluginKeys([]);
-      localStorage.removeItem('pluginKeys');
-      return;
-    }
-
-    setPluginKeys(updatedPluginKeys);
-    localStorage.setItem('pluginKeys', JSON.stringify(updatedPluginKeys));
-  };
 
   const handleToggleChatbar = () => {
     setShowSidebar(!showSidebar);
     localStorage.setItem('showChatbar', JSON.stringify(!showSidebar));
   };
 
-  const handleExportData = () => {
-    exportData();
-  };
-
-  const handleImportConversations = (data: SupportedExportFormats) => {
-    const { history, folders, prompts }: LatestExportFormat = importData(data);
-
-    setConversations(history);
-    setSelectedConversation(history[history.length - 1]);
-    setFolders(folders);
-  };
 
   const handleSelectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
@@ -445,7 +313,7 @@ const Home: React.FC<HomeProps> = ({
 
     const newConversation: Conversation = {
       id: uuidv4(),
-      name: `${t('New Conversation')}`,
+      name: `New Conversation`,
       messages: [],
       model: lastConversation?.model || {
         id: OpenAIModels[defaultModelId].id,
@@ -580,13 +448,6 @@ const Home: React.FC<HomeProps> = ({
       setLightMode(theme as 'dark' | 'light');
     }
 
-    const pluginKeys = localStorage.getItem('pluginKeys');
-    if (serverSidePluginKeysSet) {
-      setPluginKeys([]);
-      localStorage.removeItem('pluginKeys');
-    } else if (pluginKeys) {
-      setPluginKeys(JSON.parse(pluginKeys));
-    }
 
     if (window.innerWidth < 640) {
       setShowSidebar(false);
@@ -635,15 +496,15 @@ const Home: React.FC<HomeProps> = ({
   return (
     <>
       <Head>
-        <title>Legal Copilot</title>
+        <title>Sigma Agent</title>
         <meta name="description" content="AI assistant with legal knowledge base." />
         <meta
           name="viewport"
           content="height=device-height ,width=device-width, initial-scale=1, user-scalable=no"
         />
-        <link rel="icon" type="image/png" href="/lc-logo.png" />
-        <link rel="shortcut icon" type="image/png" href="/lc-logo.png" />
-        <link rel="apple-touch-icon" href="/lc-logo.png" />
+        <link rel="icon" type="image/png" href="/sa-logo.png" />
+        <link rel="shortcut icon" type="image/png" href="/sa-logo.png" />
+        <link rel="apple-touch-icon" href="/sa-logo.png" />
       </Head>
       {!user ? (
         <HomePage />
@@ -677,8 +538,6 @@ const Home: React.FC<HomeProps> = ({
                     onDeleteConversation={handleDeleteConversation}
                     onUpdateConversation={handleUpdateConversation}
                     onClearConversations={handleClearConversations}
-                  onExportConversations={handleExportData}
-                  onImportConversations={handleImportConversations}
                   />
 
                   <button
@@ -726,7 +585,7 @@ const Home: React.FC<HomeProps> = ({
 
 export default Home;
 
-export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
+export const getServerSideProps: GetServerSideProps = async () => {
   const defaultModelId =
     (process.env.DEFAULT_MODEL &&
       Object.values(OpenAIModelID).includes(
@@ -735,26 +594,10 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
       (process.env.DEFAULT_MODEL as OpenAIModelID)) ||
     fallbackModelID;
 
-  let serverSidePluginKeysSet = false;
-
-  const googleApiKey = process.env.GOOGLE_API_KEY;
-  const googleCSEId = process.env.GOOGLE_CSE_ID;
-
-  if (googleApiKey && googleCSEId) {
-    serverSidePluginKeysSet = true;
-  }
-
   return {
     props: {
       serverSideApiKeyIsSet: true,
       defaultModelId,
-      serverSidePluginKeysSet,
-      ...(await serverSideTranslations(locale ?? 'en', [
-        'common',
-        'chat',
-        'sidebar',
-        'markdown',
-      ])),
     },
   };
 };

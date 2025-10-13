@@ -1,4 +1,4 @@
-# Legal Copilot Frontend
+# Sigma Agent Frontend
 
 A modern, AI-powered legal assistant built with Next.js, TypeScript, and Redux.
 
@@ -8,7 +8,6 @@ A modern, AI-powered legal assistant built with Next.js, TypeScript, and Redux.
 - 🤖 **AI-Powered Chat**: Intelligent legal assistant with conversation history
 - 📁 **File Management**: Organize conversations and documents in folders
 - 🎨 **Modern UI**: Beautiful, responsive design with dark/light mode
-- 🌐 **Internationalization**: Multi-language support
 - 📱 **Mobile Responsive**: Works seamlessly on all devices
 
 ## Tech Stack
@@ -19,7 +18,6 @@ A modern, AI-powered legal assistant built with Next.js, TypeScript, and Redux.
 - **Styling**: Tailwind CSS
 - **Icons**: Tabler Icons
 - **Notifications**: React Hot Toast
-- **Internationalization**: next-i18next
 
 ## Getting Started
 
@@ -27,7 +25,7 @@ A modern, AI-powered legal assistant built with Next.js, TypeScript, and Redux.
 
 - Node.js 18+ 
 - npm or yarn
-- Legal Copilot Backend running
+- Sigma Agent Backend running
 
 ### Installation
 

@@ -2,10 +2,8 @@ import { Conversation, Message } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
 import { OpenAIModel, OpenAIModelID } from '@/types/openai';
-import { Plugin } from '@/types/plugin';
 import { throttle } from '@/utils';
 import { IconArrowDown, IconClearAll } from '@tabler/icons-react';
-import { useTranslation } from 'next-i18next';
 import {
   FC,
   MutableRefObject,
@@ -32,7 +30,6 @@ interface Props {
   onSend: (
     message: Message,
     deleteCount: number,
-    plugin: Plugin | null,
   ) => void;
   onUpdateConversation: (
     conversation: Conversation,
@@ -56,7 +53,6 @@ export const Chat: FC<Props> = memo(
     onEditMessage,
     stopConversationRef,
   }) => {
-    const { t } = useTranslation('chat');
     const [currentMessage, setCurrentMessage] = useState<Message>();
     const [autoScrollEnabled, setAutoScrollEnabled] = useState<boolean>(true);
     const [showScrollDownButton, setShowScrollDownButton] =
@@ -97,7 +93,7 @@ export const Chat: FC<Props> = memo(
     };
 
     const onClearAll = () => {
-      if (confirm(t<string>('Are you sure you want to clear all messages?'))) {
+      if (confirm('Are you sure you want to clear all messages?')) {
         onUpdateConversation(conversation, { key: 'messages', value: [] });
       }
     };
@@ -145,17 +141,17 @@ export const Chat: FC<Props> = memo(
         {!(serverSideApiKeyIsSet) ? (
           <div className="mx-auto flex h-full w-[300px] flex-col justify-center space-y-6 sm:w-[600px]">
             <div className="text-center text-4xl font-bold text-black dark:text-white">
-              Welcome to Legal Copilot
+              Welcome to Sigma Agent
             </div>
             <div className="text-center text-lg text-black dark:text-white">
-              <div className="mb-8">{`Legal Copilot is an AI assistant with access to legal knowledge base.`}</div>
+              <div className="mb-8">{`Sigma Agent is an AI assistant with access to legal knowledge base.`}</div>
               <div className="mb-2 font-bold">
-                Important: Make sure your Legal Copilot backend is running.
+                Important: Make sure your Sigma Agent backend is running.
               </div>
             </div>
             <div className="text-center text-gray-500 dark:text-gray-400">
               <div className="mb-2">
-                Legal Copilot connects to your local RAG backend to provide
+                Sigma Agent connects to your local RAG backend to provide
                 accurate legal information and assistance.
               </div>
               <div className="mb-2">
@@ -181,7 +177,7 @@ export const Chat: FC<Props> = memo(
                           <Spinner size="16px" className="mx-auto" />
                         </div>
                       ) : (
-                        'Legal Copilot'
+                        'Sigma Agent'
                       )}
                     </div>
                   </div>
@@ -189,7 +185,7 @@ export const Chat: FC<Props> = memo(
               ) : (
                 <>
                   <div className="flex justify-center border border-b-neutral-300 bg-neutral-100 py-2 text-sm text-neutral-500 dark:border-none dark:bg-[#444654] dark:text-neutral-200">
-                    {t('Model')}: {conversation.model.name}
+                    Model: {conversation.model.name}
                     <button
                       className="ml-2 cursor-pointer hover:opacity-50"
                       onClick={onClearAll}
@@ -223,13 +219,13 @@ export const Chat: FC<Props> = memo(
               messageIsStreaming={messageIsStreaming}
               conversationIsEmpty={conversation.messages.length === 0}
               model={conversation.model}
-              onSend={(message, plugin) => {
+              onSend={(message) => {
                 setCurrentMessage(message);
-                onSend(message, 0, plugin);
+                onSend(message, 0);
               }}
               onRegenerate={() => {
                 if (currentMessage) {
-                  onSend(currentMessage, 2, null);
+                  onSend(currentMessage, 2);
                 }
               }}
             />

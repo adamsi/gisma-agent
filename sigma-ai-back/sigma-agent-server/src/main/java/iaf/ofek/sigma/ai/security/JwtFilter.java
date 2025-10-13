@@ -37,10 +37,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (servletPath.startsWith("/auth/me") || servletPath.startsWith("/auth/refresh-token")
                 || (!servletPath.startsWith("/auth/"))) {
-            Optional<String> tokenOptional = getJwtFromCookies(request);
+            try {
+                Optional<String> tokenOptional = getJwtFromCookies(request);
+                tokenOptional.ifPresent(jwtToken -> {
 
-            tokenOptional.ifPresent(jwtToken -> {
-                try {
                     if (jwtUtil.validateToken(jwtToken)) {
                         UUID userId = jwtUtil.extractUserId(jwtToken);
 
@@ -52,10 +52,11 @@ public class JwtFilter extends OncePerRequestFilter {
                             }
                         }
                     }
-                } catch (Exception e) {
-                    log.debug(e.getMessage());
-                }
-            });
+
+                });
+            } catch (Exception e) {
+                log.warn(e.getMessage());
+            }
         }
 
         filterChain.doFilter(request, response);

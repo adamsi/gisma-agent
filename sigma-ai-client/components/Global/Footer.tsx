@@ -25,14 +25,14 @@ const Footer: React.FC = () => {
             <div className="flex items-center justify-center mb-3 sm:mb-4">
               <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mr-2 sm:mr-3 shadow-lg overflow-hidden">
                 <img
-                  src="/lc-logo.png"
-                  alt="Legal Copilot Logo"
+                  src="/sa-logo.png"
+                  alt="Sigma Agent Logo"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="text-lg sm:text-xl font-semibold text-white">Legal Copilot</span>
+              <span className="text-lg sm:text-xl font-semibold text-white">Sigma Agent</span>
             </div>
-            <p className="text-blue-300 text-sm sm:text-base">© 2026 Legal Copilot. All rights reserved.</p>
+            <p className="text-blue-300 text-sm sm:text-base">© 2026 Sigma Agent. All rights reserved.</p>
           </div>
         </div>
       </footer>

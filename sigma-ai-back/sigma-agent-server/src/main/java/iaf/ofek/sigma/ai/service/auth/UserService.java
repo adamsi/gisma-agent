@@ -54,6 +54,7 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException(String.format("User with id %s not found", userId)));
     }
 
+    @Transactional
     public User createUser(RegisterUserDto user) {
         String email = user.getEmail();
         User newUser = new User();

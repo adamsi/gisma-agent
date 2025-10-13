@@ -2,7 +2,6 @@ import { Conversation } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
 import { Folder } from '@/types/folder';
 import { IconFolderPlus, IconMessagesOff, IconPlus } from '@tabler/icons-react';
-import { useTranslation } from 'next-i18next';
 import { FC, useEffect, useState } from 'react';
 import { ChatFolders } from '../Folders/Chat/ChatFolders';
 import { Search } from '../Sidebar/Search';
@@ -27,8 +26,6 @@ interface Props {
     data: KeyValuePair,
   ) => void;
   onClearConversations: () => void;
-  onExportConversations: () => void; // deprecated
-  onImportConversations: (data: any) => void; // deprecated
 }
 
 export const Chatbar: FC<Props> = ({
@@ -46,10 +43,7 @@ export const Chatbar: FC<Props> = ({
   onDeleteConversation,
   onUpdateConversation,
   onClearConversations,
-  onExportConversations,
-  onImportConversations,
 }) => {
-  const { t } = useTranslation('sidebar');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filteredConversations, setFilteredConversations] =
     useState<Conversation[]>(conversations);
@@ -117,12 +111,12 @@ export const Chatbar: FC<Props> = ({
           }}
         >
           <IconPlus size={18} />
-          {t('New chat')}
+          New chat
         </button>
 
         <button
           className="ml-2 flex flex-shrink-0 cursor-pointer items-center gap-3 rounded-md border border-white/20 p-3 text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
-          onClick={() => onCreateFolder(t('New folder'))}
+          onClick={() => onCreateFolder('New folder')}
         >
           <IconFolderPlus size={18} />
         </button>
@@ -178,7 +172,7 @@ export const Chatbar: FC<Props> = ({
         ) : (
           <div className="mt-8 flex flex-col items-center gap-3 text-sm leading-normal text-white opacity-50">
             <IconMessagesOff />
-            {t('No conversations.')}
+            No conversations.
           </div>
         )}
       </div>

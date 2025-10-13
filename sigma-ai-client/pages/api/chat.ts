@@ -10,7 +10,7 @@ const handler = async (_req: Request): Promise<Response> => {
         const chunks = [
           'Hello! ',
           'This is a demo response ',
-          'from the Legal Copilot chat API. ',
+          'from the Sigma Agent chat API. ',
           'You can replace this with real model output later.'
         ];
         for (const chunk of chunks) {

@@ -29,14 +29,6 @@ export const refreshToken = createAsyncThunk(
   }
 );
 
-export const verifyRegister = createAsyncThunk("auth/verify", async (token: string, { rejectWithValue }) => {
-  try {
-      const response = await api.get("/auth/verify", { withCredentials: true, params: { token } });
-      return response.data;
-  } catch (error) {
-      return rejectWithValue(handleAxiosError(error));
-  }
-});
 
 export const login = createAsyncThunk(
   'auth/login',
@@ -137,17 +129,6 @@ const authSlice = createSlice({
       state.loading = false;
   })
   .addCase(register.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-  })
-  .addCase(verifyRegister.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-  })
-  .addCase(verifyRegister.fulfilled, (state) => {
-      state.loading = false;
-  })
-  .addCase(verifyRegister.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload as string;
   })

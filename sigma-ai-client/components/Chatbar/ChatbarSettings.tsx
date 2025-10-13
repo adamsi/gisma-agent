@@ -1,5 +1,4 @@
 import { IconMoon, IconSun, IconUser, IconLogout } from '@tabler/icons-react';
-import { useTranslation } from 'next-i18next';
 import { FC, useState } from 'react';
 import { SidebarButton } from '../Sidebar/SidebarButton';
 import { ClearConversations } from './ClearConversations';
@@ -17,7 +16,6 @@ export const ChatbarSettings: FC<Props> = ({
   conversationsCount,
   onToggleLightMode,
 }) => {
-  const { t } = useTranslation('sidebar');
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const [showProfile, setShowProfile] = useState(false);
@@ -30,7 +28,7 @@ export const ChatbarSettings: FC<Props> = ({
       ) : null}
 
       <SidebarButton
-        text={lightMode === 'light' ? t('Dark mode') : t('Light mode')}
+        text={lightMode === 'light' ? 'Dark mode' : 'Light mode'}
         icon={
           lightMode === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />
         }
@@ -57,10 +55,10 @@ export const ChatbarSettings: FC<Props> = ({
           )}
           <div className="flex flex-col text-left">
             <span className="text-white text-[12.5px] leading-4">
-              {user?.username || t('User')}
+              {user?.username || 'User'}
             </span>
             <span className="text-neutral-400 text-[11px] leading-3 truncate max-w-[140px]">
-              {user?.email || ''}
+              {user?.username || ''}
             </span>
           </div>
         </button>
@@ -71,7 +69,7 @@ export const ChatbarSettings: FC<Props> = ({
               <div className="font-semibold text-white">
                 {user?.username}
               </div>
-              <div className="text-neutral-400 break-all">{user?.email}</div>
+              <div className="text-neutral-400 break-all">{user?.username}</div>
             </div>
             <button
               className="flex w-full items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-left text-white hover:bg-gray-500/10"
@@ -81,7 +79,7 @@ export const ChatbarSettings: FC<Props> = ({
               }}
             >
               <IconLogout size={18} />
-              <span>{t('Log out')}</span>
+              <span>Log out</span>
             </button>
           </div>
         )}

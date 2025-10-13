@@ -1,6 +1,5 @@
 import { Message } from '@/types/chat';
 import { IconCheck, IconCopy, IconEdit, IconUser, IconRobot } from '@tabler/icons-react';
-import { useTranslation } from 'next-i18next';
 import { FC, memo, useEffect, useRef, useState } from 'react';
 import rehypeMathjax from 'rehype-mathjax';
 import remarkGfm from 'remark-gfm';
@@ -16,7 +15,6 @@ interface Props {
 
 export const ChatMessage: FC<Props> = memo(
   ({ message, messageIndex, onEditMessage }) => {
-    const { t } = useTranslation('chat');
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [isTyping, setIsTyping] = useState<boolean>(false);
     const [messageContent, setMessageContent] = useState(message.content);
@@ -113,7 +111,7 @@ export const ChatMessage: FC<Props> = memo(
                         onClick={handleEditMessage}
                         disabled={messageContent.trim().length <= 0}
                       >
-                        {t('Save & Submit')}
+                        Save & Submit
                       </button>
                       <button
                         className="h-[40px] rounded-md border border-neutral-300 px-4 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
@@ -122,7 +120,7 @@ export const ChatMessage: FC<Props> = memo(
                           setIsEditing(false);
                         }}
                       >
-                        {t('Cancel')}
+                        Cancel
                       </button>
                     </div>
                   </div>
