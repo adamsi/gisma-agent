@@ -17,7 +17,8 @@ public class ChatController {
 
     private final AgentService agentService;
 
-    //client sends request to /app/chat and listens to response on /user/`bob`/queue/reply
+    //client sends request to /app/chat and listens to response on /user/queue/reply,
+    // spring handles routing to specific user
     @MessageMapping("/chat")
     public void handlePrompt(@Payload String prompt, Principal user) {
         String response = agentService.handleQuery(prompt);

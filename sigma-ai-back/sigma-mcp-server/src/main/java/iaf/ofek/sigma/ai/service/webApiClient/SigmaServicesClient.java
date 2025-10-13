@@ -9,7 +9,7 @@ import java.util.List;
 @Service
 public class SigmaServicesClient {
 
-    private final WebClient webClient = WebClient.create("http://localhost:9040");
+    private final WebClient webClient = WebClient.create("http://localhost:8081");
 
 
     public List<String> getAllTargets() {
