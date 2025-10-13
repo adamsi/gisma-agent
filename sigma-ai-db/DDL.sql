@@ -1,16 +1,16 @@
-DROP SCHEMA IF EXISTS ${LC_DB_SCHEMA} CASCADE;
-CREATE SCHEMA ${LC_DB_SCHEMA};
+DROP SCHEMA IF EXISTS ${SA_DB_SCHEMA} CASCADE;
+CREATE SCHEMA ${SA_DB_SCHEMA};
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TABLE ${LC_DB_SCHEMA}.document_vector_store (
+CREATE TABLE ${SA_DB_SCHEMA}.document_vector_store (
     id UUID PRIMARY KEY,
     content TEXT,
     metadata JSONB,
     embedding vector(1536)
 );
 
-CREATE TABLE ${LC_DB_SCHEMA}.memory_vector_store
+CREATE TABLE ${SA_DB_SCHEMA}.memory_vector_store
 (
     id        UUID PRIMARY KEY,
     content   TEXT,
@@ -18,7 +18,7 @@ CREATE TABLE ${LC_DB_SCHEMA}.memory_vector_store
     embedding vector(1536)
 );
 
-CREATE TABLE ${LC_DB_SCHEMA}.user (
+CREATE TABLE ${SA_DB_SCHEMA}.users (
     id UUID PRIMARY KEY,
     email          VARCHAR(255),
     password       VARCHAR(255),

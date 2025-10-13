@@ -5,7 +5,7 @@ import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
 import iaf.ofek.sigma.ai.service.auth.AuthService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.tool.TooSAallbackProvider;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,14 +30,13 @@ public class SigmaMcpClient implements AgentTool {
 
     private final ChatClient chatClient;
 
-    public SigmaMcpClient(ChatClient.Builder chatClientBuilder, TooSAallbackProvider tools,
+    public SigmaMcpClient(ChatClient.Builder chatClientBuilder, ToolCallbackProvider tools,
                           ChatMemoryAdvisorProvider memoryAdvisorProvider, AuthService authService) {
         this.chatClient = chatClientBuilder
                 .defaultAdvisors(memoryAdvisorProvider.chatMemoryAdvisor(0))
-                .defaultTools(tools)
+                .defaultToolCallbacks(tools)
                 .build();
         this.authService = authService;
-
     }
 
     @Override

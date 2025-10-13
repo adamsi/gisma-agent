@@ -8,7 +8,7 @@
     <artifactId>sigma-ai-parent</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
-    <name>Sigma AI Parent</name>
+    <name>sigma-ai</name>
 
     <modules>
         <module>sigma-agent-server</module>

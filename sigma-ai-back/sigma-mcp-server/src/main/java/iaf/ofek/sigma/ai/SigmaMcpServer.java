@@ -1,8 +1,8 @@
 package iaf.ofek.sigma.ai;
 
 import iaf.ofek.sigma.ai.service.tools.SigmaServicesTools;
-import org.springframework.ai.tool.TooSAallbackProvider;
-import org.springframework.ai.tool.method.MethodTooSAallbackProvider;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -18,8 +18,8 @@ public class SigmaMcpServer {
 
 
     @Bean
-    public TooSAallbackProvider tools(SigmaServicesTools sigmaServicesTools) {
-        return MethodTooSAallbackProvider.builder()
+    public ToolCallbackProvider tools(SigmaServicesTools sigmaServicesTools) {
+        return MethodToolCallbackProvider.builder()
                 .toolObjects(sigmaServicesTools)
                 .build();
     }
