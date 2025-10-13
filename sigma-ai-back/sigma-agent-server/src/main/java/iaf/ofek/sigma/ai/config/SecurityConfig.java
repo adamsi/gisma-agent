@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/me", "/auth/refresh-token").authenticated()
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/**", "/test").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex // this shit handler catches security exception,
                         // business exceptions caught by GlobalExceptionHandler

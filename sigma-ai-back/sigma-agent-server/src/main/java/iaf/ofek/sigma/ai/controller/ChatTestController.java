@@ -14,7 +14,7 @@ public class ChatTestController {
 
     private final AgentService agentService;
 
-    @GetMapping("/")
+    @GetMapping
     public String prompt(@RequestBody String query) {
         return agentService.handleQuery(query);
     }

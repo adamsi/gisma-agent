@@ -35,7 +35,7 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         String servletPath = request.getServletPath();
 
-        if (servletPath.startsWith("/auth/me") || servletPath.startsWith("/auth/refresh-token")
+        if (servletPath.startsWith("/auth/me") || !servletPath.startsWith("/test")
                 || (!servletPath.startsWith("/auth/"))) {
             try {
                 Optional<String> tokenOptional = getJwtFromCookies(request);
