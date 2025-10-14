@@ -6,6 +6,7 @@ import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
 import iaf.ofek.sigma.ai.service.agent.tools.fallback.UnclassifiedService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
@@ -19,10 +20,18 @@ public class AgentOrchestrator {
 
     private final Map<ToolIntent, AgentTool> toolMap;
 
-    public String handleQuery(String input) {
+    public Flux<String> handleQuery(String input) {
+        var intent = classifierService.classify(input);
+        Flux<String> response = toolMap.getOrDefault(intent, unclassifiedService)
+                .execute(input);
+
+        return response;
+    }
+
+    public String handleQueryBlocking(String input) {
         var intent = classifierService.classify(input);
         String response = toolMap.getOrDefault(intent, unclassifiedService)
-                .execute(input);
+                .executeBlocking(input);
 
         return response;
     }

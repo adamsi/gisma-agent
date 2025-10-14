@@ -16,7 +16,7 @@ public class ChatTestController {
 
     @GetMapping
     public String prompt(@RequestBody String query) {
-        return agentOrchestrator.handleQuery(query);
+        return agentOrchestrator.handleQueryBlocking(query);
     }
 
 }

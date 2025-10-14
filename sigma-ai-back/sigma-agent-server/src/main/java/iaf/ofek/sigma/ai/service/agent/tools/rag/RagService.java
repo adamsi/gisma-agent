@@ -13,6 +13,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.util.Optional;
 
@@ -85,12 +86,12 @@ public class RagService implements AgentTool {
     }
 
     @Override
-    public String execute(String query) {
+    public Flux<String> execute(String query) {
         return chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
                 .user(query)
                 .advisors(memoryAdvisorProvider.shortTermMemoryAdvisor())
-                .call()
+                .stream()
                 .content();
     }
 

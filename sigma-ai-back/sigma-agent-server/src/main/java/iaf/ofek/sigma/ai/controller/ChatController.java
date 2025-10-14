@@ -6,6 +6,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 import java.security.Principal;
 
@@ -20,9 +21,15 @@ public class ChatController {
     //client sends request to /app/chat and listens to response on /user/queue/reply,
     // spring handles routing to specific user
     @MessageMapping("/chat")
-    public void handlePrompt(@Payload String prompt, Principal user) {
-        String response = agentOrchestrator.handleQuery(prompt);
-        messagingTemplate.convertAndSendToUser(user.getName(), "/queue/reply", response);
+    public Mono<Void> handlePrompt(@Payload String prompt, Principal user) {
+        return agentOrchestrator.handleQuery(prompt)
+                .doOnNext(response ->
+                        messagingTemplate.convertAndSendToUser(
+                                user.getName(), "/queue/reply", response
+                        )
+                )
+                .then();
     }
+
 
 }

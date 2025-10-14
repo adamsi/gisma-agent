@@ -9,6 +9,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 @Service
 @Log4j2
@@ -46,14 +47,15 @@ public class SigmaMcpClient implements AgentTool {
     }
 
     @Override
-    public String execute(String input) {
+    public Flux<String> execute(String input) {
         String userId = authService.getCurrentUserId();
         var prompt = chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
                 .user(input)
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId));
         log.info("Sending prompt to LLM for user {}: {}.", userId, input);
-        String content = prompt.call().content();
+        Flux<String> content = prompt.stream()
+                .content();
         log.info("LLM response for user {}: {}", userId, content);
 
         return content;
