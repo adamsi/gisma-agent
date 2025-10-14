@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.security;
+package iaf.ofek.sigma.ai.filter;
 
 import iaf.ofek.sigma.ai.entity.User;
 import iaf.ofek.sigma.ai.service.auth.UserService;

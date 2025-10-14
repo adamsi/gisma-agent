@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.security;
+package iaf.ofek.sigma.ai.filter;
 
 import iaf.ofek.sigma.ai.exception.TokenProcessingException;
 import iaf.ofek.sigma.ai.service.auth.Token;
@@ -39,21 +39,18 @@ public class JwtFilter extends OncePerRequestFilter {
                 || (!servletPath.startsWith("/auth/"))) {
             try {
                 Optional<String> tokenOptional = getJwtFromCookies(request);
-                tokenOptional.ifPresent(jwtToken -> {
+                tokenOptional.filter(token -> !token.isBlank())
+                        .filter(jwtUtil::validateToken)
+                        .ifPresent(jwtToken -> {
+                            UUID userId = jwtUtil.extractUserId(jwtToken);
 
-                    if (jwtUtil.validateToken(jwtToken)) {
-                        UUID userId = jwtUtil.extractUserId(jwtToken);
-
-                        if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                            if (jwtUtil.validateToken(jwtToken)) {
-                                userService.getUserById(userId);
-                                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
+                            if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                                UsernamePasswordAuthenticationToken auth =
+                                        new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
                                 SecurityContextHolder.getContext().setAuthentication(auth);
                             }
-                        }
-                    }
+                        });
 
-                });
             } catch (Exception e) {
                 log.warn(e.getMessage());
             }

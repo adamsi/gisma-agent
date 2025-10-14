@@ -1,6 +1,6 @@
 package iaf.ofek.sigma.ai.service.auth;
 
-import iaf.ofek.sigma.ai.security.JwtUtil;
+import iaf.ofek.sigma.ai.filter.JwtUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;

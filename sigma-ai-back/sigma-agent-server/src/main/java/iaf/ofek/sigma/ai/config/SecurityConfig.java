@@ -1,7 +1,7 @@
 package iaf.ofek.sigma.ai.config;
 
-import iaf.ofek.sigma.ai.security.CustomUserDetailsService;
-import iaf.ofek.sigma.ai.security.JwtFilter;
+import iaf.ofek.sigma.ai.filter.CustomUserDetailsService;
+import iaf.ofek.sigma.ai.filter.JwtFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

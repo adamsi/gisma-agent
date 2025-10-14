@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.security;
+package iaf.ofek.sigma.ai.filter;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
