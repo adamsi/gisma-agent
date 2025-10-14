@@ -98,11 +98,12 @@ export class WebSocketManager {
       if (this.isConnected) {
         resolve();
         return;
-      }
+      } 
 
       const timeout = setTimeout(() => {
-        reject(new Error('Connection timeout'));
-      }, 10000);
+        console.error(`WebSocket connection timeout after ${WEBSOCKET_CONFIG.CONNECTION_TIMEOUT / 1000} seconds`);
+        reject(new Error(`Connection timeout - Server may be unreachable or overloaded (${WEBSOCKET_CONFIG.CONNECTION_TIMEOUT / 1000}s)`));
+      }, WEBSOCKET_CONFIG.CONNECTION_TIMEOUT);
 
       this.client.onConnect = (frame) => {
         clearTimeout(timeout);
@@ -121,7 +122,27 @@ export class WebSocketManager {
         resolve();
       };
 
-      this.client.activate();
+      this.client.onStompError = (frame) => {
+        clearTimeout(timeout);
+        console.error('STOMP Error:', frame.headers['message'], frame.body);
+        this.isConnected = false;
+        reject(new Error(`STOMP Error: ${frame.headers['message'] || 'Unknown error'}`));
+      };
+
+      this.client.onWebSocketError = (error) => {
+        clearTimeout(timeout);
+        console.error('WebSocket Error:', error);
+        this.isConnected = false;
+        reject(new Error(`WebSocket Error: ${error.message || 'Connection failed'}`));
+      };
+
+      try {
+        this.client.activate();
+      } catch (error) {
+        clearTimeout(timeout);
+        console.error('Failed to activate WebSocket client:', error);
+        reject(new Error(`Failed to activate WebSocket: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      }
     });
   }
 

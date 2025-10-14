@@ -31,7 +31,12 @@ export class ChatService {
   }
 
   public async connect(): Promise<void> {
-    await this.wsManager.connect();
+    try {
+      await this.wsManager.connect();
+    } catch (error) {
+      console.error('ChatService: Failed to connect to WebSocket:', error);
+      throw error;
+    }
   }
 
   public disconnect(): void {

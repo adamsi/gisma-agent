@@ -12,6 +12,9 @@ export const WEBSOCKET_CONFIG = {
   HEARTBEAT_INCOMING: 4000,
   HEARTBEAT_OUTGOING: 4000,
   
+  // Connection timeout (in milliseconds)
+  CONNECTION_TIMEOUT: parseInt(process.env.NEXT_PUBLIC_WEBSOCKET_TIMEOUT || '15000'), // 15 seconds default
+  
   // Message destinations
   SEND_DESTINATION: '/app/chat',
   RECEIVE_DESTINATION: '/user/queue/reply',
