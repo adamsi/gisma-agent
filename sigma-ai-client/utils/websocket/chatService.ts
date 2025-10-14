@@ -31,6 +31,12 @@ export class ChatService {
   }
 
   public async connect(): Promise<void> {
+    // Don't connect if no token (user not signed in)
+    if (!this.token) {
+      console.warn('ChatService: No authentication token, skipping WebSocket connection');
+      return;
+    }
+
     try {
       await this.wsManager.connect();
     } catch (error) {
@@ -49,6 +55,13 @@ export class ChatService {
     onComplete: () => void,
     onError: (error: string) => void
   ): Promise<void> {
+    // Don't send messages if no token (user not signed in)
+    if (!this.token) {
+      console.warn('ChatService: No authentication token, cannot send message');
+      onError('User not authenticated');
+      return;
+    }
+
     this.stopped = false;
     if (!this.wsManager.isWebSocketConnected()) {
       await this.connect();
