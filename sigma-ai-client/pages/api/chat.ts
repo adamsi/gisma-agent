@@ -1,35 +1,21 @@
+// This API endpoint is now deprecated in favor of WebSocket communication
+// The chat functionality has been moved to WebSocket for real-time communication
 export const config = {
   runtime: 'edge',
 };
 
 const handler = async (_req: Request): Promise<Response> => {
-  try {
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        const chunks = [
-          'Hello! ',
-          'This is a demo response ',
-          'from the Sigma Agent chat API. ',
-          'You can replace this with real model output later.'
-        ];
-        for (const chunk of chunks) {
-          controller.enqueue(encoder.encode(chunk));
-        }
-        controller.close();
-      },
-    });
-
-    return new Response(stream, {
+  return new Response(
+    JSON.stringify({ 
+      error: 'This endpoint is deprecated. Please use WebSocket connection for chat functionality.' 
+    }), 
+    { 
+      status: 410, // Gone
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-store',
+        'Content-Type': 'application/json',
       },
-    });
-  } catch (error) {
-    console.error(error);
-    return new Response('Error', { status: 500 });
-  }
+    }
+  );
 };
 
 export default handler;

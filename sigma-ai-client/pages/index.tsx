@@ -35,6 +35,8 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { ChatService } from '@/utils/websocket/chatService';
+import { WEBSOCKET_CONFIG } from '@/utils/websocket/config';
 
 interface HomeProps {
   serverSideApiKeyIsSet: boolean;
@@ -65,6 +67,9 @@ const Home: React.FC<HomeProps> = ({
 
   // REFS ----------------------------------------------
   const stopConversationRef = useRef<boolean>(false);
+  
+  // WEBSOCKET SERVICE ----------------------------------------------
+  const chatService = useRef<ChatService>(new ChatService(WEBSOCKET_CONFIG.SERVER_URL));
 
   // AUTHENTICATION EFFECT ----------------------------------------------
   useEffect(() => {
@@ -85,11 +90,31 @@ const Home: React.FC<HomeProps> = ({
     return () => clearInterval(refreshInterval);
   }, [dispatch]); // Add dispatch to dependency array
 
+  // WEBSOCKET CLEANUP EFFECT ----------------------------------------------
+  useEffect(() => {
+    return () => {
+      // Cleanup WebSocket connection on unmount
+      chatService.current.disconnect();
+    };
+  }, []);
 
+  // WEBSOCKET AUTHENTICATION EFFECT ----------------------------------------------
+  useEffect(() => {
+    // Reconnect WebSocket when user authentication state changes
+    if (user) {
+      // User is authenticated, ensure WebSocket is connected
+      chatService.current.connect().catch((error) => {
+        console.error('Failed to connect WebSocket:', error);
+      });
+    } else {
+      // User is not authenticated, disconnect WebSocket
+      chatService.current.disconnect();
+    }
+  }, [user]);
 
   // Note: Avoid early returns that change hook order. Render conditionally in JSX below.
 
-  // FETCH RESPONSE ----------------------------------------------
+  // WEBSOCKET RESPONSE ----------------------------------------------
   const handleSend = async (
     message: Message,
     deleteCount = 0,
@@ -118,38 +143,7 @@ const Home: React.FC<HomeProps> = ({
       setAppLoading(true);
       setMessageIsStreaming(true);
 
-      const chatBody: ChatBody = {
-        model: updatedConversation.model,
-        messages: updatedConversation.messages,
-        key: '',
-        prompt: updatedConversation.prompt,
-      };
-
-      const controller = new AbortController();
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-        body: JSON.stringify(chatBody),
-      });
-
-      if (!response.ok) {
-        setAppLoading(false);
-        setMessageIsStreaming(false);
-        toast.error(response.statusText);
-        return;
-      }
-
-      const data = response.body;
-
-      if (!data) {
-        setAppLoading(false);
-        setMessageIsStreaming(false);
-        return;
-      }
-
+      // Set conversation name if it's the first message
       if (updatedConversation.messages.length === 1) {
         const { content } = message;
         const customName =
@@ -163,80 +157,96 @@ const Home: React.FC<HomeProps> = ({
 
       setAppLoading(false);
 
-      const reader = data.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let isFirst = true;
-      let text = '';
+      let assistantMessage: Message = { role: 'assistant', content: '' };
+      let isFirstChunk = true;
+      let completionTimer: any = null;
 
-      while (!done) {
-        if (stopConversationRef.current === true) {
-          controller.abort();
-          done = true;
-          break;
+      const finalizeStream = () => {
+        if (completionTimer) {
+          clearTimeout(completionTimer);
+          completionTimer = null;
         }
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunkValue = decoder.decode(value);
-
-        text += chunkValue;
-
-        if (isFirst) {
-          isFirst = false;
-          const updatedMessages: Message[] = [
-            ...updatedConversation.messages,
-            { role: 'assistant', content: chunkValue },
-          ];
-
-          updatedConversation = {
-            ...updatedConversation,
-            messages: updatedMessages,
-          };
-
-          setSelectedConversation(updatedConversation);
-        } else {
-          const updatedMessages: Message[] = updatedConversation.messages.map(
-            (message, index) => {
-              if (index === updatedConversation.messages.length - 1) {
-                return {
-                  ...message,
-                  content: text,
-                };
-              }
-
-              return message;
-            },
-          );
-
-          updatedConversation = {
-            ...updatedConversation,
-            messages: updatedMessages,
-          };
-
-          setSelectedConversation(updatedConversation);
+        saveConversation(updatedConversation);
+        const updatedConversations: Conversation[] = conversations.map(
+          (conversation) => {
+            if (conversation.id === selectedConversation.id) {
+              return updatedConversation;
+            }
+            return conversation;
+          },
+        );
+        if (updatedConversations.length === 0) {
+          updatedConversations.push(updatedConversation);
         }
-      }
+        setConversations(updatedConversations);
+        saveConversations(updatedConversations);
+        setMessageIsStreaming(false);
+      };
 
-      saveConversation(updatedConversation);
+      try {
+        await chatService.current.sendMessage(
+          message.content,
+          (chunk: string) => {
+            if (stopConversationRef.current) {
+              chatService.current.abortCurrentStream();
+              finalizeStream();
+              return;
+            }
 
-      const updatedConversations: Conversation[] = conversations.map(
-        (conversation) => {
-          if (conversation.id === selectedConversation.id) {
-            return updatedConversation;
+            if (completionTimer) clearTimeout(completionTimer);
+            completionTimer = setTimeout(() => {
+              finalizeStream();
+            }, 800);
+
+            if (isFirstChunk) {
+              isFirstChunk = false;
+              assistantMessage = { role: 'assistant', content: chunk };
+              const updatedMessages: Message[] = [
+                ...updatedConversation.messages,
+                assistantMessage,
+              ];
+
+              updatedConversation = {
+                ...updatedConversation,
+                messages: updatedMessages,
+              };
+            } else {
+              assistantMessage.content += chunk;
+              const updatedMessages: Message[] = updatedConversation.messages.map(
+                (msg, index) => {
+                  if (index === updatedConversation.messages.length - 1) {
+                    return assistantMessage;
+                  }
+                  return msg;
+                },
+              );
+
+              updatedConversation = {
+                ...updatedConversation,
+                messages: updatedMessages,
+              };
+            }
+
+            setSelectedConversation(updatedConversation);
+          },
+          () => {
+            // On complete from server
+            finalizeStream();
+          },
+          (error: string) => {
+            // On error
+            console.error('WebSocket error:', error);
+            toast.error('Connection error. Please try again.');
+            setAppLoading(false);
+            setMessageIsStreaming(false);
           }
-
-          return conversation;
-        },
-      );
-
-      if (updatedConversations.length === 0) {
-        updatedConversations.push(updatedConversation);
+        );
+      } catch (error) {
+        console.error('Failed to send message:', error);
+        toast.error('Failed to send message. Please try again.');
+        setAppLoading(false);
+        setMessageIsStreaming(false);
       }
-
-      setConversations(updatedConversations);
-      saveConversations(updatedConversations);
-
-      setMessageIsStreaming(false);
     }
   };
 

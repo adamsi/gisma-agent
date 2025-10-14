@@ -5,10 +5,10 @@ import iaf.ofek.sigma.ai.entity.Role;
 import iaf.ofek.sigma.ai.entity.User;
 import iaf.ofek.sigma.ai.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -45,10 +45,12 @@ public class UserService {
                 });
     }
 
+    @Transactional(readOnly=true)
     public Optional<User> findUserByUsernameOrEmail(String userIdentifier) {
         return userRepository.findByEmailOrUsername(userIdentifier, userIdentifier);
     }
 
+    @Transactional(readOnly=true)
     public User getUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format("User with id %s not found", userId)));

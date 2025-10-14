@@ -13,12 +13,16 @@ import org.springframework.stereotype.Service;
 import java.util.function.Consumer;
 
 @Service
-@RequiredArgsConstructor
 public class ChatMemoryAdvisorProvider {
 
     private final AuthService authService;
 
     private final VectorStore memoryVectorStore;
+
+    public ChatMemoryAdvisorProvider(@Qualifier("memoryVectorStore") VectorStore memoryVectorStore, AuthService authService) {
+        this.authService = authService;
+        this.memoryVectorStore = memoryVectorStore;
+    }
 
 
     private static final String CHAT_MEMORY_TEMPLATE = """
