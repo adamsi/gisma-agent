@@ -74,6 +74,17 @@ export const logout = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.post('/auth/logout');
+      
+      // Disconnect WebSocket on logout
+      if (typeof window !== 'undefined') {
+        // Create a simple disconnect function
+        const disconnectWebSocket = () => {
+          // Find and disconnect any existing WebSocket connections
+          const event = new CustomEvent('websocket-disconnect');
+          window.dispatchEvent(event);
+        };
+        disconnectWebSocket();
+      }
 
       return response.data;
     } catch (error) {

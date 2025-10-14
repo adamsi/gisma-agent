@@ -92,25 +92,20 @@ const Home: React.FC<HomeProps> = ({
 
   // WEBSOCKET CLEANUP EFFECT ----------------------------------------------
   useEffect(() => {
+    // Listen for logout event to disconnect WebSocket
+    const handleLogout = () => {
+      chatService.current.disconnect();
+    };
+
+    window.addEventListener('websocket-disconnect', handleLogout);
+
     return () => {
       // Cleanup WebSocket connection on unmount
       chatService.current.disconnect();
+      window.removeEventListener('websocket-disconnect', handleLogout);
     };
   }, []);
 
-  // WEBSOCKET AUTHENTICATION EFFECT ----------------------------------------------
-  useEffect(() => {
-    // Reconnect WebSocket when user authentication state changes
-    if (user) {
-      // User is authenticated, ensure WebSocket is connected
-      chatService.current.connect().catch((error) => {
-        console.error('Failed to connect WebSocket:', error);
-      });
-    } else {
-      // User is not authenticated, disconnect WebSocket
-      chatService.current.disconnect();
-    }
-  }, [user]);
 
   // Note: Avoid early returns that change hook order. Render conditionally in JSX below.
 
@@ -119,6 +114,12 @@ const Home: React.FC<HomeProps> = ({
     message: Message,
     deleteCount = 0,
   ) => {
+    // Only send messages if user is signed in
+    if (!user) {
+      console.warn('Cannot send message: User not signed in');
+      return;
+    }
+
     if (selectedConversation) {
       let updatedConversation: Conversation;
 
