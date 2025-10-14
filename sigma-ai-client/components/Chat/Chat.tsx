@@ -200,6 +200,12 @@ export const Chat: FC<Props> = memo(
                       message={message}
                       messageIndex={index}
                       onEditMessage={onEditMessage}
+                      isLastMessage={index === conversation.messages.length - 1}
+                      onRegenerate={() => {
+                        if (currentMessage) {
+                          onSend(currentMessage, 2);
+                        }
+                      }}
                     />
                   ))}
 

@@ -1,5 +1,5 @@
 import { Message } from '@/types/chat';
-import { IconCheck, IconCopy, IconEdit, IconUser, IconRobot } from '@tabler/icons-react';
+import { IconCheck, IconCopy, IconEdit, IconUser, IconRobot, IconRepeat } from '@tabler/icons-react';
 import { FC, memo, useEffect, useRef, useState } from 'react';
 import rehypeMathjax from 'rehype-mathjax';
 import remarkGfm from 'remark-gfm';
@@ -11,10 +11,12 @@ interface Props {
   message: Message;
   messageIndex: number;
   onEditMessage: (message: Message, messageIndex: number) => void;
+  isLastMessage?: boolean;
+  onRegenerate?: () => void;
 }
 
 export const ChatMessage: FC<Props> = memo(
-  ({ message, messageIndex, onEditMessage }) => {
+  ({ message, messageIndex, onEditMessage, isLastMessage, onRegenerate }) => {
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [isTyping, setIsTyping] = useState<boolean>(false);
     const [messageContent, setMessageContent] = useState(message.content);
@@ -151,7 +153,7 @@ export const ChatMessage: FC<Props> = memo(
                     window.innerWidth < 640
                       ? 'right-3 bottom-1'
                       : 'right-0 top-[26px] m-0'
-                  }`}
+                  } flex flex-col gap-1`}
                 >
                   {messagedCopied ? (
                     <IconCheck
@@ -164,6 +166,14 @@ export const ChatMessage: FC<Props> = memo(
                       onClick={copyOnClick}
                     >
                       <IconCopy size={20} />
+                    </button>
+                  )}
+                  {isLastMessage && onRegenerate && (
+                    <button
+                      className="translate-x-[1000px] text-gray-500 hover:text-gray-700 focus:translate-x-0 group-hover:translate-x-0 dark:text-gray-400 dark:hover:text-gray-300"
+                      onClick={onRegenerate}
+                    >
+                      <IconRepeat size={20} />
                     </button>
                   )}
                 </div>

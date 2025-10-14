@@ -153,7 +153,7 @@ const HomePage: React.FC = () => {
             <ScrollReveal direction="up" delay={300} duration={1000}>
               <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-full bg-blue-900/40 text-blue-200 text-xs sm:text-sm font-medium mb-6 sm:mb-8 ring-1 ring-white/10">
                 <IconSparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                AI-Powered Legal Assistant
+                Sigma AI Assistant
               </div>
             </ScrollReveal>
             
@@ -166,9 +166,9 @@ const HomePage: React.FC = () => {
                   <div className="absolute bottom-0 left-0 w-56 h-12 sm:w-72 sm:h-16 rounded-full bg-blue-400/20 blur-[60px]" />
                 </div>
                 <h1 className="text-5xl sm:text-6xl md:text-6xl lg:text-6xl tracking-tight font-bold text-white mb-6 sm:mb-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 rounded-2xl transform hover:scale-105 transition-all duration-300 relative z-10 overflow-hidden animate-float">
-                  <span className="block leading-[1.2] sm:leading-[1.3] mb-1 sm:mb-2 md:mb-3 relative z-10">Transform Your</span>
+                  <span className="block leading-[1.2] sm:leading-[1.3] mb-1 sm:mb-2 md:mb-3 relative z-10">Unified Data Platform</span>
                   <span className="block leading-[1.2] sm:leading-[1.3] bg-gradient-to-r from-blue-100 to-blue-200 bg-clip-text text-transparent relative z-10">
-                    Legal Practice
+                    for Matan
                   </span>
                 </h1>
               </div>
@@ -176,7 +176,7 @@ const HomePage: React.FC = () => {
             
             <ScrollReveal direction="up" delay={1000} duration={1000}>
               <p className="mt-6 sm:mt-8 max-w-2xl mx-auto text-lg sm:text-xl text-blue-200 leading-relaxed px-4">
-                Streamline your legal research, document analysis, and case preparation with our advanced AI-powered legal assistant.
+                Sigma is a comprehensive data platform for Matan, providing API services across multiple networks and different API patterns including REST and GraphQL.
               </p>
             </ScrollReveal>
             
@@ -212,10 +212,10 @@ const HomePage: React.FC = () => {
           <ScrollReveal direction="up" delay={1500} duration={1000}>
             <div className="text-center">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                Powerful Features for Legal Professionals
+                Powerful Data Platform Features
               </h2>
               <p className="mt-3 sm:mt-4 max-w-2xl mx-auto text-lg sm:text-xl text-blue-200">
-                Everything you need to streamline your legal practice
+                Everything you need to manage data across multiple networks and API patterns
               </p>
             </div>
           </ScrollReveal>
@@ -233,10 +233,10 @@ const HomePage: React.FC = () => {
                     </svg>
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">
-                      AI-Powered Research
+                      Multi-Network API Services
                     </h3>
                     <p className="text-blue-200 leading-relaxed text-sm sm:text-base">
-                      Quickly analyze legal documents, case law, and regulations with advanced AI algorithms.
+                      Connect and manage data across multiple networks with unified API services and intelligent routing.
                     </p>
                   </div>
                 </div>
@@ -253,10 +253,10 @@ const HomePage: React.FC = () => {
                     </svg>
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">
-                      Document Analysis
+                      REST & GraphQL APIs
                     </h3>
                     <p className="text-blue-200 leading-relaxed text-sm sm:text-base">
-                      Automatically extract key information from contracts, legal documents, and case files.
+                      Flexible API patterns supporting both REST and GraphQL endpoints for diverse integration needs.
                     </p>
                   </div>
                 </div>
@@ -273,10 +273,10 @@ const HomePage: React.FC = () => {
                     </svg>
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">
-                      Smart Chat Assistant
+                      Intelligent Data Management
                     </h3>
                     <p className="text-blue-200 leading-relaxed text-sm sm:text-base">
-                      Get instant answers to legal questions and receive guidance on complex legal matters.
+                      Advanced data processing, transformation, and analytics capabilities powered by AI for optimal performance.
                     </p>
                   </div>
                 </div>
