@@ -1,9 +1,9 @@
 package iaf.ofek.sigma.ai.service.agent.tools.rag;
 
+import iaf.ofek.sigma.ai.dto.ToolManifest;
 import iaf.ofek.sigma.ai.service.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
 import iaf.ofek.sigma.ai.service.auth.AuthService;
-import iaf.ofek.sigma.ai.service.ingestion.DocumentProcessor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
@@ -13,6 +13,8 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class RagService implements AgentTool {
@@ -35,6 +37,19 @@ public class RagService implements AgentTool {
             - When appropriate, reference endpoint names, parameters, or examples from the documentation.
             """;
 
+    private static final String CONTEXTUALIZE_SYSTEM_PROMPT = """
+        You are the Sigma Knowledge Context Extractor.
+        Your task is to help the orchestrator understand the user's intent
+        and retrieve the most relevant Sigma documentation fragments.
+        
+        Guidelines:
+        - DO NOT answer the user directly.
+        - Summarize key API concepts, parameters, and sections
+          that relate to the user's query.
+        - Include short references to endpoints or entities if relevant.
+        - Be concise (max 5 sentences).
+    """;
+
 
 
     private static final String USER_PROMPT_TEMPLATE = """
@@ -45,38 +60,58 @@ public class RagService implements AgentTool {
             {query}
             """;
 
-    private final AuthService authService;
-
     private final ChatClient chatClient;
 
-    public RagService(AuthService authService,
-                      ChatMemoryAdvisorProvider memoryAdvisorProvider,
+    private final ChatMemoryAdvisorProvider memoryAdvisorProvider;
+
+    public RagService(ChatMemoryAdvisorProvider memoryAdvisorProvider,
                       ChatClient.Builder builder,
                       @Qualifier("documentVectorStore") VectorStore documentVectorStore) {
-        this.authService = authService;
-        SimpleLoggerAdvisor headLogger = SimpleLoggerAdvisor.builder().order(0).build();
+        this.memoryAdvisorProvider = memoryAdvisorProvider;
+        SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder()
+                .order(0)
+                .build();
 
-        VectorStoreChatMemoryAdvisor memoryAdvisor = memoryAdvisorProvider.chatMemoryAdvisor(1);
+        VectorStoreChatMemoryAdvisor memoryAdvisor = memoryAdvisorProvider.longTermChatMemoryAdvisor(1);
 
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .order(2)
                 .promptTemplate(new PromptTemplate(USER_PROMPT_TEMPLATE))
                 .build();
 
-        SimpleLoggerAdvisor tailLogger = SimpleLoggerAdvisor.builder().order(3).build();
         this.chatClient = builder
-                .defaultAdvisors(headLogger, qaAdvisor, memoryAdvisor, tailLogger)
+                .defaultAdvisors(loggerAdvisor, qaAdvisor, memoryAdvisor)
                 .build();
     }
 
+    @Override
     public String execute(String query) {
-        String userId = authService.getCurrentUserId();
-
         return chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
                 .user(query)
-                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
+                .advisors(memoryAdvisorProvider.shortTermMemoryAdvisor())
                 .call()
                 .content();
     }
+
+    @Override
+    public Optional<String> contextualize(String query) {
+        String contextSummary = chatClient.prompt()
+                .system(CONTEXTUALIZE_SYSTEM_PROMPT)
+                .user(query)
+                .advisors(memoryAdvisorProvider.shortTermMemoryAdvisor())
+                .call()
+                .content();
+
+        return Optional.ofNullable(contextSummary);
+    }
+
+    @Override
+    public ToolManifest manifest() {
+        return ToolManifest.builder()
+                .name("RagAgentTool")
+                .description("Retrieves and summarizes Sigma API documentation for reasoning or answering.")
+                .build();
+    }
+
 }

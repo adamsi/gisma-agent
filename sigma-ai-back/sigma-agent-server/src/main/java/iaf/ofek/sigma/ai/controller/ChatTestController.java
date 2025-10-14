@@ -1,6 +1,6 @@
 package iaf.ofek.sigma.ai.controller;
 
-import iaf.ofek.sigma.ai.service.agent.AgentService;
+import iaf.ofek.sigma.ai.service.agent.orchestrator.AgentOrchestrator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ChatTestController {
 
-    private final AgentService agentService;
+    private final AgentOrchestrator agentOrchestrator;
 
     @GetMapping
     public String prompt(@RequestBody String query) {
-        return agentService.handleQuery(query);
+        return agentOrchestrator.handleQuery(query);
     }
 
 }

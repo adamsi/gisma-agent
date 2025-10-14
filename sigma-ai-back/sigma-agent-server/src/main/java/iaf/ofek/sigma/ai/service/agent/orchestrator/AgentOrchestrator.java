@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.service.agent;
+package iaf.ofek.sigma.ai.service.agent.orchestrator;
 
 import iaf.ofek.sigma.ai.service.agent.classifier.ClassifierService;
 import iaf.ofek.sigma.ai.service.agent.classifier.ToolIntent;
@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class AgentService {
+public class AgentOrchestrator {
 
     private final ClassifierService classifierService;
 

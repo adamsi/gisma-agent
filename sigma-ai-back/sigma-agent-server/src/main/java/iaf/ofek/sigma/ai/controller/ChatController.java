@@ -1,6 +1,6 @@
 package iaf.ofek.sigma.ai.controller;
 
-import iaf.ofek.sigma.ai.service.agent.AgentService;
+import iaf.ofek.sigma.ai.service.agent.orchestrator.AgentOrchestrator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -15,13 +15,13 @@ public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    private final AgentService agentService;
+    private final AgentOrchestrator agentOrchestrator;
 
     //client sends request to /app/chat and listens to response on /user/queue/reply,
     // spring handles routing to specific user
     @MessageMapping("/chat")
     public void handlePrompt(@Payload String prompt, Principal user) {
-        String response = agentService.handleQuery(prompt);
+        String response = agentOrchestrator.handleQuery(prompt);
         messagingTemplate.convertAndSendToUser(user.getName(), "/queue/reply", response);
     }
 
