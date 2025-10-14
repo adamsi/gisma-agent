@@ -5,12 +5,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.security.Principal;
 
-@RestController("/agent")
+@Controller
 @RequiredArgsConstructor
 public class ChatController {
 
@@ -22,6 +26,12 @@ public class ChatController {
     // spring handles routing to specific user
     @MessageMapping("/chat")
     public Mono<Void> handlePrompt(@Payload String prompt, Principal user) {
+        if (user instanceof Authentication auth) {
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(auth);
+            SecurityContextHolder.setContext(context);
+        }
+
         return agentOrchestrator.handleQuery(prompt)
                 .doOnNext(response ->
                         messagingTemplate.convertAndSendToUser(
@@ -30,6 +40,5 @@ public class ChatController {
                 )
                 .then();
     }
-
 
 }

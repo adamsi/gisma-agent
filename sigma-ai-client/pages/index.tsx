@@ -187,6 +187,7 @@ const Home: React.FC<HomeProps> = ({
         await chatService.current.sendMessage(
           message.content,
           (chunk: string) => {
+      
             if (stopConversationRef.current) {
               chatService.current.abortCurrentStream();
               finalizeStream();

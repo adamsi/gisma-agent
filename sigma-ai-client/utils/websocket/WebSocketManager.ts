@@ -48,17 +48,6 @@ export class WebSocketManager {
     this.client.onConnect = (frame) => {
       this.isConnected = true;
       this.reconnectAttempts = 0;
-      
-      // Subscribe to response queue
-      this.client.subscribe(WEBSOCKET_CONFIG.RECEIVE_DESTINATION, (message) => {
-        try {
-          const response: WebSocketResponse = JSON.parse(message.body);
-          this.handleResponse(response);
-        } catch (_error) {
-          // Fallback: backend sent plain text chunk
-          this.handleResponse({ type: 'response', content: message.body, isComplete: false });
-        }
-      });
     };
 
     this.client.onStompError = (frame) => {
@@ -123,11 +112,9 @@ export class WebSocketManager {
         // Subscribe to response queue
         this.client.subscribe(WEBSOCKET_CONFIG.RECEIVE_DESTINATION, (message) => {
           try {
-            const response: WebSocketResponse = JSON.parse(message.body);
-            this.handleResponse(response);
-          } catch (_error) {
-            // Fallback: backend sent plain text chunk
             this.handleResponse({ type: 'response', content: message.body, isComplete: false });
+          } catch (_error) {
+            console.error('Error parsing message:', _error);
           }
         });
         

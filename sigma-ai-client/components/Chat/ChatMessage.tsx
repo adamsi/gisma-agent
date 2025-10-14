@@ -168,52 +168,9 @@ export const ChatMessage: FC<Props> = memo(
                   )}
                 </div>
 
-                <MemoizedReactMarkdown
-                  className="prose dark:prose-invert"
-                  remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[rehypeMathjax]}
-                  components={{
-                    code({ node, inline, className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || '');
-
-                      return !inline && match ? (
-                        <CodeBlock
-                          key={Math.random()}
-                          language={match[1]}
-                          value={String(children).replace(/\n$/, '')}
-                          {...props}
-                        />
-                      ) : (
-                        <code className={className} {...props}>
-                          {children}
-                        </code>
-                      );
-                    },
-                    table({ children }) {
-                      return (
-                        <table className="border-collapse border border-black py-1 px-3 dark:border-white">
-                          {children}
-                        </table>
-                      );
-                    },
-                    th({ children }) {
-                      return (
-                        <th className="break-words border border-black bg-gray-500 py-1 px-3 text-white dark:border-white">
-                          {children}
-                        </th>
-                      );
-                    },
-                    td({ children }) {
-                      return (
-                        <td className="break-words border border-black py-1 px-3 dark:border-white">
-                          {children}
-                        </td>
-                      );
-                    },
-                  }}
-                >
+                <div className="prose whitespace-pre-wrap dark:prose-invert">
                   {message.content}
-                </MemoizedReactMarkdown>
+                </div>
               </>
             )}
           </div>
