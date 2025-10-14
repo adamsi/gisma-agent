@@ -30,10 +30,14 @@ public class AuthService {
     }
 
     public String getCurrentUserId() {
-        return SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getPrincipal()
-                .toString();
+        try {
+           return SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal()
+                    .toString();
+        } catch (Exception e) {
+            return "user";
+        }
     }
 
 }
