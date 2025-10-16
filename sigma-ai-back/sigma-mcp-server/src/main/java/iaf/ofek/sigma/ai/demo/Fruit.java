@@ -5,10 +5,10 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class Target {
+public class Fruit {
 
     private Long id;
 
-    private String idfCode;
+    private String code;
 
 }

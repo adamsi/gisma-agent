@@ -176,7 +176,7 @@ const HomePage: React.FC = () => {
             
             <ScrollReveal direction="up" delay={1000} duration={1000}>
               <p className="mt-6 sm:mt-8 max-w-2xl mx-auto text-lg sm:text-xl text-blue-200 leading-relaxed px-4">
-                Sigma is a comprehensive data platform for Matan, providing API services across multiple networks and different API patterns including REST and GraphQL.
+                Sigma is the data platform of Fruits, providing API services across multiple networks and different API patterns.
               </p>
             </ScrollReveal>
             
