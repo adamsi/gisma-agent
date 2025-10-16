@@ -5,35 +5,34 @@ import { WEBSOCKET_CONFIG } from './config';
 export class ChatService {
   private wsManager: WebSocketManager;
   private serverUrl: string;
-  private token: string | null = null;
+  private isAuthenticated: boolean = false;
   private stopped: boolean = false;
 
-  constructor(serverUrl: string = WEBSOCKET_CONFIG.SERVER_URL, token?: string) {
+  constructor(serverUrl: string = WEBSOCKET_CONFIG.SERVER_URL) {
     this.serverUrl = serverUrl;
-    this.token = token || null;
     this.wsManager = new WebSocketManager({
       serverUrl,
       reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
       reconnectDelay: WEBSOCKET_CONFIG.RECONNECT_DELAY,
-      token: this.token || undefined,
+      // No token needed for cookie-based authentication
     });
   }
 
-  public setToken(token: string): void {
-    this.token = token;
-    // Recreate the WebSocket manager with the new token
+  public setAuthenticated(authenticated: boolean): void {
+    this.isAuthenticated = authenticated;
+    // Recreate the WebSocket manager when authentication state changes
     this.wsManager = new WebSocketManager({
       serverUrl: this.serverUrl,
       reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
       reconnectDelay: WEBSOCKET_CONFIG.RECONNECT_DELAY,
-      token: this.token || undefined,
+      // No token needed for cookie-based authentication
     });
   }
 
   public async connect(): Promise<void> {
-    // Don't connect if no token (user not signed in)
-    if (!this.token) {
-      console.warn('ChatService: No authentication token, skipping WebSocket connection');
+    // Don't connect if user not authenticated
+    if (!this.isAuthenticated) {
+      console.warn('ChatService: User not authenticated, skipping WebSocket connection');
       return;
     }
 
@@ -55,9 +54,9 @@ export class ChatService {
     onComplete: () => void,
     onError: (error: string) => void
   ): Promise<void> {
-    // Don't send messages if no token (user not signed in)
-    if (!this.token) {
-      console.warn('ChatService: No authentication token, cannot send message');
+    // Don't send messages if user not authenticated
+    if (!this.isAuthenticated) {
+      console.warn('ChatService: User not authenticated, cannot send message');
       onError('User not authenticated');
       return;
     }

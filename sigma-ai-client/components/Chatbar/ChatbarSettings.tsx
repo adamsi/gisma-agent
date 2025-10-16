@@ -9,12 +9,14 @@ interface Props {
   lightMode: 'light' | 'dark';
   conversationsCount: number;
   onToggleLightMode: (mode: 'light' | 'dark') => void;
+  onClearConversations: () => void;
 }
 
 export const ChatbarSettings: FC<Props> = ({
   lightMode,
   conversationsCount,
   onToggleLightMode,
+  onClearConversations,
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
@@ -24,7 +26,7 @@ export const ChatbarSettings: FC<Props> = ({
   return (
     <div className="flex flex-col items-center space-y-1 border-t border-white/20 pt-1 text-sm">
       {conversationsCount > 0 ? (
-        <ClearConversations onClearConversations={() => {}} />
+        <ClearConversations onClearConversations={onClearConversations} />
       ) : null}
 
       <SidebarButton

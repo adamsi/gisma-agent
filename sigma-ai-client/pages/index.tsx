@@ -90,6 +90,12 @@ const Home: React.FC<HomeProps> = ({
     return () => clearInterval(refreshInterval);
   }, [dispatch]); // Add dispatch to dependency array
 
+  // UPDATE CHATSERVICE AUTHENTICATION STATE ---------------------------
+  useEffect(() => {
+    // Update ChatService authentication state when user state changes
+    chatService.current.setAuthenticated(!!user);
+  }, [user]);
+
   // WEBSOCKET CLEANUP EFFECT ----------------------------------------------
   useEffect(() => {
     // Listen for logout event to disconnect WebSocket
