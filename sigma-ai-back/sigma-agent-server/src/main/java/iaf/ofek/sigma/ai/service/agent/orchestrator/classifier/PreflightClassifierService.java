@@ -33,6 +33,9 @@ public class PreflightClassifierService {
                 2. If not sufficient, choose the next action:
                    - "DIRECT_TOOL": if the user query can be answered with a direct tool/API call using MCP.
                    - "PLANNER": if the query requires multi-step reasoning, orchestration, or combined tool usage.
+                3. Rephrase the QuickShotResponse text to fix typos, improve grammar, and make it well-structured.
+                       - This should be included in the output as `rephrasedResponse`.
+                       - Do this regardless of whether the response is sufficient or not, if response is already perfect, just copy paste it to rephrasedResponse.
             
                 Guidelines:
                 - Always return a valid JSON object matching the ClassifierResponse schema:
@@ -41,9 +44,9 @@ public class PreflightClassifierService {
                 - Consider the QuickShotResponse fields when making your decision:
                   - confidenceScore: higher means more likely sufficient.
                   - requiresDataFetching / requiresPlanning: indicates additional work may be needed.
-                - Only include nextAction and tools if sufficient == false.
-                - When nextAction is "DIRECT_TOOL", select the most relevant single tool from the available metadata.
-                - When nextAction is "PLANNER", recommend multiple tools that might be useful together.
+                - Only include actionMode and tools if sufficient == false.
+                - When actionMode is "DIRECT_TOOL", select the most relevant single tool from the available metadata.
+                - When actionMode is "PLANNER", recommend multiple tools that might be useful together.
                 - Be concise and precise in your explanation.
             """;
 
@@ -66,7 +69,7 @@ public class PreflightClassifierService {
                   "type": "boolean",
                   "description": "True if the QuickShotResponse fully answers the query."
                 },
-                "nextAction": {
+                "actionMode": {
                   "type": "string",
                   "enum": ["PLANNER", "DIRECT_TOOL"],
                   "description": "The next step to take if the QuickShotResponse is insufficient."
@@ -75,27 +78,19 @@ public class PreflightClassifierService {
                   "type": "array",
                   "description": "A list of recommended tools to use. One tool for DIRECT_TOOL, multiple for PLANNER.",
                   "items": {
-                    "type": "object",
-                    "properties": {
-                      "toolName": { "type": "string" },
-                      "reason": { "type": "string" }
-                    },
-                    "required": ["toolName"]
+                    "type": "String",
+                    "enum": ["RAG_SERVICE", "MCP_CLIENT"]
                   }
                 },
-                "explanation": {
-                  "type": "string",
-                  "description": "Overall reasoning for the decision."
-                }
+                "rephrasedResponse": "string"
               },
-              "required": ["sufficient"],
+              "required": ["sufficient", "rephrasedResponse"],
               "additionalProperties": false,
-            
               "allOf": [
                 {
                   "if": {
-                    "properties": { "nextAction": { "const": "DIRECT_TOOL" } },
-                    "required": ["nextAction"]
+                    "properties": { "actionMode": { "const": "DIRECT_TOOL" } },
+                    "required": ["actionMode"]
                   },
                   "then": {
                     "required": ["tools"],

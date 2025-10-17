@@ -1,7 +1,7 @@
 package iaf.ofek.sigma.ai.service.agent.tools.rag;
 
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
-import iaf.ofek.sigma.ai.dto.agent.ToolManifest;
+import iaf.ofek.sigma.ai.enums.ToolManifest;
 import iaf.ofek.sigma.ai.service.agent.prompt.PromptMessageFormater;
 import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
 import iaf.ofek.sigma.ai.service.agent.llmCaller.LLMCallerService;
@@ -114,14 +114,6 @@ public class RagService implements AgentTool {
                         .system(systemMessage)
                         .user(query)
                         .advisors(qaAdvisor), QuickShotResponse.class);
-    }
-
-    @Override
-    public ToolManifest manifest() {
-        return ToolManifest.builder()
-                .name("RagAgentTool")
-                .description("Retrieves and summarizes Sigma API documentation for reasoning or answering.")
-                .build();
     }
 
 }

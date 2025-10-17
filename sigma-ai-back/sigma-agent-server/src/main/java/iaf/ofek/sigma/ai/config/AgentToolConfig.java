@@ -1,8 +1,7 @@
 package iaf.ofek.sigma.ai.config;
 
-import iaf.ofek.sigma.ai.enums.ToolIntent;
+import iaf.ofek.sigma.ai.enums.ToolManifest;
 import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
-import iaf.ofek.sigma.ai.service.agent.tools.fallback.OffDomainService;
 import iaf.ofek.sigma.ai.service.agent.tools.mcp.SigmaMcpClient;
 import iaf.ofek.sigma.ai.service.agent.tools.rag.RagService;
 import org.springframework.context.annotation.Bean;
@@ -14,14 +13,10 @@ import java.util.Map;
 public class AgentToolConfig {
 
     @Bean
-    public Map<ToolIntent, AgentTool> toolMap(RagService ragService,
-                                              SigmaMcpClient mcpClient,
-                                              OffDomainService offDomainTool) {
+    public Map<ToolManifest, AgentTool> toolMap(RagService ragService, SigmaMcpClient mcpClient) {
         return Map.of(
-                ToolIntent.DOC_QUESTION, ragService,
-                ToolIntent.DATA_FETCH, mcpClient,
-                ToolIntent.OFF_DOMAIN, offDomainTool
-        );
+                ToolManifest.RAG_SERVICE, ragService,
+                ToolManifest.MCP_CLIENT, mcpClient);
     }
 
 }
