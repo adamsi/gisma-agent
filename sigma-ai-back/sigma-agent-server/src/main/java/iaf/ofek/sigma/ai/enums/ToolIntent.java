@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.service.agent.orchestrator.classifier;
+package iaf.ofek.sigma.ai.enums;
 
 import lombok.RequiredArgsConstructor;
 

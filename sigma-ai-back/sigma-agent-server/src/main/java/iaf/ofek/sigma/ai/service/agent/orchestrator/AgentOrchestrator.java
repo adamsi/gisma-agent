@@ -1,39 +1,32 @@
 package iaf.ofek.sigma.ai.service.agent.orchestrator;
 
-import iaf.ofek.sigma.ai.service.agent.orchestrator.classifier.ClassifierService;
-import iaf.ofek.sigma.ai.service.agent.orchestrator.classifier.ToolIntent;
-import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
-import iaf.ofek.sigma.ai.service.agent.tools.fallback.UnclassifiedService;
+import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
+import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
+import iaf.ofek.sigma.ai.service.agent.orchestrator.classifier.PreflightClassifierService;
+import iaf.ofek.sigma.ai.service.agent.tools.ToolRegistry;
+import iaf.ofek.sigma.ai.service.agent.tools.rag.RagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class AgentOrchestrator {
 
-    private final ClassifierService classifierService;
+    private final RagService ragService;
 
-    private final UnclassifiedService unclassifiedService;
+    private final PreflightClassifierService preflightClassifierService;
 
-    private final Map<ToolIntent, AgentTool> toolMap;
+    private final ToolRegistry toolRegistry;
 
-    public Flux<String> handleQuery(String input) {
-        var intent = classifierService.classify(input);
-        Flux<String> response = toolMap.getOrDefault(intent, unclassifiedService)
-                .execute(input);
+    public Flux<String> handleQuery(String query) {
+        QuickShotResponse quickShotResponse = ragService.quickShotSimilaritySearch(query);
+        PreflightClassifierResponse preflightClassifierResponse =  preflightClassifierService.classify(query, quickShotResponse, toolRegistry.describeAll());
 
-        return response;
     }
 
     public String handleQueryBlocking(String input) {
-        var intent = classifierService.classify(input);
-        String response = toolMap.getOrDefault(intent, unclassifiedService)
-                .executeBlocking(input);
 
-        return response;
     }
 
 

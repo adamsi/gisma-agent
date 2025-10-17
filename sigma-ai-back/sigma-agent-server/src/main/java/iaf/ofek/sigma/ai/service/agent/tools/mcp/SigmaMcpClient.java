@@ -1,5 +1,6 @@
 package iaf.ofek.sigma.ai.service.agent.tools.mcp;
 
+import iaf.ofek.sigma.ai.dto.agent.ToolManifest;
 import iaf.ofek.sigma.ai.service.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
 import iaf.ofek.sigma.ai.service.auth.AuthService;
@@ -61,5 +62,12 @@ public class SigmaMcpClient implements AgentTool {
         return content;
     }
 
+    @Override
+    public ToolManifest manifest() {
+        return ToolManifest.builder()
+                .name("MCPClientTool")
+                .description("Fetches data (entities, aggregations, raw) from sigma api services")
+                .build();
+    }
 
 }

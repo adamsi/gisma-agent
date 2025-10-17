@@ -1,6 +1,6 @@
 package iaf.ofek.sigma.ai.config;
 
-import iaf.ofek.sigma.ai.service.agent.orchestrator.classifier.ToolIntent;
+import iaf.ofek.sigma.ai.enums.ToolIntent;
 import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
 import iaf.ofek.sigma.ai.service.agent.tools.fallback.OffDomainService;
 import iaf.ofek.sigma.ai.service.agent.tools.mcp.SigmaMcpClient;

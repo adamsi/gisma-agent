@@ -33,14 +33,14 @@ public class RagService implements AgentTool {
             - When appropriate, reference endpoint names, parameters, or examples from the documentation.
             """;
 
-    private static final String QUICK_SHOT_PROMPT_TEMPLATE = """
+    private static final String QUICK_SHOT_SYSTEM_MESSAGE = """
         You are the Sigma Knowledge Context Extractor.
         Retrieve the most relevant Sigma documentation fragments.
 
         Guidelines:
         - Always respond in strict JSON format matching this schema:
         
-        {schema_json_format}
+        {schema_json}
 
         Additional Instructions:
         - Summarize key API concepts, parameters, and relevant sections that relate to the user's query.
@@ -107,14 +107,13 @@ public class RagService implements AgentTool {
     public QuickShotResponse quickShotSimilaritySearch(String query) {
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .build();
-        String systemMessage = PromptMessageFormater.SCHEMA_JSON.format(QUICK_SHOT_PROMPT_TEMPLATE, QUICK_SHOT_SCHEMA);
+        String systemMessage = PromptMessageFormater.SCHEMA_JSON.format(QUICK_SHOT_SYSTEM_MESSAGE, QUICK_SHOT_SCHEMA);
 
         return llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
                         .user(query)
                         .advisors(qaAdvisor), QuickShotResponse.class);
-
     }
 
     @Override

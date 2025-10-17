@@ -1,7 +1,7 @@
 package iaf.ofek.sigma.ai.service.agent.tools;
 
 import iaf.ofek.sigma.ai.dto.agent.ToolManifest;
-import iaf.ofek.sigma.ai.service.agent.orchestrator.classifier.ToolIntent;
+import iaf.ofek.sigma.ai.enums.ToolIntent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
