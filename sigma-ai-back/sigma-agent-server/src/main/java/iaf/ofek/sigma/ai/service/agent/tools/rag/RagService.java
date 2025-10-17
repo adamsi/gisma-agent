@@ -3,7 +3,6 @@ package iaf.ofek.sigma.ai.service.agent.tools.rag;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
 import iaf.ofek.sigma.ai.dto.agent.ToolManifest;
 import iaf.ofek.sigma.ai.service.agent.prompt.PromptMessageFormater;
-import iaf.ofek.sigma.ai.service.agent.prompt.PromptMessageFormatter;
 import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
 import iaf.ofek.sigma.ai.service.agent.llmCaller.LLMCallerService;
 import lombok.RequiredArgsConstructor;
