@@ -1,6 +1,6 @@
 package iaf.ofek.sigma.ai.controller;
 
-import iaf.ofek.sigma.ai.service.agent.orchestrator.AgentOrchestrator;
+import iaf.ofek.sigma.ai.agent.orchestrator.AgentOrchestrator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;

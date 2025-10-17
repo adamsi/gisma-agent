@@ -1,11 +1,13 @@
-package iaf.ofek.sigma.ai.service.agent.orchestrator.classifier;
+package iaf.ofek.sigma.ai.agent.orchestrator.classifier;
 
 import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
-import iaf.ofek.sigma.ai.service.agent.llmCaller.LLMCallerService;
-import iaf.ofek.sigma.ai.service.agent.prompt.PromptMessageFormater;
+import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
+import iaf.ofek.sigma.ai.agent.prompt.PromptMessageFormater;
+import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 
 @Service
@@ -107,17 +109,21 @@ public class PreflightClassifierService {
 
     private final LLMCallerService llmCallerService;
 
-    public PreflightClassifierResponse classify(String query, QuickShotResponse quickShotResponse, String toolsMetadata) {
-        String systemMessage = PromptMessageFormater.formatMultiple(PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE,
-                new String[]{PREFLIGHT_CLASSIFIER_SCHEMA, toolsMetadata, PREFLIGHT_CLASSIFIER_SCHEMA});
+    public Mono<PreflightClassifierResponse> classify(String query, QuickShotResponse quickShotResponse, String toolsMetadata) {
+        String systemMessage = PromptMessageFormater.formatMultiple(
+                PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE,
+                new String[]{PREFLIGHT_CLASSIFIER_SCHEMA, toolsMetadata},
+                PromptMessageFormater.SCHEMA_JSON, PromptMessageFormater.TOOLS_METADATA);
 
-        String userMessage = PromptMessageFormater.formatMultiple(PREFLIGHT_CLASSIFIER_USER_MESSAGE,
-                new String[]{query, quickShotResponse.toString()});
+        String userMessage = PromptMessageFormater.formatMultiple(
+                PREFLIGHT_CLASSIFIER_USER_MESSAGE,
+                new String[]{query, quickShotResponse.toString()},
+                PromptMessageFormater.QUERY, PromptMessageFormater.QUICKSHOT_RESPONSE);
 
-        return llmCallerService.callLLMWithSchemaValidation(chatClient ->
+        return ReactiveUtils.runBlockingAsync(()-> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
-                        .user(userMessage), PreflightClassifierResponse.class);
+                        .user(userMessage), PreflightClassifierResponse.class));
     }
 
 }

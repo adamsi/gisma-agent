@@ -1,9 +1,7 @@
-package iaf.ofek.sigma.ai.service.agent.prompt;
+package iaf.ofek.sigma.ai.agent.prompt;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Getter
@@ -13,7 +11,9 @@ public enum PromptMessageFormater {
 
     TOOLS_METADATA("{tools_metadata}"),
 
-    QUICKSHOT_RESPONSE("{quickshot_response}");
+    QUICKSHOT_RESPONSE("{quickshot_response}"),
+
+    QUERY("{query}");
 
     private final String placeholder;
 

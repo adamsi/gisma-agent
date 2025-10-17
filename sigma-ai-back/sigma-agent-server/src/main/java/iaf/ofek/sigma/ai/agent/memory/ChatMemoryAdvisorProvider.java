@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.service.agent.memory;
+package iaf.ofek.sigma.ai.agent.memory;
 
 import iaf.ofek.sigma.ai.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;

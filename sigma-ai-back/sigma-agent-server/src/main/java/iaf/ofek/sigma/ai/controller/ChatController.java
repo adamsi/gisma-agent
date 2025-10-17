@@ -1,6 +1,6 @@
 package iaf.ofek.sigma.ai.controller;
 
-import iaf.ofek.sigma.ai.service.agent.orchestrator.AgentOrchestrator;
+import iaf.ofek.sigma.ai.agent.orchestrator.AgentOrchestrator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.security.Principal;

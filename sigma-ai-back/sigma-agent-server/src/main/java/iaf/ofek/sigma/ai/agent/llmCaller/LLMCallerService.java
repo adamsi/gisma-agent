@@ -1,13 +1,13 @@
-package iaf.ofek.sigma.ai.service.agent.llmCaller;
+package iaf.ofek.sigma.ai.agent.llmCaller;
 
 import iaf.ofek.sigma.ai.exception.SchemaValidationException;
-import iaf.ofek.sigma.ai.service.agent.memory.ChatMemoryAdvisorProvider;
+import iaf.ofek.sigma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.sigma.ai.util.JsonUtils;
 import iaf.ofek.sigma.ai.util.RetryUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -34,12 +34,12 @@ public class LLMCallerService {
                 .build();
     }
 
-    public LLMCallerService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider, Advisor... advisors) {
+    public LLMCallerService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider, ToolCallbackProvider toolCallbackProvider) {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().build();
         this.chatClient = builder
                 .defaultAdvisors(loggerAdvisor)
                 .defaultAdvisors(memoryAdvisorProvider.shortTermMemoryAdvisor())
-                .defaultAdvisors(advisors)
+                .defaultToolCallbacks(toolCallbackProvider)
                 .build();
     }
 

@@ -1,20 +1,22 @@
-package iaf.ofek.sigma.ai.service.agent.tools.rag;
+package iaf.ofek.sigma.ai.agent.tools.rag;
 
+import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
-import iaf.ofek.sigma.ai.enums.ToolManifest;
-import iaf.ofek.sigma.ai.service.agent.prompt.PromptMessageFormater;
-import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
-import iaf.ofek.sigma.ai.service.agent.llmCaller.LLMCallerService;
+import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
+import iaf.ofek.sigma.ai.agent.prompt.PromptMessageFormater;
+import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
+import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class RagService implements AgentTool {
+public class RagService implements DirectToolExecutor {
 
     private static final String SYSTEM_INSTRUCTIONS = """
             You are the Sigma-services system assistant.
@@ -24,8 +26,12 @@ public class RagService implements AgentTool {
             
             1. DOCUMENT CONTEXT — relevant fragments of sigma-services API documentation or design notes.
             2. USER QUERY — the user’s current message.
+            3. QUICKSHOT RESPONSE — the output of the QuickShot similarity search, which may already contain a sufficient answer.
             
             Guidelines:
+            - If the QUICKSHOT RESPONSE is already sufficient, focus on rephrasing,and improving response if possible.
+            - If more information is needed, reason carefully based on DOCUMENT CONTEXT and USER QUERY.
+            - Only include tools or multi-step planning if explicitly required to answer the query.
             - Always use the retrieved documentation as your source of truth.
             - If unsure, ask the user to clarify their question.
             - Never invent information about the Sigma System.
@@ -55,6 +61,9 @@ public class RagService implements AgentTool {
             
             ### USER QUERY:
             {query}
+            
+            ### QUICKSHOT RESPONSE:
+            {quickshot_response}
             """;
 
     private static final String QUICK_SHOT_SCHEMA = """
@@ -93,9 +102,14 @@ public class RagService implements AgentTool {
     private final VectorStore documentVectorStore;
 
     @Override
-    public Flux<String> execute(String query) {
+    public Flux<String> execute(String query, PreflightClassifierResponse classifierResponse) {
+        String userMessage = PromptMessageFormater.formatMultiple(
+                USER_PROMPT_TEMPLATE,
+                new String[]{query, classifierResponse.rephrasedResponse()},
+                PromptMessageFormater.QUERY, PromptMessageFormater.QUICKSHOT_RESPONSE
+        );
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
-                .promptTemplate(new PromptTemplate(USER_PROMPT_TEMPLATE))
+                .promptTemplate(new PromptTemplate(userMessage))
                 .build();
 
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
@@ -104,16 +118,16 @@ public class RagService implements AgentTool {
                 .advisors(qaAdvisor));
     }
 
-    public QuickShotResponse quickShotSimilaritySearch(String query) {
+    public Mono<QuickShotResponse> quickShotSimilaritySearch(String query) {
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .build();
         String systemMessage = PromptMessageFormater.SCHEMA_JSON.format(QUICK_SHOT_SYSTEM_MESSAGE, QUICK_SHOT_SCHEMA);
 
-        return llmCallerService.callLLMWithSchemaValidation(chatClient ->
+        return ReactiveUtils.runBlockingAsync(()-> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
                         .user(query)
-                        .advisors(qaAdvisor), QuickShotResponse.class);
+                        .advisors(qaAdvisor), QuickShotResponse.class));
     }
 
 }
