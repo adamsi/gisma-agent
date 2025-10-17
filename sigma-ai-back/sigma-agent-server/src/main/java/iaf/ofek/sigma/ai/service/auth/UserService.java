@@ -1,6 +1,6 @@
 package iaf.ofek.sigma.ai.service.auth;
 
-import iaf.ofek.sigma.ai.dto.RegisterUserDto;
+import iaf.ofek.sigma.ai.dto.auth.RegisterUserDto;
 import iaf.ofek.sigma.ai.entity.Role;
 import iaf.ofek.sigma.ai.entity.User;
 import iaf.ofek.sigma.ai.repository.UserRepository;

@@ -1,10 +1,9 @@
 package iaf.ofek.sigma.ai.service.agent.tools;
 
-import iaf.ofek.sigma.ai.dto.ToolManifest;
+import iaf.ofek.sigma.ai.dto.agent.ToolManifest;
 import reactor.core.publisher.Flux;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public interface AgentTool {
 
@@ -22,15 +21,8 @@ public interface AgentTool {
     default ToolManifest manifest() {
         return ToolManifest.builder()
                 .name(this.getClass().getSimpleName())
-                .description("No description provided.")
+                .description("An agent tool.")
                 .build();
-    }
-
-    /**
-      let the tool participate in pre-orchestration reasoning.
-     */
-    default Optional<String> contextualize(String query) {
-        return Optional.empty();
     }
 
 }

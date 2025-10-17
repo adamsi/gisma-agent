@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.dto;
+package iaf.ofek.sigma.ai.dto.auth;
 
 import iaf.ofek.sigma.ai.entity.Role;
 import lombok.Data;

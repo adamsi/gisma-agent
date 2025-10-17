@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.dto;
+package iaf.ofek.sigma.ai.dto.agent;
 
 import lombok.Builder;
 

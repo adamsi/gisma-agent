@@ -1,6 +1,6 @@
 package iaf.ofek.sigma.ai.service.auth;
 
-import iaf.ofek.sigma.ai.dto.LoginUserDto;
+import iaf.ofek.sigma.ai.dto.auth.LoginUserDto;
 import iaf.ofek.sigma.ai.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;

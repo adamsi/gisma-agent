@@ -1,7 +1,7 @@
 package iaf.ofek.sigma.ai.service.agent.orchestrator;
 
-import iaf.ofek.sigma.ai.service.agent.classifier.ClassifierService;
-import iaf.ofek.sigma.ai.service.agent.classifier.ToolIntent;
+import iaf.ofek.sigma.ai.service.agent.orchestrator.classifier.ClassifierService;
+import iaf.ofek.sigma.ai.service.agent.orchestrator.classifier.ToolIntent;
 import iaf.ofek.sigma.ai.service.agent.tools.AgentTool;
 import iaf.ofek.sigma.ai.service.agent.tools.fallback.UnclassifiedService;
 import lombok.RequiredArgsConstructor;

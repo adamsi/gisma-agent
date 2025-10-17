@@ -1,8 +1,8 @@
 package iaf.ofek.sigma.ai.controller;
 
-import iaf.ofek.sigma.ai.dto.LoginUserDto;
-import iaf.ofek.sigma.ai.dto.RegisterUserDto;
-import iaf.ofek.sigma.ai.dto.UserInfoDto;
+import iaf.ofek.sigma.ai.dto.auth.LoginUserDto;
+import iaf.ofek.sigma.ai.dto.auth.RegisterUserDto;
+import iaf.ofek.sigma.ai.dto.auth.UserInfoDto;
 import iaf.ofek.sigma.ai.entity.User;
 import iaf.ofek.sigma.ai.mapper.UserMapper;
 import iaf.ofek.sigma.ai.service.auth.*;
