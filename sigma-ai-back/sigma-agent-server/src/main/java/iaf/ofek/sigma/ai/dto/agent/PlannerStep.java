@@ -9,5 +9,6 @@ public record PlannerStep(
         ToolManifest toolCategory,
         List<String> mcpEndpoints,
         Map<String, Object> input,
-        String query
+        String query,
+        String description
 ) {}

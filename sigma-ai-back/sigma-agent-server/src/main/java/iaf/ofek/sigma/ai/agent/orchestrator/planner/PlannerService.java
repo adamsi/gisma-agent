@@ -15,43 +15,43 @@ import reactor.core.publisher.Mono;
 public class PlannerService {
 
     private static final String SYSTEM_INSTRUCTIONS = """
-            You are the Sigma Planner for the Sigma AI system.
+            You are the Sigma Planner — a reasoning module that converts a user query and contextual responses 
+            into a structured, multi-step execution plan.
             
-            Your job is to convert a user query and QuickShotResponse
-            into a structured execution plan consisting of ordered steps.
+            Input:
+            - User Query
+            - QuickShotResponse → short RAG-based pre-answer
+            - Available Tools Metadata
+            
+            Output:
+            - A valid JSON object that strictly matches the PlannerResponse schema.
             
             Guidelines:
-            - Each step must be actionable and self-contained.
-            - Decide whether each step uses a general tool category:
-              MCP_CLIENT or RAG_SERVICE.
-            - If MCP_CLIENT, list all relevant endpoints in 'mcpEndpoints'.
-            - Provide input parameters for each step.
-            - Include 'query' if the step requires a RAG/LLM call.
-            - Include 'description' for reasoning or audit purposes.
-            - Return only valid JSON matching the PlannerResponse schema.
-            """;
-
-    private static final String PLANNER_SYSTEM_PROMPT = """
-            Available Tools:
+            - Each step must be actionable, self-contained, and logically ordered.
+            - Choose the toolCategory carefully:
+                • MCP_CLIENT → structured Sigma MCP service calls.
+                • RAG_SERVICE → knowledge or documentation-based reasoning.
+                • LLM_CALL → general-purpose freeform LLM reasoning or synthesis.
+            - If MCP_CLIENT → specify 'mcpEndpoints' (relevant endpoints).
+            - Always include 'input' parameters.
+            - If RAG_SERVICE or LLM_CALL → include 'query' (prompt text).
+            - Include 'description' explaining the purpose of each step.
+            - Add a final 'explanation' summarizing the overall plan logic.
+            
+            Context:
+            🧩 Tools Metadata:
             {tools_metadata}
             
-            User Query:
+            🧠 User Query:
             {user_query}
             
-            QuickShotResponse:
+            💬 QuickShot Response (from RAG quick answer phase):
             {quickshot_response}
             
-            Guidelines:
-            - Return a JSON object matching this schema:
+            Schema to follow:
             {schema_json}
-            - Each step must include:
-              - toolCategory: MCP_CLIENT | RAG_SERVICE
-              - mcpEndpoints: list of endpoint names if MCP_CLIENT
-              - input: parameters as key-value pairs
-              - query: prompt for LLM if RAG_SERVICE
-              - description: optional reasoning for step
-            - Plan should fully address the user query using available tools.
             """;
+
 
     private static final String PLANNER_SCHEMA_JSON = """
             {
@@ -61,31 +61,31 @@ public class PlannerService {
               "properties": {
                 "steps": {
                   "type": "array",
-                  "description": "Ordered execution steps",
+                  "description": "Ordered execution steps required to fulfill the user query",
                   "items": {
                     "type": "object",
                     "properties": {
                       "toolCategory": {
                         "type": "string",
-                        "enum": ["MCP_CLIENT", "RAG_SERVICE"],
-                        "description": "General tool category for this step"
+                        "enum": ["MCP_CLIENT", "RAG_SERVICE", "LLM_CALL"],
+                        "description": "Tool type used in this step"
                       },
                       "mcpEndpoints": {
                         "type": "array",
-                        "description": "List of MCP endpoints to call if toolCategory is MCP_CLIENT",
-                        "items": { "type": "string" }
+                        "items": { "type": "string" },
+                        "description": "List of MCP endpoints if toolCategory = MCP_CLIENT"
                       },
                       "input": {
                         "type": "object",
-                        "description": "Parameters for the step"
+                        "description": "Parameters or payload required for this step"
                       },
                       "query": {
                         "type": "string",
-                        "description": "LLM prompt if step uses RAG_SERVICE"
+                        "description": "Prompt for RAG or LLM reasoning steps"
                       },
                       "description": {
                         "type": "string",
-                        "description": "Reasoning or explanation for this step"
+                        "description": "Purpose or reasoning behind this step"
                       }
                     },
                     "required": ["toolCategory", "input"]
@@ -93,17 +93,18 @@ public class PlannerService {
                 },
                 "explanation": {
                   "type": "string",
-                  "description": "Overall reasoning for the entire plan"
+                  "description": "Overall reasoning and logic behind the generated plan"
                 }
               },
               "required": ["steps", "explanation"]
             }
             """;
 
+
     private final LLMCallerService llmCallerService;
 
     public Mono<PlannerResponse> plan(String userQuery, PreflightClassifierResponse preflightClassifierResponse) {
-        String systemMessage = PLANNER_SYSTEM_PROMPT
+        String systemMessage = SYSTEM_INSTRUCTIONS
                 .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll())
                 .replace(PromptFormat.QUERY, userQuery)
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, preflightClassifierResponse.rephrasedResponse())
@@ -112,6 +113,7 @@ public class PlannerService {
         return ReactiveUtils.runBlockingAsync(() ->
                 llmCallerService.callLLMWithSchemaValidation(
                         chatClient -> chatClient.prompt()
+                                .system(SYSTEM_INSTRUCTIONS)
                                 .system(systemMessage)
                                 .user(userQuery),
                         PlannerResponse.class

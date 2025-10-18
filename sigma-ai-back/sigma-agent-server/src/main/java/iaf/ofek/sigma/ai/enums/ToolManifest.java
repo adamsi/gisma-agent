@@ -14,7 +14,9 @@ public enum ToolManifest {
     RAG_SERVICE("Retrieves and summarizes Sigma API documentation for reasoning or answering."),
 
     MCP_CLIENT(String.format("Fetches data (entities, aggregations, raw) from sigma api services. Available MCP Tools: %s",
-            McpToolsMetadataDescriber.describeAllTools()));
+            McpToolsMetadataDescriber.describeAllTools())),
+
+    LLM_CALL("Calls LLM with query and extra context or data");
 
     private final String description;
 
