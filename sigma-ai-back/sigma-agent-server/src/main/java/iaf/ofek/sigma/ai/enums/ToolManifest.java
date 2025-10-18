@@ -1,11 +1,11 @@
 package iaf.ofek.sigma.ai.enums;
 
 import iaf.ofek.sigma.ai.agent.tools.mcp.McpToolsMetadataDescriber;
+import iaf.ofek.sigma.ai.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Getter
@@ -16,14 +16,14 @@ public enum ToolManifest {
     MCP_CLIENT(String.format("Fetches data (entities, aggregations, raw) from sigma api services. Available MCP Tools: %s",
             McpToolsMetadataDescriber.describeAllTools())),
 
-    LLM_CALL("Calls LLM with query and extra context or data");
+    LLM_REASONER("Calls LLM with query and extra context or data and reason for understanding");
 
     private final String description;
 
     public static String describeAll() {
-        return Arrays.stream(ToolManifest.values())
+        return StringUtils.joinLines(Arrays.stream(ToolManifest.values())
                 .map(m -> m + ": " + m.getDescription())
-                .collect(Collectors.joining("\n"));
+                .toList());
     }
 
 }

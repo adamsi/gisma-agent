@@ -1,11 +1,15 @@
 package iaf.ofek.sigma.ai.agent.tools.rag;
 
+import iaf.ofek.sigma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
-import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
+import iaf.ofek.sigma.ai.dto.agent.PlannerStep;
+import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
-import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
+import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.sigma.ai.dto.agent.StepExecutionResult;
 import iaf.ofek.sigma.ai.util.ReactiveUtils;
+import iaf.ofek.sigma.ai.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -16,7 +20,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class RagService implements DirectToolExecutor {
+public class RagService implements DirectToolExecutor, StepExecutor {
 
     private static final String SYSTEM_INSTRUCTIONS = """
             You are the Sigma-services system assistant.
@@ -38,6 +42,21 @@ public class RagService implements DirectToolExecutor {
             - Keep your answers concise, technical, and helpful.
             - When appropriate, reference endpoint names, parameters, or examples from the documentation.
             """;
+
+    private static final String STEP_SYSTEM_INSTRUCTIONS = """
+        You are the Sigma RAG step executor.
+
+        Your goal is to produce a concise, factual answer for the current step 
+        based solely on the retrieved DOCUMENT CONTEXT and the step description.
+
+        Rules:
+        1. Use only the DOCUMENT CONTEXT and STEP DESCRIPTION as your sources.
+        2. Do not plan, classify, or call tools — this step is purely informational reasoning.
+        3. If the context already provides the answer, summarize or refine it clearly.
+        4. If information is missing or incomplete, state that politely.
+        5. Keep the response short, technical, and directly relevant to the query.
+        6. Never fabricate or assume undocumented Sigma System details.
+        """;
 
     private static final String QUICK_SHOT_SYSTEM_MESSAGE = """
         You are the Sigma Knowledge Context Extractor.
@@ -64,6 +83,17 @@ public class RagService implements DirectToolExecutor {
             
             ### QUICKSHOT RESPONSE:
             {quickshot_response}
+            """;
+
+    private static final String STEP_PROMPT_TEMPLATE = """
+            ### USER QUERY:
+            {query}
+            
+             ### STEP DESCRIPTION:
+            {step_description}
+            
+            ### DOCUMENT CONTEXT:
+            {question_answer_context}
             """;
 
     private static final String QUICK_SHOT_SCHEMA = """
@@ -102,7 +132,7 @@ public class RagService implements DirectToolExecutor {
     private final VectorStore documentVectorStore;
 
     @Override
-    public Flux<String> execute(String query, PreflightClassifierResponse classifierResponse) {
+    public Flux<String> execute(String query, PreflightClassifierResult classifierResponse) {
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUERY, query)
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
@@ -127,5 +157,36 @@ public class RagService implements DirectToolExecutor {
                         .user(query)
                         .advisors(qaAdvisor), QuickShotResponse.class));
     }
+
+    @Override
+    public Mono<StepExecutionResult> executeStep(PlannerStep step) {
+        String query = step.query() != null ? step.query() : "";
+        String description = step.description() != null ? step.description() : "";
+        String userMessage = STEP_PROMPT_TEMPLATE
+                .replace(PromptFormat.QUERY, query)
+                .replace(PromptFormat.STEP_DESCRIPTION, description);
+        QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
+                .promptTemplate(new PromptTemplate(userMessage))
+                .build();
+
+        return llmCallerService.callLLM(chatClient -> chatClient.prompt()
+                        .system(STEP_SYSTEM_INSTRUCTIONS)
+                        .user(query)
+                        .advisors(qaAdvisor))
+                .collectList()
+                .map(outputs -> new StepExecutionResult(
+                        step,
+                        StringUtils.joinLines(outputs),
+                        true,
+                        null
+                ))
+                .onErrorResume(ex -> Mono.just(new StepExecutionResult(
+                        step,
+                        "",
+                        false,
+                        ex.getMessage()
+                )));
+    }
+
 
 }

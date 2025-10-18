@@ -1,19 +1,24 @@
 package iaf.ofek.sigma.ai.agent.tools.mcp;
 
+import iaf.ofek.sigma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
-import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
-import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
+import iaf.ofek.sigma.ai.dto.agent.PlannerStep;
+import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
+import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.sigma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
+import iaf.ofek.sigma.ai.dto.agent.StepExecutionResult;
+import iaf.ofek.sigma.ai.util.StringUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @Log4j2
-public class SigmaMcpClient implements DirectToolExecutor {
+public class SigmaMcpClient implements DirectToolExecutor, StepExecutor {
 
     private static final String SYSTEM_INSTRUCTIONS = """
             You are the Sigma services API assistant.
@@ -31,12 +36,35 @@ public class SigmaMcpClient implements DirectToolExecutor {
             Never provide external knowledge or fabricate data. Always base your responses solely on tool outputs and previous conversation context.
             """;
 
-    private static final String USER_MESSAGE = """
+    private static final String USER_PROMPT_TEMPLATE = """
             ### USER QUERY:
             {query}
             
             ### QUICKSHOT RESPONSE:
             {quickshot_response}
+            """;
+
+    private static final String STEP_SYSTEM_INSTRUCTIONS = """
+        You are the Sigma MCP step executor.
+        
+        Execute the described step using the provided MCP endpoints and input parameters.
+        Return only the execution result or tool output.
+        Do not plan, decide, or invent endpoints.
+        Be concise and structured.
+        """;
+
+    private static final String STEP_PROMPT_TEMPLATE = """
+            ### MCP CLIENT STEP
+            Endpoints: {mcp_endpoints}
+            
+            ### INPUT PARAMETERS:
+            {mcp_input}
+            
+            ### USER QUERY:
+            {query}
+            
+            ### STEP DESCRIPTION:
+            {step_description}
             """;
 
 
@@ -48,8 +76,8 @@ public class SigmaMcpClient implements DirectToolExecutor {
     }
 
     @Override
-    public Flux<String> execute(String query, PreflightClassifierResponse classifierResponse) {
-        String userMessage = USER_MESSAGE
+    public Flux<String> execute(String query, PreflightClassifierResult classifierResponse) {
+        String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUERY, query)
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
 
@@ -58,4 +86,42 @@ public class SigmaMcpClient implements DirectToolExecutor {
                 .user(userMessage));
     }
 
+    @Override
+    public Mono<StepExecutionResult> executeStep(PlannerStep step) {
+        String endpoints = (step.mcpEndpoints() != null && !step.mcpEndpoints().isEmpty())
+                ? String.join(", ", step.mcpEndpoints())
+                : "No specific endpoints provided";
+
+        String input = step.input() != null ? step.input().toString() : "{}";
+        String query = step.query() != null ? step.query() : "";
+        String description = step.description() != null ? step.description() : "";
+
+        // Build a clear, human-readable prompt for the LLM tool executor
+        String userMessage = STEP_PROMPT_TEMPLATE
+                .replace(PromptFormat.MCP_ENDPOINTS, endpoints)
+                .replace(PromptFormat.MCP_INPUT, input)
+                .replace(PromptFormat.QUERY, query)
+                .replace(PromptFormat.STEP_DESCRIPTION, description);
+
+        return llmCallerService.callLLM(chatClient -> chatClient.prompt()
+                        .system(SYSTEM_INSTRUCTIONS)
+                        .user(userMessage))
+                .collectList()
+                .map(outputs -> new StepExecutionResult(
+                        step,
+                        StringUtils.joinLines(outputs),
+                        true,
+                        null
+                ))
+                .onErrorResume(ex -> {
+                    log.error("Error executing MCP step for toolCategory={} endpoints={}",
+                            step.toolCategory(), step.mcpEndpoints(), ex);
+                    return Mono.just(new StepExecutionResult(
+                            step,
+                            "",
+                            false,
+                            ex.getMessage()
+                    ));
+                });
+    }
 }

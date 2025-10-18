@@ -15,4 +15,10 @@ public class PromptFormat {
 
     public static final String QUERY = "{query}";
 
+    public static final String MCP_ENDPOINTS = "{mcp_endpoints}";
+
+    public static final String MCP_INPUT = "{mcp_input}";
+
+    public static final String STEP_DESCRIPTION = "{step_description}";
+
 }

@@ -1,10 +1,10 @@
 package iaf.ofek.sigma.ai.agent.orchestrator.executor;
 
-import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
+import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
 import reactor.core.publisher.Flux;
 
 public interface ActionModeExecutor {
 
-    Flux<String> execute(String query, PreflightClassifierResponse classifierResponse);
+    Flux<String> execute(String query, PreflightClassifierResult classifierResponse);
 
 }

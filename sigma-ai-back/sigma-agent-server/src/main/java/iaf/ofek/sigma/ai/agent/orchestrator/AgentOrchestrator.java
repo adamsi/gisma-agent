@@ -1,12 +1,13 @@
 package iaf.ofek.sigma.ai.agent.orchestrator;
 
-import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
+import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
 import iaf.ofek.sigma.ai.enums.ToolManifest;
 import iaf.ofek.sigma.ai.agent.orchestrator.classifier.PreflightClassifierService;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.ActionModeExecutor;
 import iaf.ofek.sigma.ai.agent.orchestrator.router.ActionModeExecutorRouter;
 import iaf.ofek.sigma.ai.agent.tools.rag.RagService;
+import iaf.ofek.sigma.ai.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -38,29 +39,26 @@ public class AgentOrchestrator {
     }
 
     public String handleQueryBlocking(String query) {
-        String toolsManifest = ToolManifest.describeAll();
-
         QuickShotResponse quickShotResponse = ragService.quickShotSimilaritySearch(query).block();
 
         if (quickShotResponse == null) {
             throw new IllegalArgumentException("quickShotResponse must not be null");
         }
 
-        PreflightClassifierResponse preflightClassifierResponse =  preflightClassifierService.classify(query, quickShotResponse).block();
+        PreflightClassifierResult preflightClassifierResult =  preflightClassifierService.classify(query, quickShotResponse).block();
 
-        if (preflightClassifierResponse == null) {
+        if (preflightClassifierResult == null) {
             throw new IllegalArgumentException("quickShotResponse must not be null");
         }
 
-        if (preflightClassifierResponse.sufficient()) {
-            return preflightClassifierResponse.rephrasedResponse();
+        if (preflightClassifierResult.sufficient()) {
+            return preflightClassifierResult.rephrasedResponse();
         }
 
-        ActionModeExecutor executor = actionModeExecutorRouter.route(preflightClassifierResponse);
+        ActionModeExecutor executor = actionModeExecutorRouter.route(preflightClassifierResult);
 
-        return String.join(
-                "\n",
-                Objects.requireNonNull(executor.execute(query, preflightClassifierResponse).collectList()                       // Collect all Flux<String> items into List<String>
+        return StringUtils.joinLines(
+                Objects.requireNonNull(executor.execute(query, preflightClassifierResult).collectList()                       // Collect all Flux<String> items into List<String>
                 .block())
         );
     }

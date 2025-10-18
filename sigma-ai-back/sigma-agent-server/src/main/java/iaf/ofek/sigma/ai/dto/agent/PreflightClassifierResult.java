@@ -5,7 +5,7 @@ import iaf.ofek.sigma.ai.enums.ToolManifest;
 
 import java.util.List;
 
-public record PreflightClassifierResponse(
+public record PreflightClassifierResult(
         boolean sufficient,
         ActionMode actionMode,
         List<ToolManifest> tools,

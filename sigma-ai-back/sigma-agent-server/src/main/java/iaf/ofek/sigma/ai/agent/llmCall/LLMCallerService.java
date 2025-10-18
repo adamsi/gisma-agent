@@ -1,4 +1,4 @@
-package iaf.ofek.sigma.ai.agent.llmCaller;
+package iaf.ofek.sigma.ai.agent.llmCall;
 
 import iaf.ofek.sigma.ai.exception.SchemaValidationException;
 import iaf.ofek.sigma.ai.agent.memory.ChatMemoryAdvisorProvider;

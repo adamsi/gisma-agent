@@ -1,5 +1,6 @@
 package iaf.ofek.sigma.ai.agent.tools.mcp;
 
+import iaf.ofek.sigma.ai.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.context.ApplicationContext;
@@ -7,7 +8,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,14 +25,14 @@ public class McpToolsMetadataDescriber implements ApplicationContextAware {
             return "";
         }
 
-        return Arrays.stream(toolCallbackProvider.getToolCallbacks())
+        return StringUtils.joinLines(Arrays.stream(toolCallbackProvider.getToolCallbacks())
                 .map(callback -> String.format(
                         "- %s: %s. inputSchema: %s",
                         callback.getToolDefinition().name(),
                         callback.getToolDefinition().description(),
                         callback.getToolDefinition().inputSchema()
                 ))
-                .collect(Collectors.joining("\n"));
+                .toList());
     }
 
 }

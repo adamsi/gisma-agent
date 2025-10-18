@@ -1,9 +1,9 @@
 package iaf.ofek.sigma.ai.agent.orchestrator.planner;
 
-import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
+import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
-import iaf.ofek.sigma.ai.dto.agent.PlannerResponse;
-import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
+import iaf.ofek.sigma.ai.dto.agent.PlannerResult;
+import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.sigma.ai.enums.ToolManifest;
 import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +31,10 @@ public class PlannerService {
             - Choose the toolCategory carefully:
                 • MCP_CLIENT → structured Sigma MCP service calls.
                 • RAG_SERVICE → knowledge or documentation-based reasoning.
-                • LLM_CALL → general-purpose freeform LLM reasoning or synthesis.
+                • LLM_REASONER → general-purpose freeform LLM reasoning or synthesis.
             - If MCP_CLIENT → specify 'mcpEndpoints' (relevant endpoints).
             - Always include 'input' parameters.
-            - If RAG_SERVICE or LLM_CALL → include 'query' (prompt text).
+            - If RAG_SERVICE or LLM_REASONER → include 'query' (prompt text).
             - Include 'description' explaining the purpose of each step.
             - Add a final 'explanation' summarizing the overall plan logic.
             
@@ -67,7 +67,7 @@ public class PlannerService {
                     "properties": {
                       "toolCategory": {
                         "type": "string",
-                        "enum": ["MCP_CLIENT", "RAG_SERVICE", "LLM_CALL"],
+                        "enum": ["MCP_CLIENT", "RAG_SERVICE", "LLM_REASONER"],
                         "description": "Tool type used in this step"
                       },
                       "mcpEndpoints": {
@@ -103,11 +103,11 @@ public class PlannerService {
 
     private final LLMCallerService llmCallerService;
 
-    public Mono<PlannerResponse> plan(String userQuery, PreflightClassifierResponse preflightClassifierResponse) {
+    public Mono<PlannerResult> plan(String userQuery, PreflightClassifierResult preflightClassifierResult) {
         String systemMessage = SYSTEM_INSTRUCTIONS
                 .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll())
                 .replace(PromptFormat.QUERY, userQuery)
-                .replace(PromptFormat.QUICKSHOT_RESPONSE, preflightClassifierResponse.rephrasedResponse())
+                .replace(PromptFormat.QUICKSHOT_RESPONSE, preflightClassifierResult.rephrasedResponse())
                 .replace(PromptFormat.SCHEMA_JSON, PLANNER_SCHEMA_JSON);
 
         return ReactiveUtils.runBlockingAsync(() ->
@@ -116,7 +116,7 @@ public class PlannerService {
                                 .system(SYSTEM_INSTRUCTIONS)
                                 .system(systemMessage)
                                 .user(userQuery),
-                        PlannerResponse.class
+                        PlannerResult.class
                 )
         );
     }

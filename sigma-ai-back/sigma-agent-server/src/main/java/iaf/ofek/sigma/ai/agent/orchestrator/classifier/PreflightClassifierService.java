@@ -1,9 +1,9 @@
 package iaf.ofek.sigma.ai.agent.orchestrator.classifier;
 
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
-import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
+import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
-import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
+import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.sigma.ai.enums.ToolManifest;
 import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
@@ -110,7 +110,7 @@ public class PreflightClassifierService {
 
     private final LLMCallerService llmCallerService;
 
-    public Mono<PreflightClassifierResponse> classify(String query, QuickShotResponse quickShotResponse) {
+    public Mono<PreflightClassifierResult> classify(String query, QuickShotResponse quickShotResponse) {
         String systemMessage = PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE
                 .replace(PromptFormat.SCHEMA_JSON, PREFLIGHT_CLASSIFIER_SCHEMA)
                 .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll());
@@ -122,7 +122,7 @@ public class PreflightClassifierService {
         return ReactiveUtils.runBlockingAsync(()-> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
-                        .user(userMessage), PreflightClassifierResponse.class));
+                        .user(userMessage), PreflightClassifierResult.class));
     }
 
 }
