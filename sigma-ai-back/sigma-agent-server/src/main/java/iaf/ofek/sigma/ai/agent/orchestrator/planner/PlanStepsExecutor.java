@@ -31,14 +31,10 @@ public class PlanStepsExecutor {
                 .flatMap(this::executeStep)
                 .doOnNext(stepResults::add)
                 .then(Mono.fromCallable(() -> {
-                    boolean overallSuccess = stepResults.stream().allMatch(StepExecutionResult::success);
-                    String aggregatedOutput = stepResults.stream()
-                            .map(StepExecutionResult::output)
-                            .reduce((a, b) -> a + "\n" + b)
-                            .orElse("");
-                    String errorMessage = overallSuccess ? null : "One or more steps failed. Check StepExecutionResults.";
+                    boolean overallSuccess = stepResults.stream()
+                            .allMatch(StepExecutionResult::success);
 
-                    return new PlanExecutionResult(stepResults, overallSuccess, aggregatedOutput, errorMessage);
+                    return PlanExecutionResult.buildResult(overallSuccess, stepResults);
                 }));
     }
 

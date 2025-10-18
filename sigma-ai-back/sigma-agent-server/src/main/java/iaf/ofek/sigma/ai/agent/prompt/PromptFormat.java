@@ -21,4 +21,8 @@ public class PromptFormat {
 
     public static final String STEP_DESCRIPTION = "{step_description}";
 
+    public static final String PLAN_OVERALL_SUCCESS = "{plan_overall_success}";
+
+    public static final String PLAN_AGGREGATED_OUTPUT = "{plan_aggregated_output}";
+
 }

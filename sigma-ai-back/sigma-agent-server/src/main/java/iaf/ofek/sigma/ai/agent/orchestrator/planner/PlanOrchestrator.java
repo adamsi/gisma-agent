@@ -12,9 +12,16 @@ public class PlanOrchestrator implements ActionModeExecutor {
 
     private final PlannerService plannerService;
 
+    private final PlanStepsExecutor planStepsExecutor;
+
+    private final PlanResponseSynthesizer planResponseSynthesizer;
+
     @Override
     public Flux<String> execute(String query, PreflightClassifierResult classifierResponse) {
-        plannerService.plan(query, classifierResponse);
+        return plannerService.plan(query, classifierResponse)
+                .flatMap(planStepsExecutor::executePlan)
+                .flatMapMany(planExecutionResult ->
+                        planResponseSynthesizer.synthesizeResponse(query, planExecutionResult));
     }
 
 }
