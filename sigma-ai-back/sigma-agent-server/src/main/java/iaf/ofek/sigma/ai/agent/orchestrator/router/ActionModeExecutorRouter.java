@@ -23,16 +23,25 @@ public class ActionModeExecutorRouter {
 
 
     public ActionModeExecutor route(PreflightClassifierResponse classifierResponse) {
-        if (classifierResponse.actionMode().equals(ActionMode.DIRECT_TOOL)) {
-            if (toolMap.isEmpty()) {
-                log.warn("failed routing, direct tool map is empty");
-                throw new RuntimeException("direct tool map is empty");
+        ActionMode actionMode = classifierResponse.actionMode();
+
+        switch (actionMode) {
+            case DIRECT_TOOL -> {
+                if (toolMap.isEmpty()) {
+                    log.warn("failed routing, direct tool map is empty");
+                    throw new RuntimeException("direct tool map is empty");
+                }
+
+                return toolMap.get(classifierResponse.tools().get(0));
             }
 
-            return toolMap.get(classifierResponse.tools().get(0));
-        }
+            case PLANNER ->
+            {
+                return planExecutor;
+            }
 
-        return planExecutor;
+            default -> throw new IllegalArgumentException("Received Invalid ActionMode");
+        }
     }
 
 }

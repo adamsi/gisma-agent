@@ -1,9 +1,10 @@
 package iaf.ofek.sigma.ai.agent.orchestrator.classifier;
 
+import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
 import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
-import iaf.ofek.sigma.ai.agent.prompt.PromptMessageFormater;
+import iaf.ofek.sigma.ai.enums.ToolManifest;
 import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -109,16 +110,14 @@ public class PreflightClassifierService {
 
     private final LLMCallerService llmCallerService;
 
-    public Mono<PreflightClassifierResponse> classify(String query, QuickShotResponse quickShotResponse, String toolsMetadata) {
-        String systemMessage = PromptMessageFormater.formatMultiple(
-                PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE,
-                new String[]{PREFLIGHT_CLASSIFIER_SCHEMA, toolsMetadata},
-                PromptMessageFormater.SCHEMA_JSON, PromptMessageFormater.TOOLS_METADATA);
+    public Mono<PreflightClassifierResponse> classify(String query, QuickShotResponse quickShotResponse) {
+        String systemMessage = PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE
+                .replace(PromptFormat.SCHEMA_JSON, PREFLIGHT_CLASSIFIER_SCHEMA)
+                .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll());
 
-        String userMessage = PromptMessageFormater.formatMultiple(
-                PREFLIGHT_CLASSIFIER_USER_MESSAGE,
-                new String[]{query, quickShotResponse.toString()},
-                PromptMessageFormater.QUERY, PromptMessageFormater.QUICKSHOT_RESPONSE);
+        String userMessage = PREFLIGHT_CLASSIFIER_USER_MESSAGE
+                .replace(PromptFormat.QUERY, query)
+                .replace(PromptFormat.QUICKSHOT_RESPONSE, quickShotResponse.toString());
 
         return ReactiveUtils.runBlockingAsync(()-> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()

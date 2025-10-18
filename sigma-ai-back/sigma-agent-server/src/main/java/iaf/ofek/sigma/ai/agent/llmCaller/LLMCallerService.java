@@ -64,7 +64,7 @@ public class LLMCallerService {
                 () -> callback.apply(chatClient).stream().content(),
                 MAX_LLM_RETRY_CALLS,
                 Duration.ofSeconds(LLM_RETRY_DELAY_SECONDS),
-                ex -> !(ex instanceof SchemaValidationException),
+                ex -> false,
                 "callLLM"
         );
     }

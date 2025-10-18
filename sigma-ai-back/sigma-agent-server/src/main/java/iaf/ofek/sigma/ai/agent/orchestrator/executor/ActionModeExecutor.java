@@ -5,6 +5,6 @@ import reactor.core.publisher.Flux;
 
 public interface ActionModeExecutor {
 
-    Flux<String> execute(String query, PreflightClassifierResponse classifierResponse, String toolsManifest);
+    Flux<String> execute(String query, PreflightClassifierResponse classifierResponse);
 
 }

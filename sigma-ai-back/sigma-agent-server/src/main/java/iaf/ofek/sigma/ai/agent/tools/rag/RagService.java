@@ -1,9 +1,9 @@
 package iaf.ofek.sigma.ai.agent.tools.rag;
 
+import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
-import iaf.ofek.sigma.ai.agent.prompt.PromptMessageFormater;
 import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
 import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
@@ -103,11 +103,9 @@ public class RagService implements DirectToolExecutor {
 
     @Override
     public Flux<String> execute(String query, PreflightClassifierResponse classifierResponse) {
-        String userMessage = PromptMessageFormater.formatMultiple(
-                USER_PROMPT_TEMPLATE,
-                new String[]{query, classifierResponse.rephrasedResponse()},
-                PromptMessageFormater.QUERY, PromptMessageFormater.QUICKSHOT_RESPONSE
-        );
+        String userMessage = USER_PROMPT_TEMPLATE
+                .replace(PromptFormat.QUERY, query)
+                .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .promptTemplate(new PromptTemplate(userMessage))
                 .build();
@@ -121,7 +119,7 @@ public class RagService implements DirectToolExecutor {
     public Mono<QuickShotResponse> quickShotSimilaritySearch(String query) {
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .build();
-        String systemMessage = PromptMessageFormater.SCHEMA_JSON.format(QUICK_SHOT_SYSTEM_MESSAGE, QUICK_SHOT_SCHEMA);
+        String systemMessage = QUICK_SHOT_SYSTEM_MESSAGE.replace(PromptFormat.SCHEMA_JSON, QUICK_SHOT_SCHEMA);
 
         return ReactiveUtils.runBlockingAsync(()-> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()

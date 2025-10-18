@@ -24,10 +24,8 @@ public class AgentOrchestrator {
     private final ActionModeExecutorRouter actionModeExecutorRouter;
 
     public Flux<String> handleQuery(String query) {
-        String toolsManifest = ToolManifest.describeAll();
-
         return ragService.quickShotSimilaritySearch(query)
-                .flatMap(quickShotResponse -> preflightClassifierService.classify(query, quickShotResponse, toolsManifest))
+                .flatMap(quickShotResponse -> preflightClassifierService.classify(query, quickShotResponse))
                 .flatMapMany(preflightClassifierResponse -> {
                     if (preflightClassifierResponse.sufficient()) {
                         return Flux.just(preflightClassifierResponse.rephrasedResponse());
@@ -35,7 +33,7 @@ public class AgentOrchestrator {
 
                     ActionModeExecutor executor = actionModeExecutorRouter.route(preflightClassifierResponse);
 
-                    return executor.execute(query, preflightClassifierResponse, toolsManifest);
+                    return executor.execute(query, preflightClassifierResponse);
                 });
     }
 
@@ -48,7 +46,7 @@ public class AgentOrchestrator {
             throw new IllegalArgumentException("quickShotResponse must not be null");
         }
 
-        PreflightClassifierResponse preflightClassifierResponse =  preflightClassifierService.classify(query, quickShotResponse, toolsManifest).block();
+        PreflightClassifierResponse preflightClassifierResponse =  preflightClassifierService.classify(query, quickShotResponse).block();
 
         if (preflightClassifierResponse == null) {
             throw new IllegalArgumentException("quickShotResponse must not be null");
@@ -62,7 +60,7 @@ public class AgentOrchestrator {
 
         return String.join(
                 "\n",
-                Objects.requireNonNull(executor.execute(query, preflightClassifierResponse, toolsManifest).collectList()                       // Collect all Flux<String> items into List<String>
+                Objects.requireNonNull(executor.execute(query, preflightClassifierResponse).collectList()                       // Collect all Flux<String> items into List<String>
                 .block())
         );
     }

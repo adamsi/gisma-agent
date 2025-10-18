@@ -1,10 +1,10 @@
 package iaf.ofek.sigma.ai.agent.tools.mcp;
 
+import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResponse;
 import iaf.ofek.sigma.ai.agent.llmCaller.LLMCallerService;
 import iaf.ofek.sigma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
-import iaf.ofek.sigma.ai.agent.prompt.PromptMessageFormater;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -49,11 +49,9 @@ public class SigmaMcpClient implements DirectToolExecutor {
 
     @Override
     public Flux<String> execute(String query, PreflightClassifierResponse classifierResponse) {
-        String userMessage = PromptMessageFormater.formatMultiple(
-                USER_MESSAGE,
-                new String[]{query, classifierResponse.rephrasedResponse()},
-                PromptMessageFormater.QUERY, PromptMessageFormater.QUICKSHOT_RESPONSE
-                );
+        String userMessage = USER_MESSAGE
+                .replace(PromptFormat.QUERY, query)
+                .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
 
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
