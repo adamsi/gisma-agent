@@ -7,6 +7,7 @@ import iaf.ofek.sigma.ai.dto.agent.PlannerResult;
 import iaf.ofek.sigma.ai.dto.agent.PlannerStep;
 import iaf.ofek.sigma.ai.dto.agent.StepExecutionResult;
 import iaf.ofek.sigma.ai.enums.ToolManifest;
+import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class PlanStepsExecutor {
         return Flux.fromIterable(plannerResult.steps())
                 .flatMap(this::executeStep)
                 .doOnNext(stepResults::add)
-                .then(Mono.fromCallable(() -> {
+                .then(ReactiveUtils.runBlockingAsync(() -> {
                     boolean overallSuccess = stepResults.stream()
                             .allMatch(StepExecutionResult::success);
 

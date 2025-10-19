@@ -8,6 +8,7 @@ import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.sigma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.sigma.ai.dto.agent.StepExecutionResult;
+import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import iaf.ofek.sigma.ai.util.StringUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
@@ -103,25 +104,13 @@ public class SigmaMcpClient implements DirectToolExecutor, StepExecutor {
                 .replace(PromptFormat.QUERY, query)
                 .replace(PromptFormat.STEP_DESCRIPTION, description);
 
-        return llmCallerService.callLLM(chatClient -> chatClient.prompt()
-                        .system(SYSTEM_INSTRUCTIONS)
-                        .user(userMessage))
-                .collectList()
-                .map(outputs -> new StepExecutionResult(
-                        step,
-                        StringUtils.joinLines(outputs),
-                        true,
-                        null
-                ))
-                .onErrorResume(ex -> {
-                    log.error("Error executing MCP step for toolCategory={} endpoints={}",
-                            step.toolCategory(), step.mcpEndpoints(), ex);
-                    return Mono.just(new StepExecutionResult(
-                            step,
-                            "",
-                            false,
-                            ex.getMessage()
-                    ));
-                });
+        return ReactiveUtils.runBlockingAsync(() ->
+                llmCallerService.callLLMWithSchemaValidation(
+                        chatClient -> chatClient.prompt()
+                                .system(SYSTEM_INSTRUCTIONS)
+                                .user(userMessage),
+                        StepExecutionResult.class
+                )
+        );
     }
 }

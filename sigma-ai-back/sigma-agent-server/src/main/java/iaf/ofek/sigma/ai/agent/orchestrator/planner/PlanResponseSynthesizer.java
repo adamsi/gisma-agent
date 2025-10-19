@@ -3,9 +3,9 @@ package iaf.ofek.sigma.ai.agent.orchestrator.planner;
 import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.sigma.ai.dto.agent.PlanExecutionResult;
-import iaf.ofek.sigma.ai.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -38,7 +38,7 @@ public class PlanResponseSynthesizer {
         Please synthesize a coherent final response based on the above information.
         """;
 
-    public Mono<String> synthesizeResponse(String userQuery, PlanExecutionResult executionResult) {
+    public Flux<String> synthesizeResponse(String userQuery, PlanExecutionResult executionResult) {
         String aggregatedOutput = executionResult.aggregatedOutput() != null ? executionResult.aggregatedOutput() : "<No output available>";
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUERY, userQuery)
@@ -48,10 +48,9 @@ public class PlanResponseSynthesizer {
         return llmCallerService.callLLM(chatClient ->
                         chatClient.prompt()
                                 .system(SYSTEM_INSTRUCTIONS)
-                                .user(userMessage)
-                ).collectList()
-                .map(StringUtils::joinLines)
-                .onErrorResume(ex -> Mono.just("Failed to synthesize response: "));
+                                .user(userMessage))
+                .onErrorResume(ex -> Mono.just("Something went wrong, try again... "));
+
     }
 }
 

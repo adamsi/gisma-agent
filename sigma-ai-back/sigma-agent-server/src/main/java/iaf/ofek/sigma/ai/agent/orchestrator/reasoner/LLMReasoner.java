@@ -5,7 +5,7 @@ import iaf.ofek.sigma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.sigma.ai.dto.agent.PlannerStep;
 import iaf.ofek.sigma.ai.dto.agent.StepExecutionResult;
-import iaf.ofek.sigma.ai.util.StringUtils;
+import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -46,22 +46,13 @@ public class LLMReasoner implements StepExecutor {
                 .replace(PromptFormat.QUERY, query)
                 .replace(PromptFormat.STEP_DESCRIPTION, description);
 
-        return llmCallerService.callLLM(chatClient -> chatClient.prompt()
-                        .system(SYSTEM_INSTRUCTIONS)
-                        .user(userMessage))
-                .collectList()
-                .map(outputs -> new StepExecutionResult(
-                        step,
-                        StringUtils.joinLines(outputs),
-                        true,
-                        null
-                ))
-                .onErrorResume(ex -> Mono.just(new StepExecutionResult(
-                        step,
-                        "",
-                        false,
-                        ex.getMessage()
-                )));
+        return ReactiveUtils.runBlockingAsync(() ->
+                llmCallerService.callLLMWithSchemaValidation(
+                        chatClient -> chatClient.prompt()
+                                .system(SYSTEM_INSTRUCTIONS)
+                                .user(userMessage),
+                        StepExecutionResult.class
+                ));
     }
 
 }

@@ -169,23 +169,14 @@ public class RagService implements DirectToolExecutor, StepExecutor {
                 .promptTemplate(new PromptTemplate(userMessage))
                 .build();
 
-        return llmCallerService.callLLM(chatClient -> chatClient.prompt()
-                        .system(STEP_SYSTEM_INSTRUCTIONS)
-                        .user(query)
-                        .advisors(qaAdvisor))
-                .collectList()
-                .map(outputs -> new StepExecutionResult(
-                        step,
-                        StringUtils.joinLines(outputs),
-                        true,
-                        null
-                ))
-                .onErrorResume(ex -> Mono.just(new StepExecutionResult(
-                        step,
-                        "",
-                        false,
-                        ex.getMessage()
-                )));
+        return ReactiveUtils.runBlockingAsync(() ->
+                llmCallerService.callLLMWithSchemaValidation(
+                        chatClient -> chatClient.prompt()
+                                .system(STEP_SYSTEM_INSTRUCTIONS)
+                                .user(query)
+                                .advisors(qaAdvisor),
+                        StepExecutionResult.class
+                ));
     }
 
 
