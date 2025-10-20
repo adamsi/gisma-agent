@@ -91,17 +91,21 @@ export const ChatInput: FC<Props> = ({
       handleSend();
     } else if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
+      const cursorPosition = e.currentTarget?.selectionStart || 0;
+      
       setContent((prevContent) => {
         const updatedContent = prevContent || '';
-        const cursorPosition = e.currentTarget.selectionStart;
         const textBeforeCursor = updatedContent.substring(0, cursorPosition);
         const textAfterCursor = updatedContent.substring(cursorPosition);
         return textBeforeCursor + '\n' + textAfterCursor;
       });
 
+      // Set cursor position after the content update
       setTimeout(() => {
-        const cursorPosition = e.currentTarget.selectionStart - 1;
-        e.currentTarget.setSelectionRange(cursorPosition, cursorPosition);
+        if (textareaRef.current) {
+          const newCursorPosition = cursorPosition + 1;
+          textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition);
+        }
       }, 0);
     }
   };
