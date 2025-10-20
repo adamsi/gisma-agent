@@ -1,9 +1,10 @@
-import { IconMoon, IconSun, IconUser, IconLogout } from '@tabler/icons-react';
+import { IconMoon, IconSun, IconUser, IconLogout, IconUpload, IconShield } from '@tabler/icons-react';
 import { FC, useState } from 'react';
 import { SidebarButton } from '../Sidebar/SidebarButton';
 import { ClearConversations } from './ClearConversations';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
+import { useRouter } from 'next/router';
 
 interface Props {
   lightMode: 'light' | 'dark';
@@ -19,7 +20,8 @@ export const ChatbarSettings: FC<Props> = ({
   onClearConversations,
 }) => {
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
+  const router = useRouter();
+  const { user, isAdmin } = useAppSelector((state) => state.auth);
   const [showProfile, setShowProfile] = useState(false);
   const avatarUrl = (user as any)?.picture || (user as any)?.image;
 
@@ -38,6 +40,15 @@ export const ChatbarSettings: FC<Props> = ({
           onToggleLightMode(lightMode === 'light' ? 'dark' : 'light')
         }
       />
+
+      {/* Admin Upload Button - Only show for admin users */}
+      {isAdmin && (
+        <SidebarButton
+          text="Upload Documents"
+          icon={<IconUpload size={18} />}
+          onClick={() => router.push('/admin/upload')}
+        />
+      )}
 
       {/* User Profile Button */}
       <div className="w-full pt-2 border-t border-white/20 mt-1">

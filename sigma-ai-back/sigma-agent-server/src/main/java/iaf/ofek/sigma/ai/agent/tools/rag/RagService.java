@@ -1,25 +1,23 @@
 package iaf.ofek.sigma.ai.agent.tools.rag;
 
+import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.sigma.ai.dto.agent.PlannerStep;
 import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
-import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
-import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.sigma.ai.dto.agent.StepExecutionResult;
 import iaf.ofek.sigma.ai.util.ReactiveUtils;
-import iaf.ofek.sigma.ai.util.StringUtils;
-import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-@RequiredArgsConstructor
 public class RagService implements DirectToolExecutor, StepExecutor {
 
     private static final String SYSTEM_INSTRUCTIONS = """
@@ -130,6 +128,12 @@ public class RagService implements DirectToolExecutor, StepExecutor {
 
 
     private final VectorStore documentVectorStore;
+
+    public RagService(LLMCallerService llmCallerService,
+                      @Qualifier("documentVectorStore") VectorStore documentVectorStore) {
+        this.llmCallerService = llmCallerService;
+        this.documentVectorStore = documentVectorStore;
+    }
 
     @Override
     public Flux<String> execute(String query, PreflightClassifierResult classifierResponse) {
