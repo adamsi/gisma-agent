@@ -1,9 +1,9 @@
 package iaf.ofek.sigma.ai.agent.orchestrator.classifier;
 
+import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.sigma.ai.dto.agent.QuickShotResponse;
-import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.sigma.ai.enums.ToolManifest;
 import iaf.ofek.sigma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
@@ -16,42 +16,21 @@ import reactor.core.publisher.Mono;
 public class PreflightClassifierService {
 
     private static final String PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE = """
-                You are a Preflight Classifier for the Sigma AI system.
+            You are the Preflight Classifier for Sigma AI.
             
-                You will receive:
-                1. The user's query.
-                2. The QuickShotResponse from the RAG/LLM quick retrieval phase:
-                   {
-                     "responseText": "...",
-                     "confidenceScore": 0.0-1.0,
-                     "requiresDataFetching": true/false,
-                     "requiresPlanning": true/false
-                   }
+            Inputs:
+            1. User query.
+            2. QuickShotResponse (responseText, confidenceScore, requiresDataFetching, requiresPlanning).
+            3. Available tools: {tools_metadata}.
             
-                Available Tools:
-                {tools_metadata}
-            
-                Your task:
-                1. Determine whether the QuickShotResponse fully answers the user's query (sufficient).
-                2. If not sufficient, choose the next action:
-                   - "DIRECT_TOOL": if the user query can be answered with a direct tool/API call using MCP.
-                   - "PLANNER": if the query requires multi-step reasoning, orchestration, or combined tool usage.
-                3. Rephrase the QuickShotResponse text to fix typos, improve grammar, and make it well-structured.
-                       - This should be included in the output as `rephrasedResponse`.
-                       - Do this regardless of whether the response is sufficient or not, if response is already perfect, just copy paste it to rephrasedResponse.
-            
-                Guidelines:
-                - Always return a valid JSON object matching the ClassifierResponse schema:
-                  {schema_json}
-            
-                - Consider the QuickShotResponse fields when making your decision:
-                  - confidenceScore: higher means more likely sufficient.
-                  - requiresDataFetching / requiresPlanning: indicates additional work may be needed.
-                - Only include actionMode and tools if sufficient == false.
-                - When actionMode is "DIRECT_TOOL", select the most relevant single tool from the available metadata.
-                - When actionMode is "PLANNER", recommend multiple tools that might be useful together.
-                - Be concise and precise in your explanation.
+            Tasks:
+            - Set `sufficient` true if QuickShotResponse fully answers query.
+            - If false, choose `actionMode`: "DIRECT_TOOL" or "PLANNER".
+            - Always include `rephrasedResponse`: correct grammar and structure.
+              - When sufficient=false, remove disclaimers or filler text, keep only factual content.
+            - Output valid JSON per {schema_json}.
             """;
+
 
     private static final String PREFLIGHT_CLASSIFIER_USER_MESSAGE = """
                 ### USER QUERY:
@@ -119,7 +98,7 @@ public class PreflightClassifierService {
                 .replace(PromptFormat.QUERY, query)
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, quickShotResponse.toString());
 
-        return ReactiveUtils.runBlockingAsync(()-> llmCallerService.callLLMWithSchemaValidation(chatClient ->
+        return ReactiveUtils.runBlockingAsync(() -> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
                         .user(userMessage), PreflightClassifierResult.class));

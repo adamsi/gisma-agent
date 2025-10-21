@@ -1,15 +1,14 @@
 package iaf.ofek.sigma.ai.agent.tools.mcp;
 
+import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.sigma.ai.agent.memory.ChatMemoryAdvisorProvider;
+import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.sigma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.sigma.ai.dto.agent.PlannerStep;
 import iaf.ofek.sigma.ai.dto.agent.PreflightClassifierResult;
-import iaf.ofek.sigma.ai.agent.llmCall.LLMCallerService;
-import iaf.ofek.sigma.ai.agent.memory.ChatMemoryAdvisorProvider;
-import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.sigma.ai.dto.agent.StepExecutionResult;
 import iaf.ofek.sigma.ai.util.ReactiveUtils;
-import iaf.ofek.sigma.ai.util.StringUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -107,7 +106,7 @@ public class SigmaMcpClient implements DirectToolExecutor, StepExecutor {
         return ReactiveUtils.runBlockingAsync(() ->
                 llmCallerService.callLLMWithSchemaValidation(
                         chatClient -> chatClient.prompt()
-                                .system(SYSTEM_INSTRUCTIONS)
+                                .system(STEP_SYSTEM_INSTRUCTIONS)
                                 .user(userMessage),
                         StepExecutionResult.class
                 )

@@ -21,55 +21,52 @@ import reactor.core.publisher.Mono;
 public class RagService implements DirectToolExecutor, StepExecutor {
 
     private static final String SYSTEM_INSTRUCTIONS = """
-            You are the Sigma-services system assistant.
+            You are the Sigma-services assistant.
             
-            Your job is to help users understand and use the Sigma System APIs and documentation.
-            You must answer **only** based on the information provided in:
+            Task:
+            Answer clearly using only the provided context:
+            - DOCUMENT CONTEXT
+            - USER QUERY
+            - QUICKSHOT RESPONSE
             
-            1. DOCUMENT CONTEXT — relevant fragments of sigma-services API documentation or design notes.
-            2. USER QUERY — the user’s current message.
-            3. QUICKSHOT RESPONSE — the output of the QuickShot similarity search, which may already contain a sufficient answer.
-            
-            Guidelines:
-            - If the QUICKSHOT RESPONSE is already sufficient, focus on rephrasing,and improving response if possible.
-            - If more information is needed, reason carefully based on DOCUMENT CONTEXT and USER QUERY.
-            - Only include tools or multi-step planning if explicitly required to answer the query.
-            - Always use the retrieved documentation as your source of truth.
-            - If unsure, ask the user to clarify their question.
-            - Never invent information about the Sigma System.
-            - Keep your answers concise, technical, and helpful.
-            - When appropriate, reference endpoint names, parameters, or examples from the documentation.
+            Rules:
+            - Rephrase or refine if the quickshot is sufficient.
+            - Reason carefully if more info is needed.
+            - Include tools/steps only if necessary.
+            - Never invent data.
+            - Be concise and technical.
             """;
 
+
     private static final String STEP_SYSTEM_INSTRUCTIONS = """
-        You are the Sigma RAG step executor.
+            You are the Sigma RAG step executor.
+            
+            Task:
+            Produce a concise, factual answer for this step using only:
+            - DOCUMENT CONTEXT
+            - STEP DESCRIPTION
+            
+            Rules:
+            - No planning, classification, or tool calls.
+            - Summarize or refine if info is sufficient.
+            - State clearly if data is missing.
+            - Be concise, technical, and relevant.
+            - Do not invent details.
+            """;
 
-        Your goal is to produce a concise, factual answer for the current step 
-        based solely on the retrieved DOCUMENT CONTEXT and the step description.
-
-        Rules:
-        1. Use only the DOCUMENT CONTEXT and STEP DESCRIPTION as your sources.
-        2. Do not plan, classify, or call tools — this step is purely informational reasoning.
-        3. If the context already provides the answer, summarize or refine it clearly.
-        4. If information is missing or incomplete, state that politely.
-        5. Keep the response short, technical, and directly relevant to the query.
-        6. Never fabricate or assume undocumented Sigma System details.
-        """;
 
     private static final String QUICK_SHOT_SYSTEM_MESSAGE = """
-        You are the Sigma Knowledge Context Extractor.
-        Retrieve the most relevant Sigma documentation fragments.
-
-        Guidelines:
-        - Always respond in strict JSON format matching this schema:
-        
-        {schema_json}
-
-        Additional Instructions:
-        - Summarize key API concepts, parameters, and relevant sections that relate to the user's query.
-        - Include concise references to endpoints or entities if relevant.
-        - Be concise and factual.
-        """;
+            You are the Sigma Knowledge Extractor.
+            
+            Task:
+            Retrieve the most relevant Sigma documentation fragments.
+            
+            Rules:
+            - Respond in strict JSON as per {schema_json}.
+            - Summarize key API concepts and relevant sections.
+            - Include concise references to endpoints or entities.
+            - Be concise, factual, and precise.
+            """;
 
 
     private static final String USER_PROMPT_TEMPLATE = """
@@ -155,7 +152,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
                 .build();
         String systemMessage = QUICK_SHOT_SYSTEM_MESSAGE.replace(PromptFormat.SCHEMA_JSON, QUICK_SHOT_SCHEMA);
 
-        return ReactiveUtils.runBlockingAsync(()-> llmCallerService.callLLMWithSchemaValidation(chatClient ->
+        return ReactiveUtils.runBlockingAsync(() -> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
                         .user(query)

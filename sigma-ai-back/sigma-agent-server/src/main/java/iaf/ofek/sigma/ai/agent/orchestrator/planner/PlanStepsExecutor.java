@@ -1,6 +1,5 @@
 package iaf.ofek.sigma.ai.agent.orchestrator.planner;
 
-import iaf.ofek.sigma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.sigma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.sigma.ai.dto.agent.PlanExecutionResult;
 import iaf.ofek.sigma.ai.dto.agent.PlannerResult;

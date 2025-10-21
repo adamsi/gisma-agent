@@ -15,28 +15,32 @@ public class PlanResponseSynthesizer {
     private final LLMCallerService llmCallerService;
 
     private static final String SYSTEM_INSTRUCTIONS = """
-        You are the Sigma AI Response Synthesizer.
+            You are the Sigma Synthesizer.
+            
+            Goal:
+            Produce a single, coherent, and factual answer to the user's query 
+            based on the provided plan execution data.
+            
+            Rules:
+            - Use only the given information; do not speculate or add facts.
+            - If any step failed, mention that results may be incomplete.
+            - Keep the response clear, concise, and user-ready.
+            """;
 
-        Your job is to produce a single, clear, and concise response to the user's query
-        based on the outputs of multiple execution steps.
-
-        Guidelines:
-        - Respect the aggregated output already provided in the PlanExecutionResult.
-        - If some steps failed, indicate that certain information may be incomplete.
-        - Be concise, factual, and helpful.
-        - Do not invent information.
-        """;
 
     private static final String USER_PROMPT_TEMPLATE = """
-        User Query: {query}
+            ### User Query
+            {query}
+            
+            ### Aggregated Step Outputs
+            {plan_aggregated_output}
+            
+            ### Execution Status
+            Overall Success: {plan_overall_success}
+            
+            Please write a unified final answer using the above context.
+            """;
 
-        Aggregated Steps Output:
-        {plan_aggregated_output}
-
-        Overall Success: {plan_overall_success}
-
-        Please synthesize a coherent final response based on the above information.
-        """;
 
     public Flux<String> synthesizeResponse(String userQuery, PlanExecutionResult executionResult) {
         String aggregatedOutput = executionResult.aggregatedOutput() != null ? executionResult.aggregatedOutput() : "<No output available>";
