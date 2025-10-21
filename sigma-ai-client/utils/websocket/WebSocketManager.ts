@@ -113,6 +113,8 @@ export class WebSocketManager {
         // Subscribe to response queue
         this.client.subscribe(WEBSOCKET_CONFIG.RECEIVE_DESTINATION, (message) => {
           try {
+            // Debug: Log the raw message body to see what's being received
+            console.log('WebSocket received chunk:', JSON.stringify(message.body));
             this.handleResponse({ type: 'response', content: message.body, isComplete: false });
           } catch (_error) {
             console.error('Error parsing message:', _error);
