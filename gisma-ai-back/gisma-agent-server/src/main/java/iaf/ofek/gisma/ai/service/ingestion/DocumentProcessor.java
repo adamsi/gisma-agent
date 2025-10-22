@@ -1,6 +1,7 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.springframework.ai.document.Document;
@@ -16,12 +17,19 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Slf4j
 public class DocumentProcessor {
 
     public static final String USER_ID = "userId";
+
+    public static final String FILENAME = "filename";
+
+    public static final String CONTENT_TYPE = "contentType";
+
+    public static final String CONTENT_HASH = "contentHash";
 
     private static final Tika tika = new Tika();
 
@@ -44,9 +52,11 @@ public class DocumentProcessor {
 
             if (extractedText != null && !extractedText.trim().isEmpty()) {
                 Document document = new Document(extractedText);
+                String contentHash = DigestUtils.sha256Hex(fileBytes);
+                document.getMetadata().put(CONTENT_HASH, contentHash);
                 document.getMetadata().put(USER_ID, userId);
-                document.getMetadata().put("filename", filename);
-                document.getMetadata().put("contentType", contentType);
+                document.getMetadata().put(FILENAME, filename);
+                document.getMetadata().put(CONTENT_TYPE, contentType);
                 List<Document> chunks = textSplitter.apply(List.of(document));
                 documentVectorStore.add(chunks);
             }
