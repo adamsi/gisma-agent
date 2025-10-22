@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/test")
+@RequestMapping("/prompt")
 @RequiredArgsConstructor
-public class ChatTestController {
+public class AgentRestController {
 
     private final AgentOrchestrator agentOrchestrator;
 

@@ -27,7 +27,6 @@ public class PreflightClassifierService {
             - Set `sufficient` true if QuickShotResponse fully answers query.
             - If false, choose `actionMode`: "DIRECT_TOOL" or "PLANNER".
             - Always include `rephrasedResponse`: correct grammar and structure.
-              - When sufficient=false, remove disclaimers or filler text, keep only factual content.
             - Output valid JSON per {schema_json}.
             """;
 
