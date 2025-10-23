@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/documents")
@@ -24,7 +25,12 @@ public class DocumentController {
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> upload(@RequestParam("documents") List<DocumentDTO> documents) {
-        return new ResponseEntity<>(ingestionService.processFiles(documents), HttpStatus.CREATED);
+        List<CompletableFuture<DocumentDTO>> futures = ingestionService.processFiles(documents);
+        List<DocumentDTO> results = futures.stream()
+                .map(CompletableFuture::join)
+                .toList();
+
+        return new ResponseEntity<>(results, HttpStatus.CREATED);
     }
 
 }
