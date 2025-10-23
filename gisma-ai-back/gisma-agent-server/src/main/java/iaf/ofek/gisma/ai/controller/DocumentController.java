@@ -1,5 +1,6 @@
 package iaf.ofek.gisma.ai.controller;
 
+import iaf.ofek.gisma.ai.dto.DocumentDTO;
 import iaf.ofek.gisma.ai.service.ingestion.IngestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,8 +23,8 @@ public class DocumentController {
 
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> upload(@RequestParam("files") List<MultipartFile> files) {
-        return new ResponseEntity<>(ingestionService.processFiles(files), HttpStatus.CREATED);
+    public ResponseEntity<?> upload(@RequestParam("documents") List<DocumentDTO> documents) {
+        return new ResponseEntity<>(ingestionService.processFiles(documents), HttpStatus.CREATED);
     }
 
 }

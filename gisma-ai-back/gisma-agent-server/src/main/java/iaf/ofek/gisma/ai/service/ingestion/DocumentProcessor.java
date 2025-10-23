@@ -1,7 +1,7 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
+import iaf.ofek.gisma.ai.dto.DocumentDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.springframework.ai.document.Document;
@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Component
 @Slf4j
@@ -29,7 +31,7 @@ public class DocumentProcessor {
 
     public static final String CONTENT_TYPE = "contentType";
 
-    public static final String CONTENT_HASH = "contentHash";
+    public static final String DOCUMENT_ID = "documentId";
 
     private static final Tika tika = new Tika();
 
@@ -42,8 +44,20 @@ public class DocumentProcessor {
     }
 
     @Async
-    public void processFile(MultipartFile file, String userId) {
+    public CompletableFuture<DocumentDTO> processFile(DocumentDTO documentInput, String userId) {
+        String documentId = documentInput.getDocumentId();
+
+        if (documentId == null) {
+            documentId = UUID.randomUUID().toString();
+            documentInput.setDocumentId(documentId);
+        }
+
+        MultipartFile file = documentInput.getFile();
         String filename = file.getOriginalFilename();
+
+        if (filename == null) {
+            throw new IllegalArgumentException("failed processing file without filename");
+        }
 
         try (InputStream inputStream = file.getInputStream()) {
             byte[] fileBytes = inputStream.readAllBytes();
@@ -51,17 +65,18 @@ public class DocumentProcessor {
             String extractedText = tika.parseToString(new ByteArrayInputStream(fileBytes));
 
             if (extractedText != null && !extractedText.trim().isEmpty()) {
-                Document document = new Document(extractedText);
-                String contentHash = DigestUtils.sha256Hex(fileBytes);
-                document.getMetadata().put(CONTENT_HASH, contentHash);
-                document.getMetadata().put(USER_ID, userId);
-                document.getMetadata().put(FILENAME, filename);
-                document.getMetadata().put(CONTENT_TYPE, contentType);
+                Document document = new Document(extractedText, Map.of(
+                        DOCUMENT_ID, documentId, USER_ID, userId,
+                        FILENAME, filename, CONTENT_TYPE, contentType
+                ));
                 List<Document> chunks = textSplitter.apply(List.of(document));
                 documentVectorStore.add(chunks);
+                documentVectorStore.delete("%s == %s".formatted(DOCUMENT_ID, documentId));
             }
         } catch (IOException | TikaException ignored) {
         }
+
+        return CompletableFuture.completedFuture(documentInput);
     }
 
 }
