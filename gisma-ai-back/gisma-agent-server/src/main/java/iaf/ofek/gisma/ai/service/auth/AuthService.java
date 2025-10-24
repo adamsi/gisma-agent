@@ -1,7 +1,7 @@
 package iaf.ofek.gisma.ai.service.auth;
 
 import iaf.ofek.gisma.ai.dto.auth.LoginUserDto;
-import iaf.ofek.gisma.ai.entity.User;
+import iaf.ofek.gisma.ai.entity.auth.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

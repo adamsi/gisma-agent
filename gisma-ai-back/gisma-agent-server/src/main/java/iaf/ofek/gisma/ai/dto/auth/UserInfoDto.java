@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.dto.auth;
 
-import iaf.ofek.gisma.ai.entity.Role;
+import iaf.ofek.gisma.ai.entity.auth.Role;
 import lombok.Data;
 
 @Data

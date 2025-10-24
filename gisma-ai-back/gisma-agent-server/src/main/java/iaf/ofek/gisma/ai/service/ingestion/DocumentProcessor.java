@@ -1,8 +1,8 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
 import iaf.ofek.gisma.ai.dto.DocumentDTO;
-import iaf.ofek.gisma.ai.entity.DocumentEntity;
-import iaf.ofek.gisma.ai.repository.DocumentRepository;
+import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
+import iaf.ofek.gisma.ai.repository.DocumentEntityRepository;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import lombok.extern.log4j.Log4j2;
 import org.apache.tika.Tika;
@@ -44,12 +44,12 @@ public class DocumentProcessor {
 
     private final VectorStore documentVectorStore;
 
-    private final DocumentRepository documentRepository;
+    private final DocumentEntityRepository documentRepository;
 
     private final S3Service s3Service;
 
     public DocumentProcessor(@Qualifier("documentVectorStore") VectorStore documentVectorStore,
-                             DocumentRepository documentRepository, S3Service s3Service) {
+                             DocumentEntityRepository documentRepository, S3Service s3Service) {
         this.documentVectorStore = documentVectorStore;
         this.documentRepository = documentRepository;
         this.s3Service = s3Service;

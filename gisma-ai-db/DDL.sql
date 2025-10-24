@@ -29,7 +29,18 @@ CREATE TABLE ${SA_DB_SCHEMA}.users (
     picture        TEXT
 );
 
+CREATE TABLE ${SA_DB_SCHEMA}.folders (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255),
+    parent_id UUID,
+    CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES ${SA_DB_SCHEMA}.folders (id)
+);
+
 CREATE TABLE ${SA_DB_SCHEMA}.documents (
     id UUID PRIMARY KEY,
-    url TEXT
+    url TEXT,
+    name VARCHAR(255),
+    content_type VARCHAR(255),
+    folder_id UUID,
+    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES ${SA_DB_SCHEMA}.folders (id)
 );

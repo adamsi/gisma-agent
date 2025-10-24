@@ -1,4 +1,4 @@
-package iaf.ofek.gisma.ai.entity;
+package iaf.ofek.gisma.ai.entity.auth;
 
 public enum Role {
 

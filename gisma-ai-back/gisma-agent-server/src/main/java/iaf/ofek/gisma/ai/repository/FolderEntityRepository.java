@@ -1,0 +1,20 @@
+package iaf.ofek.gisma.ai.repository;
+
+import iaf.ofek.gisma.ai.entity.ingestion.FolderEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.UUID;
+
+@Repository
+public interface FolderEntityRepository extends JpaRepository<FolderEntity, UUID> {
+
+    @Query("SELECT f FROM FolderEntity f " +
+            "LEFT JOIN FETCH f.childrenFolders cf " +
+            "LEFT JOIN FETCH f.childrenDocuments d " +
+            "WHERE f.parentFolder IS NULL")
+    List<FolderEntity> findAllRootsWithChildren();
+
+}

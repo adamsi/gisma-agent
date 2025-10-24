@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.filter;
 
-import iaf.ofek.gisma.ai.entity.User;
+import iaf.ofek.gisma.ai.entity.auth.User;
 import iaf.ofek.gisma.ai.service.auth.UserService;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

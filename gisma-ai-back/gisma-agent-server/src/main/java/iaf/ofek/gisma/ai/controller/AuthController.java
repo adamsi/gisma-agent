@@ -3,7 +3,7 @@ package iaf.ofek.gisma.ai.controller;
 import iaf.ofek.gisma.ai.dto.auth.LoginUserDto;
 import iaf.ofek.gisma.ai.dto.auth.RegisterUserDto;
 import iaf.ofek.gisma.ai.dto.auth.UserInfoDto;
-import iaf.ofek.gisma.ai.entity.User;
+import iaf.ofek.gisma.ai.entity.auth.User;
 import iaf.ofek.gisma.ai.mapper.UserMapper;
 import iaf.ofek.gisma.ai.service.auth.*;
 import jakarta.servlet.http.HttpServletResponse;

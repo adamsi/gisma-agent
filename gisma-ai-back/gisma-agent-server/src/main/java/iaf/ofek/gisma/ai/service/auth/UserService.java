@@ -1,8 +1,8 @@
 package iaf.ofek.gisma.ai.service.auth;
 
 import iaf.ofek.gisma.ai.dto.auth.RegisterUserDto;
-import iaf.ofek.gisma.ai.entity.Role;
-import iaf.ofek.gisma.ai.entity.User;
+import iaf.ofek.gisma.ai.entity.auth.Role;
+import iaf.ofek.gisma.ai.entity.auth.User;
 import iaf.ofek.gisma.ai.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;

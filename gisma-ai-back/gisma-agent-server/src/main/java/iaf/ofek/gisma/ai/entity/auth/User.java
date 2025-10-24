@@ -1,5 +1,6 @@
-package iaf.ofek.gisma.ai.entity;
+package iaf.ofek.gisma.ai.entity.auth;
 
+import iaf.ofek.gisma.ai.entity.GismaAiEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

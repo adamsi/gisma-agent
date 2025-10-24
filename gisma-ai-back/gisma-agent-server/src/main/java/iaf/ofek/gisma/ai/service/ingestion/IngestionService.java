@@ -1,17 +1,15 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
 import iaf.ofek.gisma.ai.dto.DocumentDTO;
-import iaf.ofek.gisma.ai.entity.DocumentEntity;
+import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
 import iaf.ofek.gisma.ai.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
