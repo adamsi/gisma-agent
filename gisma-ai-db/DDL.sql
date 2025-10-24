@@ -28,3 +28,8 @@ CREATE TABLE ${SA_DB_SCHEMA}.users (
     role           VARCHAR(50),
     picture        TEXT
 );
+
+CREATE TABLE ${SA_DB_SCHEMA}.documents (
+    id UUID PRIMARY KEY,
+    url TEXT
+);

@@ -1,7 +1,10 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
 import iaf.ofek.gisma.ai.dto.DocumentDTO;
-import lombok.extern.slf4j.Slf4j;
+import iaf.ofek.gisma.ai.entity.DocumentEntity;
+import iaf.ofek.gisma.ai.repository.DocumentRepository;
+import iaf.ofek.gisma.ai.util.ReactiveUtils;
+import lombok.extern.log4j.Log4j2;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.springframework.ai.document.Document;
@@ -12,6 +15,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -22,7 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Component
-@Slf4j
+@Log4j2
 public class DocumentProcessor {
 
     public static final String USER_ID = "userId";
@@ -39,20 +44,30 @@ public class DocumentProcessor {
 
     private final VectorStore documentVectorStore;
 
-    public DocumentProcessor(@Qualifier("documentVectorStore") VectorStore documentVectorStore) {
+    private final DocumentRepository documentRepository;
+
+    private final S3Service s3Service;
+
+    public DocumentProcessor(@Qualifier("documentVectorStore") VectorStore documentVectorStore,
+                             DocumentRepository documentRepository, S3Service s3Service) {
         this.documentVectorStore = documentVectorStore;
+        this.documentRepository = documentRepository;
+        this.s3Service = s3Service;
     }
 
     @Async
-    public CompletableFuture<DocumentDTO> processFile(DocumentDTO documentInput, String userId) {
-        String documentId = documentInput.getDocumentId();
-
-        if (documentId == null) {
-            documentId = UUID.randomUUID().toString();
-            documentInput.setDocumentId(documentId);
-        }
-
+    public CompletableFuture<DocumentEntity> processFile(DocumentDTO documentInput, String userId) {
+        DocumentEntity document = documentRepository.findById(UUID.fromString(documentInput.getDocumentId()))
+                .orElseGet(DocumentEntity::new);
         MultipartFile file = documentInput.getFile();
+        ingestToVectorStore(file, document, userId);
+        String url = s3Service.uploadFile(file);
+        document.setUrl(url); // insert or replace document url
+
+        return CompletableFuture.completedFuture(document);
+    }
+
+    private void ingestToVectorStore(MultipartFile file, DocumentEntity documentEntity, String userId) {
         String filename = file.getOriginalFilename();
 
         if (filename == null) {
@@ -66,17 +81,34 @@ public class DocumentProcessor {
 
             if (extractedText != null && !extractedText.trim().isEmpty()) {
                 Document document = new Document(extractedText, Map.of(
-                        DOCUMENT_ID, documentId, USER_ID, userId,
+                        DOCUMENT_ID, documentEntity.getId(), USER_ID, userId,
                         FILENAME, filename, CONTENT_TYPE, contentType
                 ));
+                deleteDocument(documentEntity);
                 List<Document> chunks = textSplitter.apply(List.of(document));
                 documentVectorStore.add(chunks);
-                documentVectorStore.delete("%s == %s".formatted(DOCUMENT_ID, documentId));
             }
-        } catch (IOException | TikaException ignored) {
+        } catch (IOException | TikaException exception) {
+            log.warn("Failed ingesting file!");
         }
 
-        return CompletableFuture.completedFuture(documentInput);
+    }
+
+    private void deleteDocument(DocumentEntity document) {
+        documentVectorStore.delete("%s == %s".formatted(DOCUMENT_ID, document.getId()));
+        s3Service.deleteFile(document.getUrl());
+    }
+
+    public Mono<Void> deleteDocuments(List<DocumentEntity> documents) {
+        return Flux.fromIterable(documents)
+                .flatMap(document ->
+                        ReactiveUtils.runBlockingAsync(() -> {
+                            documentVectorStore.delete("%s == %s".formatted(DOCUMENT_ID, document.getId()));
+                            s3Service.deleteFile(document.getUrl());
+                            return true;
+                        })
+                )
+                .then();
     }
 
 }

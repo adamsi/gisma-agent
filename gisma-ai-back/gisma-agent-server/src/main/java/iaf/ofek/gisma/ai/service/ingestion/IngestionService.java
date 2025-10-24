@@ -1,10 +1,12 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
 import iaf.ofek.gisma.ai.dto.DocumentDTO;
+import iaf.ofek.gisma.ai.entity.DocumentEntity;
 import iaf.ofek.gisma.ai.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -17,7 +19,7 @@ public class IngestionService {
 
     private final DocumentProcessor documentProcessor;
 
-    public List<CompletableFuture<DocumentDTO>> processFiles(List<DocumentDTO> documents) {
+    public List<CompletableFuture<DocumentEntity>> processFiles(List<DocumentDTO> documents) {
         String userId = authService.getCurrentUserId();
 
         return documents.stream()
@@ -26,11 +28,16 @@ public class IngestionService {
                     try {
                         return documentProcessor.processFile(document, userId);
                     } catch (Exception e) {
-                    throw new IllegalArgumentException("Failed processing files, try again...");
+                        throw new IllegalArgumentException("Failed processing files, try again...");
                     }
                 })
                 .toList();
     }
+
+    public Mono<Void> deleteFiles(List<DocumentEntity> documentEntities) {
+        return documentProcessor.deleteDocuments(documentEntities);
+    }
+
 
     private boolean isSupported(MultipartFile file) {
         return !file.isEmpty() && file.getContentType() != null &&
