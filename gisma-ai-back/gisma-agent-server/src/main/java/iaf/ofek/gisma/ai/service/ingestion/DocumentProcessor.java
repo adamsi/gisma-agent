@@ -2,8 +2,10 @@ package iaf.ofek.gisma.ai.service.ingestion;
 
 import iaf.ofek.gisma.ai.dto.DocumentDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
+import iaf.ofek.gisma.ai.entity.ingestion.FolderEntity;
 import iaf.ofek.gisma.ai.repository.DocumentEntityRepository;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
+import jakarta.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
@@ -23,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -46,20 +47,31 @@ public class DocumentProcessor {
 
     private final DocumentEntityRepository documentRepository;
 
+    private final FolderEntityService folderService;
+
     private final S3Service s3Service;
 
+
     public DocumentProcessor(@Qualifier("documentVectorStore") VectorStore documentVectorStore,
-                             DocumentEntityRepository documentRepository, S3Service s3Service) {
+                             DocumentEntityRepository documentRepository, FolderEntityService folderService,
+                             S3Service s3Service) {
         this.documentVectorStore = documentVectorStore;
         this.documentRepository = documentRepository;
         this.s3Service = s3Service;
+        this.folderService = folderService;
     }
 
     @Async
     public CompletableFuture<DocumentEntity> processFile(DocumentDTO documentInput, String userId) {
-        DocumentEntity document = documentRepository.findById(UUID.fromString(documentInput.getDocumentId()))
-                .orElseGet(DocumentEntity::new);
-        MultipartFile file = documentInput.getFile();
+        DocumentEntity document = documentRepository.findById(documentInput.getDocumentId())
+                .orElseGet(()-> {
+                    FolderEntity folder = folderService.getFileParentFolder(documentInput.getParentFolderId());
+
+                return DocumentEntity.builder()
+                        .parentFolder(folder)
+                        .build();
+                });
+        var file = documentInput.getFile();
         ingestToVectorStore(file, document, userId);
         String url = s3Service.uploadFile(file);
         document.setUrl(url); // insert or replace document url
@@ -75,12 +87,12 @@ public class DocumentProcessor {
         }
 
         try (InputStream inputStream = file.getInputStream()) {
-            byte[] fileBytes = inputStream.readAllBytes();
+            var fileBytes = inputStream.readAllBytes();
             String contentType = tika.detect(fileBytes);
             String extractedText = tika.parseToString(new ByteArrayInputStream(fileBytes));
 
             if (extractedText != null && !extractedText.trim().isEmpty()) {
-                Document document = new Document(extractedText, Map.of(
+                var document = new Document(extractedText, Map.of(
                         DOCUMENT_ID, documentEntity.getId(), USER_ID, userId,
                         FILENAME, filename, CONTENT_TYPE, contentType
                 ));
@@ -99,11 +111,13 @@ public class DocumentProcessor {
         s3Service.deleteFile(document.getUrl());
     }
 
+    @Transactional
     public Mono<Void> deleteDocuments(List<DocumentEntity> documents) {
         return Flux.fromIterable(documents)
                 .flatMap(document ->
                         ReactiveUtils.runBlockingAsync(() -> {
                             documentVectorStore.delete("%s == %s".formatted(DOCUMENT_ID, document.getId()));
+                            documentRepository.deleteAll(documents);
                             s3Service.deleteFile(document.getUrl());
                             return true;
                         })

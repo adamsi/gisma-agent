@@ -4,10 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 public class DocumentDTO {
-    private String documentId;
+    private UUID documentId;
+    private UUID parentFolderId;
     private MultipartFile file;
 }
 

@@ -1,10 +1,9 @@
 package iaf.ofek.gisma.ai.entity.ingestion;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import iaf.ofek.gisma.ai.entity.GismaAiEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.UUID;
 
 @Entity
 @Table(name = "documents")
@@ -12,6 +11,7 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class DocumentEntity extends GismaAiEntity {
 
     private String url;
@@ -20,5 +20,10 @@ public class DocumentEntity extends GismaAiEntity {
 
     @Column(name = "content_type")
     private String contentType;
+
+    @ManyToOne
+    @JoinColumn(name = "folder_id")
+    @JsonBackReference(value = "folder-document")
+    private FolderEntity parentFolder;
 
 }

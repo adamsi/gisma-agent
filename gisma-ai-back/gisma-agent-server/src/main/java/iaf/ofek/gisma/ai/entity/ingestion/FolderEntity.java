@@ -1,6 +1,8 @@
 package iaf.ofek.gisma.ai.entity.ingestion;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import iaf.ofek.gisma.ai.entity.GismaAiEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -22,14 +24,15 @@ public class FolderEntity extends GismaAiEntity {
 
     @ManyToOne
     @JoinColumn(name = "parent_id")
-    @JsonIgnore
+    @JsonBackReference(value = "folder-folder")
     private FolderEntity parentFolder;
 
     @OneToMany(mappedBy = "parentFolder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference(value = "folder-folder")
     private List<FolderEntity> childrenFolders;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "folder_id")
+    @OneToMany(mappedBy = "parentFolder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference(value = "folder-document")
     private List<DocumentEntity> childrenDocuments;
 
 }
