@@ -4,6 +4,7 @@ import iaf.ofek.gisma.ai.dto.auth.LoginUserDto;
 import iaf.ofek.gisma.ai.entity.auth.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,11 +20,15 @@ public class AuthService {
 
     private final UserService userService;
 
-    @Transactional(readOnly = true)
     public UUID authenticate(LoginUserDto loginUserDto) {
         String username = loginUserDto.getUsername();
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, loginUserDto.getPassword());
-        authenticationManager.authenticate(token);
+        try {
+            authenticationManager.authenticate(token);
+        } catch (Exception e) {
+        throw new BadCredentialsException("Bad credentials", e);
+        }
+
         User user = userService.getUser(username);
 
         return user.getId();

@@ -3,3 +3,8 @@ export interface DocumentDTO {
   parentFolderId: string;
   file: File;
 }
+
+export interface FolderDTO {
+  name: string;
+  parentFolderId?: string;
+}

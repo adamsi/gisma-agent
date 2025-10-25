@@ -7,9 +7,10 @@ import { RootState } from '@/store';
 
 interface FileUploadProps {
   className?: string;
+  parentFolderId: string;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ className = '' }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ className = '', parentFolderId }) => {
   const dispatch = useAppDispatch();
   const { uploading, uploadProgress, error, success } = useSelector((state: RootState) => state.upload);
   
@@ -53,16 +54,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ className = '' }) => {
     if (selectedFiles.length === 0) return;
     
     dispatch(clearError());
-    dispatch(clearSuccess());
+    dispatch(clearSuccess()); // Clear any existing success messages
     
     try {
-      await dispatch(uploadFiles(selectedFiles)).unwrap();
+      await dispatch(uploadFiles({ files: selectedFiles, parentFolderId })).unwrap();
       setSelectedFiles([]);
     } catch (error: unknown) {
       // Error is handled by the slice
       console.error('Upload failed:', error);
     }
-  }, [dispatch, selectedFiles]);
+  }, [dispatch, selectedFiles, parentFolderId]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';

@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { getUser } from '@/store/slices/authSlice';
+import { 
+  fetchRootFolder, 
+  createFolder, 
+  deleteItems, 
+  setCurrentFolder,
+  clearError,
+  clearSuccess
+} from '@/store/slices/uploadSlice';
 import LoadingSpinner from '@/components/Global/LoadingSpinner';
 import ParticlesBackground from '@/components/Global/Particles';
 import { useRouter } from 'next/router';
@@ -13,106 +21,11 @@ import {
   IconChevronRight,
   IconX,
   IconTrash,
-  IconPlus
+  IconPlus,
+  IconCheck
 } from '@tabler/icons-react';
 import { FolderEntity, DocumentEntity } from '@/types/ingestion';
 import { FileUpload } from '@/components/Upload';
-
-// Mock data simulating the folder structure
-const mockRootFolder: FolderEntity = {
-  id: 'root',
-  name: '/',
-  childrenFolders: [
-    {
-      id: 'folder1',
-      name: 'Documents',
-      childrenFolders: [
-        {
-          id: 'folder2',
-          name: 'Reports',
-          childrenDocuments: [
-            {
-              id: 'doc1',
-              name: 'Q4_Report.pdf',
-              url: '/documents/reports/Q4_Report.pdf',
-              contentType: 'application/pdf'
-            },
-            {
-              id: 'doc2',
-              name: 'Financial_Analysis.xlsx',
-              url: '/documents/reports/Financial_Analysis.xlsx',
-              contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            }
-          ]
-        },
-        {
-          id: 'folder3',
-          name: 'Presentations',
-          childrenDocuments: [
-            {
-              id: 'doc3',
-              name: 'Company_Overview.pptx',
-              url: '/documents/presentations/Company_Overview.pptx',
-              contentType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-            }
-          ]
-        }
-      ],
-      childrenDocuments: [
-        {
-          id: 'doc4',
-          name: 'README.md',
-          url: '/documents/README.md',
-          contentType: 'text/markdown'
-        }
-      ]
-    },
-    {
-      id: 'folder4',
-      name: 'Images',
-      childrenDocuments: [
-        {
-          id: 'doc5',
-          name: 'logo.png',
-          url: '/images/logo.png',
-          contentType: 'image/png'
-        },
-        {
-          id: 'doc6',
-          name: 'banner.jpg',
-          url: '/images/banner.jpg',
-          contentType: 'image/jpeg'
-        }
-      ]
-    },
-    {
-      id: 'folder5',
-      name: 'Code',
-      childrenFolders: [
-        {
-          id: 'folder6',
-          name: 'Frontend',
-          childrenDocuments: [
-            {
-              id: 'doc7',
-              name: 'App.tsx',
-              url: '/code/frontend/App.tsx',
-              contentType: 'text/typescript'
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  childrenDocuments: [
-    {
-      id: 'doc8',
-      name: 'Welcome.txt',
-      url: '/Welcome.txt',
-      contentType: 'text/plain'
-    }
-  ]
-};
 
 interface BreadcrumbItem {
   id: string;
@@ -123,11 +36,13 @@ const AdminUpload: React.FC = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user, isAdmin, loading } = useAppSelector((state) => state.auth);
+  const { rootFolder, currentFolder, loading: uploadLoading, error, success } = useAppSelector((state) => state.upload);
   
-  const [currentFolder, setCurrentFolder] = useState<FolderEntity>(mockRootFolder);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: 'root', name: '/' }]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [newFolderName, setNewFolderName] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -141,9 +56,35 @@ const AdminUpload: React.FC = () => {
     }
   }, [loading, user, isAdmin, router]);
 
+  useEffect(() => {
+    if (user && isAdmin && !rootFolder) {
+      dispatch(fetchRootFolder());
+    }
+  }, [dispatch, user, isAdmin, rootFolder]);
+
+  useEffect(() => {
+    if (currentFolder) {
+      // Update breadcrumbs when current folder changes
+      const path = buildPathToFolder(currentFolder.id, rootFolder!);
+      if (path) {
+        setBreadcrumbs(path);
+      }
+    }
+  }, [currentFolder, rootFolder]);
+
+  // Auto-clear success messages after 3 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        dispatch(clearSuccess());
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [success, dispatch]);
+
   const navigateToFolder = (folder: FolderEntity) => {
-    setCurrentFolder(folder);
-    setBreadcrumbs(prev => [...prev, { id: folder.id, name: folder.name }]);
+    dispatch(setCurrentFolder(folder));
     setSelectedItems([]);
   };
 
@@ -188,14 +129,14 @@ const AdminUpload: React.FC = () => {
 
   const navigateToBreadcrumb = (index: number) => {
     if (index === 0) {
-      setCurrentFolder(mockRootFolder);
+      dispatch(setCurrentFolder(rootFolder!));
       setBreadcrumbs([{ id: 'root', name: '/' }]);
     } else {
       const targetBreadcrumb = breadcrumbs[index];
-      const targetFolder = findFolderById(targetBreadcrumb.id, mockRootFolder);
+      const targetFolder = findFolderById(targetBreadcrumb.id, rootFolder!);
       
       if (targetFolder) {
-        setCurrentFolder(targetFolder);
+        dispatch(setCurrentFolder(targetFolder));
         setBreadcrumbs(breadcrumbs.slice(0, index + 1));
       }
     }
@@ -233,18 +174,48 @@ const AdminUpload: React.FC = () => {
     );
   };
 
-  const handleDeleteSelected = () => {
-    // In real implementation, dispatch delete action
-    console.log('Deleting items:', selectedItems);
-    setSelectedItems([]);
+  const handleDeleteSelected = async () => {
+    if (selectedItems.length === 0) return;
+    
+    dispatch(clearSuccess()); // Clear any existing success messages
+    try {
+      await dispatch(deleteItems(selectedItems)).unwrap();
+      setSelectedItems([]);
+      // For mock data, we don't need to refresh since it's static
+      console.log('Mock deletion completed for items:', selectedItems);
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
   };
 
-  if (loading) {
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    
+    dispatch(clearSuccess()); // Clear any existing success messages
+    try {
+      await dispatch(createFolder({
+        name: newFolderName.trim(),
+        parentFolderId: currentFolder?.id || 'root'
+      })).unwrap();
+      setNewFolderName('');
+      setIsCreateFolderModalOpen(false);
+      // For mock data, we don't need to refresh since it's static
+      console.log('Mock folder creation completed:', newFolderName.trim());
+    } catch (error) {
+      console.error('Create folder failed:', error);
+    }
+  };
+
+  if (loading || uploadLoading) {
     return <LoadingSpinner />;
   }
 
   if (!user || !isAdmin) {
     return null;
+  }
+
+  if (!currentFolder) {
+    return <LoadingSpinner />;
   }
 
   return (
@@ -340,6 +311,14 @@ const AdminUpload: React.FC = () => {
                 >
                   <IconPlus className="w-4 h-4" />
                   <span>Upload Files</span>
+                </button>
+                
+                <button
+                  onClick={() => setIsCreateFolderModalOpen(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <IconFolder className="w-4 h-4" />
+                  <span>New Folder</span>
                 </button>
                 
                 {selectedItems.length > 0 && (
@@ -451,7 +430,7 @@ const AdminUpload: React.FC = () => {
                   <IconX className="w-5 h-5" />
                 </button>
               </div>
-              <FileUpload className="w-full" />
+              <FileUpload className="w-full" parentFolderId={currentFolder.id} />
               
               {/* Current Folder Display */}
               <div className="mt-6 pt-4 border-t border-white/10 text-center">
@@ -462,6 +441,99 @@ const AdminUpload: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Create Folder Modal */}
+        {isCreateFolderModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCreateFolderModalOpen(false)} />
+            <div className="relative bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 w-full max-w-md">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">Create New Folder</h2>
+                <button
+                  onClick={() => setIsCreateFolderModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-500/20 rounded-lg transition-all duration-200"
+                >
+                  <IconX className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-blue-200 mb-2">
+                    Folder Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Enter folder name..."
+                    className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="text-sm text-blue-200/70">
+                  Current folder: <span className="text-blue-300 font-mono">
+                    {breadcrumbs.length === 1 ? '/' : '/' + breadcrumbs.slice(1).map(crumb => crumb.name).join('/')}
+                  </span>
+                </div>
+                
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    onClick={() => setIsCreateFolderModalOpen(false)}
+                    className="flex-1 px-4 py-3 bg-gray-600/20 text-gray-300 border border-gray-500/30 rounded-xl hover:bg-gray-600/30 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateFolder}
+                    disabled={!newFolderName.trim()}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Create Folder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error/Success Messages */}
+        {(error || success) && (
+          <div className="fixed bottom-4 right-4 z-50 max-w-md">
+            {error && (
+              <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start space-x-3 backdrop-blur-sm">
+                <IconX className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-300">Error</p>
+                  <p className="text-xs text-red-200/80 mt-1">{error}</p>
+                </div>
+                <button
+                  onClick={() => dispatch(clearError())}
+                  className="text-red-400 hover:text-red-300 p-1 hover:bg-red-500/10 rounded-lg transition-colors duration-200"
+                >
+                  <IconX className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            
+            {success && (
+              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-start space-x-3 backdrop-blur-sm">
+                <IconCheck className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-green-300">Success</p>
+                  <p className="text-xs text-green-200/80 mt-1">{success}</p>
+                </div>
+                <button
+                  onClick={() => dispatch(clearSuccess())}
+                  className="text-green-400 hover:text-green-300 p-1 hover:bg-green-500/10 rounded-lg transition-colors duration-200"
+                >
+                  <IconX className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
