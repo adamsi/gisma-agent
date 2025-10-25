@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
-import iaf.ofek.gisma.ai.dto.DocumentDTO;
+import iaf.ofek.gisma.ai.dto.ingestion.DocumentDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
 import iaf.ofek.gisma.ai.entity.ingestion.FolderEntity;
 import iaf.ofek.gisma.ai.repository.DocumentEntityRepository;
@@ -16,19 +16,23 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.validation.Valid;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Component
 @Log4j2
+@Validated
 public class DocumentProcessor {
 
     public static final String USER_ID = "userId";
@@ -62,7 +66,7 @@ public class DocumentProcessor {
     }
 
     @Async
-    public CompletableFuture<DocumentEntity> processFile(DocumentDTO documentInput, String userId) {
+    public CompletableFuture<DocumentEntity> processFile(@Valid DocumentDTO documentInput, String userId) {
         DocumentEntity document = documentRepository.findById(documentInput.getDocumentId())
                 .orElseGet(()-> {
                     FolderEntity folder = folderService.getFileParentFolder(documentInput.getParentFolderId());
@@ -112,12 +116,14 @@ public class DocumentProcessor {
     }
 
     @Transactional
-    public Mono<Void> deleteDocuments(List<DocumentEntity> documents) {
-        return Flux.fromIterable(documents)
-                .flatMap(document ->
+    public Mono<Void> deleteDocuments(List<UUID> ids) {
+        return Flux.fromIterable(ids)
+                .flatMap(id ->
                         ReactiveUtils.runBlockingAsync(() -> {
+                            DocumentEntity document = documentRepository.findById(id)
+                                    .orElseThrow(()-> new IllegalArgumentException("failed to find document with id: " + id));
                             documentVectorStore.delete("%s == %s".formatted(DOCUMENT_ID, document.getId()));
-                            documentRepository.deleteAll(documents);
+                            documentRepository.delete(document);
                             s3Service.deleteFile(document.getUrl());
                             return true;
                         })

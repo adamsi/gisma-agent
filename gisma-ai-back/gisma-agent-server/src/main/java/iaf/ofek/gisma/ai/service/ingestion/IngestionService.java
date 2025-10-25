@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
-import iaf.ofek.gisma.ai.dto.DocumentDTO;
+import iaf.ofek.gisma.ai.dto.ingestion.DocumentDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
 import iaf.ofek.gisma.ai.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -47,8 +48,8 @@ public class IngestionService {
                 .toList();
     }
 
-    public Mono<Void> deleteFiles(List<DocumentEntity> documentEntities) {
-        return documentProcessor.deleteDocuments(documentEntities);
+    public Mono<Void> deleteFiles(List<UUID> ids) {
+        return documentProcessor.deleteDocuments(ids);
     }
 
 

@@ -1,16 +1,23 @@
-package iaf.ofek.gisma.ai.dto;
+package iaf.ofek.gisma.ai.dto.ingestion;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 public class DocumentDTO {
+
+    @NotNull(message = "can't be null")
     private UUID documentId;
+
     private UUID parentFolderId;
+
+    @NotNull(message = "can't be null")
     private MultipartFile file;
+
 }
 

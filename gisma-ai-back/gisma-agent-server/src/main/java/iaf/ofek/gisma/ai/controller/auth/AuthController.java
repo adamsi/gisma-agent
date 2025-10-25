@@ -1,4 +1,4 @@
-package iaf.ofek.gisma.ai.controller;
+package iaf.ofek.gisma.ai.controller.auth;
 
 import iaf.ofek.gisma.ai.dto.auth.LoginUserDto;
 import iaf.ofek.gisma.ai.dto.auth.RegisterUserDto;
@@ -10,8 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -20,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Validated
 public class AuthController {
 
     private final AuthService authService;

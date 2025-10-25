@@ -1,28 +1,27 @@
-package iaf.ofek.gisma.ai.controller;
+package iaf.ofek.gisma.ai.controller.ingestion;
 
-import iaf.ofek.gisma.ai.dto.DocumentDTO;
+import iaf.ofek.gisma.ai.dto.ingestion.DocumentDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
-import iaf.ofek.gisma.ai.entity.ingestion.FolderEntity;
-import iaf.ofek.gisma.ai.service.ingestion.FolderEntityService;
 import iaf.ofek.gisma.ai.service.ingestion.IngestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
-@RequestMapping("/documents")
+@RequestMapping("/ingestion/documents")
 @RequiredArgsConstructor
+@Validated
 public class DocumentController {
 
     private final IngestionService ingestionService;
-
-    private final FolderEntityService folderEntityService;
 
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
@@ -37,14 +36,8 @@ public class DocumentController {
 
     @PostMapping("/delete")
     @PreAuthorize("hasRole('ADMIN')")
-    public Mono<Void> delete(@RequestBody List<DocumentEntity> documents) {
-         return ingestionService.deleteFiles(documents);
-    }
-
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public FolderEntity getRootFolder() { // TODO: make reactive
-        return folderEntityService.getRootFolder();
+    public Mono<Void> delete(@RequestBody List<UUID> ids) {
+        return ingestionService.deleteFiles(ids);
     }
 
 }

@@ -1,4 +1,4 @@
-package iaf.ofek.gisma.ai.controller;
+package iaf.ofek.gisma.ai.controller.agent;
 
 import iaf.ofek.gisma.ai.agent.orchestrator.AgentOrchestrator;
 import lombok.RequiredArgsConstructor;
