@@ -5,8 +5,8 @@ import iaf.ofek.gisma.ai.entity.GismaAiEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "folders")
@@ -26,9 +26,9 @@ public class FolderEntity extends GismaAiEntity {
     private FolderEntity parentFolder;
 
     @OneToMany(mappedBy = "parentFolder", cascade = CascadeType.ALL)
-    private Set<FolderEntity> childrenFolders = new HashSet<>();
+    private List<FolderEntity> childrenFolders = new ArrayList<>();
 
     @OneToMany(mappedBy = "parentFolder", cascade = CascadeType.ALL)
-    private Set<DocumentEntity> childrenDocuments = new HashSet<>();
+    private List<DocumentEntity> childrenDocuments = new ArrayList<>();
 
 }

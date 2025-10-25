@@ -17,8 +17,13 @@ public class FolderEntityService {
     private final FolderEntityRepository folderEntityRepository;
 
     public FolderEntity getRootFolder() {
-        return folderEntityRepository.findRootFolderWithChildren()
+        FolderEntity rootFolder = folderEntityRepository.findRootFolderWithChildrenFolders()
                 .orElseThrow(() -> new EntityNotFoundException("root folder not found"));
+
+        folderEntityRepository.findRootFolderWithChildrenDocuments()
+                .ifPresent(f -> rootFolder.setChildrenDocuments(f.getChildrenDocuments()));
+
+        return rootFolder;
     }
 
     public FolderEntity getFileParentFolder(UUID folderId) {
