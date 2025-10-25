@@ -51,6 +51,12 @@ public class UserService {
     }
 
     @Transactional(readOnly=true)
+    public User getUser(String userIdentifier) {
+        return findUserByUsernameOrEmail(userIdentifier)
+                .orElseThrow(()-> new EntityNotFoundException("User '%s' not found".formatted(userIdentifier)));
+    }
+
+    @Transactional(readOnly=true)
     public User getUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format("User with id %s not found", userId)));
