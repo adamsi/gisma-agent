@@ -13,7 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class DocumentDTO {
 
-    @NotNull(message = "can't be null")
     private UUID documentId;
 
     private UUID parentFolderId;

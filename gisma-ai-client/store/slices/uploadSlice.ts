@@ -12,6 +12,7 @@ interface UploadState {
   rootFolder: FolderEntity | null;
   currentFolder: FolderEntity | null;
   loading: boolean;
+  deleting: boolean;
 }
 
 const initialState: UploadState = {
@@ -23,19 +24,32 @@ const initialState: UploadState = {
   rootFolder: null,
   currentFolder: null,
   loading: false,
+  deleting: false,
 };
 
 export const uploadFiles = createAsyncThunk(
   'upload/uploadFiles',
   async ({ files, parentFolderId }: { files: File[]; parentFolderId: string }, { rejectWithValue }) => {
     try {
-      const documents: DocumentDTO[] = files.map(file => ({
+      const formData = new FormData();
+      
+      // Add all files
+      files.forEach(file => formData.append('files', file));
+      
+      // Create DocumentDTO array
+      const documents = files.map(() => ({
         documentId: crypto.randomUUID(),
-        parentFolderId,
-        file
+        parentFolderId
       }));
+      
+      // Add documents as JSON blob with explicit filename
+      const documentsBlob = new Blob([JSON.stringify(documents)], { type: 'application/json' });
+      formData.append('documents', documentsBlob, 'documents');
 
-      const response = await api.post('/ingestion/documents/upload', documents, {
+      const response = await api.post('/ingestion/documents/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
         withCredentials: true,
         onUploadProgress: (progressEvent) => {
           const progress = Math.round(
@@ -80,11 +94,27 @@ export const createFolder = createAsyncThunk(
   }
 );
 
-export const deleteItems = createAsyncThunk(
-  'upload/deleteItems',
+export const deleteDocuments = createAsyncThunk(
+  'upload/deleteDocuments',
   async (ids: string[], { rejectWithValue }) => {
     try {
-      await api.post('/ingestion/documents/delete', ids, {
+      await api.delete('/ingestion/documents/delete', {
+        data: ids,
+        withCredentials: true,
+      });
+      return ids;
+    } catch (error) {
+      return rejectWithValue(handleAxiosError(error));
+    }
+  }
+);
+
+export const deleteFolders = createAsyncThunk(
+  'upload/deleteFolders',
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await api.delete('/ingestion/folders/delete', {
+        data: ids,
         withCredentials: true,
       });
       return ids;
@@ -171,20 +201,32 @@ const uploadSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      // Delete items
-      .addCase(deleteItems.pending, (state) => {
-        state.loading = true;
+      // Delete documents
+      .addCase(deleteDocuments.pending, (state) => {
+        state.deleting = true;
         state.error = null;
       })
-      .addCase(deleteItems.fulfilled, (state, action) => {
-        state.loading = false;
-        state.success = `${action.payload.length} item(s) deleted successfully!`;
+      .addCase(deleteDocuments.fulfilled, (state, action) => {
+        state.deleting = false;
+        state.success = `${action.payload.length} document(s) deleted successfully!`;
         state.error = null;
-        // Refresh the folder structure after deletion
-        // In a real app, you might want to refetch or update locally
       })
-      .addCase(deleteItems.rejected, (state, action) => {
-        state.loading = false;
+      .addCase(deleteDocuments.rejected, (state, action) => {
+        state.deleting = false;
+        state.error = action.payload as string;
+      })
+      // Delete folders
+      .addCase(deleteFolders.pending, (state) => {
+        state.deleting = true;
+        state.error = null;
+      })
+      .addCase(deleteFolders.fulfilled, (state, action) => {
+        state.deleting = false;
+        state.success = `${action.payload.length} folder(s) deleted successfully!`;
+        state.error = null;
+      })
+      .addCase(deleteFolders.rejected, (state, action) => {
+        state.deleting = false;
         state.error = action.payload as string;
       });
   },

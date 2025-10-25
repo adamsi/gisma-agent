@@ -1,8 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '@/store/hooks';
-import { IconUpload, IconX, IconFile, IconCheck, IconAlertCircle } from '@tabler/icons-react';
-import { uploadFiles, clearError, clearSuccess, clearUploadState, fetchRootFolder } from '@/store/slices/uploadSlice';
+import { IconUpload, IconX, IconFile } from '@tabler/icons-react';
+import { uploadFiles, fetchRootFolder } from '@/store/slices/uploadSlice';
 import { RootState } from '@/store';
 
 interface FileUploadProps {
@@ -12,7 +12,7 @@ interface FileUploadProps {
 
 const FileUpload: React.FC<FileUploadProps> = ({ className = '', parentFolderId }) => {
   const dispatch = useAppDispatch();
-  const { uploading, uploadProgress, error, success } = useSelector((state: RootState) => state.upload);
+  const { uploading, uploadProgress } = useSelector((state: RootState) => state.upload);
   
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -53,16 +53,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ className = '', parentFolderId 
   const handleUpload = useCallback(async () => {
     if (selectedFiles.length === 0) return;
     
-    dispatch(clearError());
-    dispatch(clearSuccess()); // Clear any existing success messages
-    
     try {
       await dispatch(uploadFiles({ files: selectedFiles, parentFolderId })).unwrap();
       setSelectedFiles([]);
       // Refresh the folder structure after upload
       dispatch(fetchRootFolder());
     } catch (error: unknown) {
-      // Error is handled by the slice
+      // Error is handled by the toast in parent component
       console.error('Upload failed:', error);
     }
   }, [dispatch, selectedFiles, parentFolderId]);
@@ -214,38 +211,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ className = '', parentFolderId 
         </div>
       )}
 
-      {/* Messages */}
-      {error && (
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start space-x-3 backdrop-blur-sm">
-          <IconAlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-red-300">Upload Failed</p>
-            <p className="text-xs text-red-200/80 mt-1">{error}</p>
-          </div>
-          <button
-            onClick={() => dispatch(clearError())}
-            className="text-red-400 hover:text-red-300 p-1 hover:bg-red-500/10 rounded-lg transition-colors duration-200"
-          >
-            <IconX className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {success && (
-        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-start space-x-3 backdrop-blur-sm">
-          <IconCheck className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-green-300">Upload Successful</p>
-            <p className="text-xs text-green-200/80 mt-1">{success}</p>
-          </div>
-          <button
-            onClick={() => dispatch(clearSuccess())}
-            className="text-green-400 hover:text-green-300 p-1 hover:bg-green-500/10 rounded-lg transition-colors duration-200"
-          >
-            <IconX className="w-4 h-4" />
-          </button>
-        </div>
-      )}
     </div>
   );
 };

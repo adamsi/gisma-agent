@@ -11,6 +11,6 @@ export interface DocumentEntity {
   id: string;
   url: string;
   name: string;
-  contentType: string;
+  contentType?: string;
   parentFolder?: FolderEntity;
 }

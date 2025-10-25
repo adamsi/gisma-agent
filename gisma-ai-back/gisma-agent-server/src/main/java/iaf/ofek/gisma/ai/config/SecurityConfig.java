@@ -38,10 +38,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/me", "/auth/refresh-token").authenticated()
+                        .requestMatchers("/auth/me").authenticated()
                         .requestMatchers("/auth/**", "/test").permitAll()
                         .anyRequest().authenticated())
-                .exceptionHandling(ex -> ex // this shit handler catches security exception,
+                .exceptionHandling(ex -> ex// this shit handler catches security exception,
                         // business exceptions caught by GlobalExceptionHandler
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

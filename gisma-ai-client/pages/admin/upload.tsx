@@ -4,7 +4,8 @@ import { getUser } from '@/store/slices/authSlice';
 import { 
   fetchRootFolder, 
   createFolder, 
-  deleteItems, 
+  deleteDocuments,
+  deleteFolders,
   setCurrentFolder,
   clearError,
   clearSuccess
@@ -36,7 +37,7 @@ const AdminUpload: React.FC = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user, isAdmin, loading } = useAppSelector((state) => state.auth);
-  const { rootFolder, currentFolder, loading: uploadLoading, error, success } = useAppSelector((state) => state.upload);
+  const { rootFolder, currentFolder, loading: uploadLoading, deleting, error, success } = useAppSelector((state) => state.upload);
   
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: 'root', name: '/' }]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -191,7 +192,11 @@ const AdminUpload: React.FC = () => {
     setSelectedItems([]);
   };
 
-  const getFileIcon = (contentType: string) => {
+  const getFileIcon = (contentType: string | null | undefined) => {
+    if (!contentType) {
+      return <IconFile className="w-6 h-6 text-blue-300" />;
+    }
+    
     if (contentType.startsWith('image/')) {
       return <IconFile className="w-6 h-6 text-green-400" />;
     } else if (contentType.includes('pdf')) {
@@ -232,13 +237,37 @@ const AdminUpload: React.FC = () => {
       return newSelection;
     });
   };
+  
+  // Update selection mode based on selected items
+  useEffect(() => {
+    if (selectedItems.length > 0 && !isSelectionMode) {
+      setIsSelectionMode(true);
+    } else if (selectedItems.length === 0 && isSelectionMode) {
+      setIsSelectionMode(false);
+    }
+  }, [selectedItems, isSelectionMode]);
 
   const handleDeleteSelected = async () => {
-    if (selectedItems.length === 0) return;
+    if (selectedItems.length === 0 || !currentFolder) return;
     
     dispatch(clearSuccess()); // Clear any existing success messages
     try {
-      await dispatch(deleteItems(selectedItems)).unwrap();
+      // Separate selected items into documents and folders
+      const selectedDocuments = selectedItems.filter(itemId => 
+        currentFolder.childrenDocuments?.some(doc => doc.id === itemId)
+      );
+      const selectedFolders = selectedItems.filter(itemId => 
+        currentFolder.childrenFolders?.some(folder => folder.id === itemId)
+      );
+      
+      // Delete documents and folders separately
+      if (selectedDocuments.length > 0) {
+        await dispatch(deleteDocuments(selectedDocuments)).unwrap();
+      }
+      if (selectedFolders.length > 0) {
+        await dispatch(deleteFolders(selectedFolders)).unwrap();
+      }
+      
       setSelectedItems([]);
       setIsSelectionMode(false);
       // Refresh the folder structure after deletion
@@ -307,16 +336,12 @@ const AdminUpload: React.FC = () => {
     setContextMenu({ ...contextMenu, visible: false });
   };
 
-  if (loading || uploadLoading) {
-    return <LoadingSpinner />;
-  }
-
   if (!user || !isAdmin) {
     return null;
   }
 
   if (!currentFolder) {
-    return <LoadingSpinner />;
+    return null;
   }
 
   return (
@@ -425,10 +450,20 @@ const AdminUpload: React.FC = () => {
                 {selectedItems.length > 0 && (
                   <button
                     onClick={handleDeleteSelected}
-                    className="flex items-center space-x-2 px-4 py-2 bg-red-600/20 text-red-300 border border-red-500/30 rounded-xl hover:bg-red-600/30 transition-all duration-200"
+                    disabled={deleting}
+                    className="flex items-center space-x-2 px-4 py-2 bg-red-600/20 text-red-300 border border-red-500/30 rounded-xl hover:bg-red-600/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <IconTrash className="w-4 h-4" />
-                    <span>Delete ({selectedItems.length})</span>
+                    {deleting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <IconTrash className="w-4 h-4" />
+                        <span>Delete ({selectedItems.length})</span>
+                      </>
+                    )}
                   </button>
                 )}
               </div>
@@ -612,16 +647,24 @@ const AdminUpload: React.FC = () => {
                 <div className="flex space-x-3 pt-4">
                   <button
                     onClick={() => setIsCreateFolderModalOpen(false)}
-                    className="flex-1 px-4 py-3 bg-gray-600/20 text-gray-300 border border-gray-500/30 rounded-xl hover:bg-gray-600/30 transition-all duration-200"
+                    disabled={uploadLoading}
+                    className="flex-1 px-4 py-3 bg-gray-600/20 text-gray-300 border border-gray-500/30 rounded-xl hover:bg-gray-600/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleCreateFolder}
-                    disabled={!newFolderName.trim()}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!newFolderName.trim() || uploadLoading}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    Create Folder
+                    {uploadLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      <span>Create Folder</span>
+                    )}
                   </button>
                 </div>
               </div>

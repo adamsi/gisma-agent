@@ -26,4 +26,8 @@ public interface FolderEntityRepository extends JpaRepository<FolderEntity, UUID
             """)
     Optional<FolderEntity> findRootFolderWithChildrenDocuments();
 
+
+    @Query("SELECT f FROM FolderEntity f WHERE f.name = '/'")
+    Optional<FolderEntity> findRootFolder();
+
 }
