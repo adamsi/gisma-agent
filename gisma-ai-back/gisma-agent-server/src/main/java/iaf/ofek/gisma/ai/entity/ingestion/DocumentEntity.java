@@ -14,8 +14,10 @@ import lombok.*;
 @Builder
 public class DocumentEntity extends GismaAiEntity {
 
+    @Column
     private String url;
 
+    @Column
     private String name;
 
     @Column(name = "content_type")

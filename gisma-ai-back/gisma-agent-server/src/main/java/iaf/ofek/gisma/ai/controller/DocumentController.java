@@ -43,8 +43,8 @@ public class DocumentController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public List<FolderEntity> getSubRootFolders() { // TODO: make reactive
-        return folderEntityService.getSubRootFolders();
+    public FolderEntity getRootFolder() { // TODO: make reactive
+        return folderEntityService.getRootFolder();
     }
 
 }

@@ -15,13 +15,14 @@ public class FolderEntityService {
 
     private final FolderEntityRepository folderEntityRepository;
 
-    public List<FolderEntity> getSubRootFolders() {
-        return folderEntityRepository.findAllChildrenOfRootWithChildren();
+    public FolderEntity getRootFolder() {
+        return folderEntityRepository.findRootFolderWithChildren()
+                .orElseThrow(()-> new EntityNotFoundException("root folder not found"));
     }
 
     public FolderEntity getFileParentFolder(UUID folderId) {
         if (folderId == null) {
-            return folderEntityRepository.findRootFolder();
+            return getRootFolder();
         }
 
         return folderEntityRepository.findById(folderId)

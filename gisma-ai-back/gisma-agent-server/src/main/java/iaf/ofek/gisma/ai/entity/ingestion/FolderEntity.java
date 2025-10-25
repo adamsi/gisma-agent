@@ -20,6 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 public class FolderEntity extends GismaAiEntity {
 
+    @Column
     private String name;
 
     @ManyToOne
