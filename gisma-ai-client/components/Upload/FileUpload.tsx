@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '@/store/hooks';
 import { IconUpload, IconX, IconFile, IconCheck, IconAlertCircle } from '@tabler/icons-react';
-import { uploadFiles, clearError, clearSuccess, clearUploadState } from '@/store/slices/uploadSlice';
+import { uploadFiles, clearError, clearSuccess, clearUploadState, fetchRootFolder } from '@/store/slices/uploadSlice';
 import { RootState } from '@/store';
 
 interface FileUploadProps {
@@ -59,6 +59,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ className = '', parentFolderId 
     try {
       await dispatch(uploadFiles({ files: selectedFiles, parentFolderId })).unwrap();
       setSelectedFiles([]);
+      // Refresh the folder structure after upload
+      dispatch(fetchRootFolder());
     } catch (error: unknown) {
       // Error is handled by the slice
       console.error('Upload failed:', error);

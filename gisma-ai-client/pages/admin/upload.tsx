@@ -43,6 +43,20 @@ const AdminUpload: React.FC = () => {
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [newFolderName, setNewFolderName] = useState('');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    itemId: string;
+    itemType: 'folder' | 'file';
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    itemId: '',
+    itemType: 'file'
+  });
 
   useEffect(() => {
     if (!user) {
@@ -83,9 +97,43 @@ const AdminUpload: React.FC = () => {
     }
   }, [success, dispatch]);
 
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        closeContextMenu();
+      }
+    };
+
+    if (contextMenu.visible) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu.visible]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape to exit selection mode
+      if (e.key === 'Escape') {
+        if (isSelectionMode) {
+          setSelectedItems([]);
+          setIsSelectionMode(false);
+        }
+        if (contextMenu.visible) {
+          closeContextMenu();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSelectionMode, contextMenu.visible]);
+
   const navigateToFolder = (folder: FolderEntity) => {
     dispatch(setCurrentFolder(folder));
     setSelectedItems([]);
+    setIsSelectionMode(false);
   };
 
   const findFolderById = (folderId: string, folder: FolderEntity): FolderEntity | null => {
@@ -167,11 +215,22 @@ const AdminUpload: React.FC = () => {
   };
 
   const handleItemSelect = (itemId: string) => {
-    setSelectedItems(prev => 
-      prev.includes(itemId) 
+    setSelectedItems(prev => {
+      const newSelection = prev.includes(itemId) 
         ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
-    );
+        : [...prev, itemId];
+      
+      // Enter selection mode when any item is selected
+      if (newSelection.length > 0 && !isSelectionMode) {
+        setIsSelectionMode(true);
+      }
+      // Exit selection mode when no items are selected
+      else if (newSelection.length === 0 && isSelectionMode) {
+        setIsSelectionMode(false);
+      }
+      
+      return newSelection;
+    });
   };
 
   const handleDeleteSelected = async () => {
@@ -181,8 +240,9 @@ const AdminUpload: React.FC = () => {
     try {
       await dispatch(deleteItems(selectedItems)).unwrap();
       setSelectedItems([]);
-      // For mock data, we don't need to refresh since it's static
-      console.log('Mock deletion completed for items:', selectedItems);
+      setIsSelectionMode(false);
+      // Refresh the folder structure after deletion
+      dispatch(fetchRootFolder());
     } catch (error) {
       console.error('Delete failed:', error);
     }
@@ -199,11 +259,52 @@ const AdminUpload: React.FC = () => {
       })).unwrap();
       setNewFolderName('');
       setIsCreateFolderModalOpen(false);
-      // For mock data, we don't need to refresh since it's static
-      console.log('Mock folder creation completed:', newFolderName.trim());
+      // Refresh the folder structure after creation
+      dispatch(fetchRootFolder());
     } catch (error) {
       console.error('Create folder failed:', error);
     }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, itemId: string, itemType: 'folder' | 'file') => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      itemId,
+      itemType
+    });
+  };
+
+  const handleContextMenuAction = (action: string) => {
+    const { itemId, itemType } = contextMenu;
+    
+    switch (action) {
+      case 'delete':
+        setSelectedItems([itemId]);
+        handleDeleteSelected();
+        break;
+      case 'select':
+        handleItemSelect(itemId);
+        break;
+      case 'open':
+        if (itemType === 'folder') {
+          const folder = currentFolder?.childrenFolders?.find(f => f.id === itemId);
+          if (folder) {
+            navigateToFolder(folder);
+          }
+        }
+        break;
+    }
+    
+    setContextMenu({ ...contextMenu, visible: false });
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu({ ...contextMenu, visible: false });
   };
 
   if (loading || uploadLoading) {
@@ -334,6 +435,11 @@ const AdminUpload: React.FC = () => {
               
               <div className="text-sm text-blue-200/70">
                 {currentFolder.childrenFolders?.length || 0} folders, {currentFolder.childrenDocuments?.length || 0} files
+                {isSelectionMode && (
+                  <span className="ml-2 px-2 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs">
+                    Selection Mode • Press Esc to exit
+                  </span>
+                )}
               </div>
             </div>
 
@@ -343,8 +449,19 @@ const AdminUpload: React.FC = () => {
               {currentFolder.childrenFolders?.map((folder) => (
                 <div
                   key={folder.id}
-                  className="group relative bg-black/30 backdrop-blur-xl rounded-2xl p-4 border border-white/10 hover:border-blue-400/30 transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl hover:shadow-blue-500/10"
-                  onClick={() => navigateToFolder(folder)}
+                  className={`group relative bg-black/30 backdrop-blur-xl rounded-2xl p-4 border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl hover:shadow-blue-500/10 ${
+                    selectedItems.includes(folder.id)
+                      ? 'border-blue-400/50 bg-blue-500/10'
+                      : 'border-white/10 hover:border-blue-400/30'
+                  }`}
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      handleItemSelect(folder.id);
+                    } else {
+                      navigateToFolder(folder);
+                    }
+                  }}
+                  onContextMenu={(e) => handleContextMenu(e, folder.id, 'folder')}
                 >
                   <div className="flex flex-col items-center text-center space-y-3">
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-indigo-500/30 transition-all duration-300">
@@ -359,6 +476,13 @@ const AdminUpload: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                  
+                  {/* Selection indicator */}
+                  {selectedItems.includes(folder.id) && (
+                    <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full" />
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -371,7 +495,12 @@ const AdminUpload: React.FC = () => {
                       ? 'border-blue-400/50 bg-blue-500/10'
                       : 'border-white/10 hover:border-blue-400/30'
                   }`}
-                  onClick={() => handleItemSelect(document.id)}
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      handleItemSelect(document.id);
+                    }
+                  }}
+                  onContextMenu={(e) => handleContextMenu(e, document.id, 'file')}
                 >
                   <div className="flex flex-col items-center text-center space-y-3">
                     <div className="w-12 h-12 bg-gradient-to-br from-gray-500/20 to-gray-600/20 rounded-xl flex items-center justify-center group-hover:from-gray-500/30 group-hover:to-gray-600/30 transition-all duration-300">
@@ -496,6 +625,48 @@ const AdminUpload: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Context Menu */}
+        {contextMenu.visible && (
+          <div
+            className="fixed z-50 bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl py-2 min-w-[160px]"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-1">
+              {contextMenu.itemType === 'folder' && (
+                <button
+                  onClick={() => handleContextMenuAction('open')}
+                  className="w-full px-4 py-2 text-left text-white hover:bg-blue-500/20 transition-colors duration-200 flex items-center space-x-3"
+                >
+                  <IconFolder className="w-4 h-4 text-blue-400" />
+                  <span>Open</span>
+                </button>
+              )}
+              
+              <button
+                onClick={() => handleContextMenuAction('select')}
+                className="w-full px-4 py-2 text-left text-white hover:bg-blue-500/20 transition-colors duration-200 flex items-center space-x-3"
+              >
+                <IconCheck className="w-4 h-4 text-green-400" />
+                <span>{selectedItems.includes(contextMenu.itemId) ? 'Deselect' : 'Select'}</span>
+              </button>
+              
+              <div className="border-t border-white/10 my-1" />
+              
+              <button
+                onClick={() => handleContextMenuAction('delete')}
+                className="w-full px-4 py-2 text-left text-red-300 hover:bg-red-500/20 transition-colors duration-200 flex items-center space-x-3"
+              >
+                <IconTrash className="w-4 h-4 text-red-400" />
+                <span>Delete</span>
+              </button>
             </div>
           </div>
         )}
