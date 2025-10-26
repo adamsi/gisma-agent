@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { api, handleAxiosError } from '@/utils/api';
-import { DocumentDTO, FolderDTO } from '@/types/ingestion';
+import { CreateFolderDTO } from '@/types/ingestion';
 import { FolderEntity, DocumentEntity } from '@/types/ingestion';
 
 interface UploadState {
@@ -27,25 +27,24 @@ const initialState: UploadState = {
   deleting: false,
 };
 
+// Create new documents
 export const uploadFiles = createAsyncThunk(
   'upload/uploadFiles',
-  async ({ files, parentFolderId, documentId }: { files: File[]; parentFolderId: string; documentId?: string }, { rejectWithValue }) => {
+  async ({ files, parentFolderId }: { files: File[]; parentFolderId: string }, { rejectWithValue }) => {
     try {
       const formData = new FormData();
       
-      // Add all files
+      // Add all files with the same key 'files' - Spring Boot will collect them into a List<MultipartFile>
       files.forEach(file => formData.append('files', file));
       
-      const documents = files.map(() => ({
-        documentId: documentId || null,
-        parentFolderId
-      }));
-      
-      // Add documents as JSON blob with explicit filename
-      const documentsBlob = new Blob([JSON.stringify(documents)], { type: 'application/json' });
-      formData.append('documents', documentsBlob, 'documents');
+      // Add parentFolderIds - Spring Boot will collect multiple parts with the same key into a List<UUID>
+      // Send each UUID as a separate part as plain text
+      const folderId = parentFolderId === 'root' ? 'root' : parentFolderId;
+      files.forEach(() => {
+        formData.append('parentFolderIds', folderId);
+      });
 
-      const response = await api.post('/ingestion/documents/upload', formData, {
+      const response = await api.post('/ingestion/documents', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -56,6 +55,34 @@ export const uploadFiles = createAsyncThunk(
           );
           // Progress will be handled in the component via the thunk
         },
+      });
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleAxiosError(error));
+    }
+  }
+);
+
+// Edit an existing document
+export const editDocument = createAsyncThunk(
+  'upload/editDocument',
+  async ({ file, documentId }: { file: File; documentId: string }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      
+      // Add the file
+      formData.append('file', file);
+      
+      // Add the UUID as a text/plain blob so Spring Boot can deserialize it
+      const idBlob = new Blob([documentId], { type: 'text/plain' });
+      formData.append('id', idBlob);
+
+      const response = await api.patch('/ingestion/documents/edit', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },  
+        withCredentials: true,
       });
 
       return response.data;
@@ -81,7 +108,7 @@ export const fetchRootFolder = createAsyncThunk(
 
 export const createFolder = createAsyncThunk(
   'upload/createFolder',
-  async (folderData: FolderDTO, { rejectWithValue }) => {
+  async (folderData: CreateFolderDTO, { rejectWithValue }) => {
     try {
       const response = await api.post('/ingestion/folders', folderData, {
         withCredentials: true,
@@ -97,7 +124,7 @@ export const deleteDocuments = createAsyncThunk(
   'upload/deleteDocuments',
   async (ids: string[], { rejectWithValue }) => {
     try {
-      await api.delete('/ingestion/documents/delete', {
+      await api.delete('/ingestion/documents', {
         data: ids,
         withCredentials: true,
       });
@@ -112,7 +139,7 @@ export const deleteFolders = createAsyncThunk(
   'upload/deleteFolders',
   async (ids: string[], { rejectWithValue }) => {
     try {
-      await api.delete('/ingestion/folders/delete', {
+      await api.delete('/ingestion/folders', {
         data: ids,
         withCredentials: true,
       });
@@ -164,6 +191,25 @@ const uploadSlice = createSlice({
         // In a real app, you might want to refetch or update locally
       })
       .addCase(uploadFiles.rejected, (state, action) => {
+        state.uploading = false;
+        state.uploadProgress = 0;
+        state.error = action.payload as string;
+        state.success = null;
+      })
+      // Edit document
+      .addCase(editDocument.pending, (state) => {
+        state.uploading = true;
+        state.uploadProgress = 0;
+        state.error = null;
+        state.success = null;
+      })
+      .addCase(editDocument.fulfilled, (state, action) => {
+        state.uploading = false;
+        state.uploadProgress = 100;
+        state.success = 'Document updated successfully!';
+        state.error = null;
+      })
+      .addCase(editDocument.rejected, (state, action) => {
         state.uploading = false;
         state.uploadProgress = 0;
         state.error = action.payload as string;

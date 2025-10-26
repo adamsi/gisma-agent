@@ -1,8 +1,8 @@
 package iaf.ofek.gisma.ai.controller.ingestion;
 
-import iaf.ofek.gisma.ai.dto.ingestion.DocumentDTO;
+import iaf.ofek.gisma.ai.dto.ingestion.CreateDocumentDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
-import iaf.ofek.gisma.ai.service.ingestion.IngestionService;
+import iaf.ofek.gisma.ai.service.ingestion.DocumentProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -23,24 +23,32 @@ import java.util.UUID;
 @Log4j2
 public class DocumentController {
 
-    private final IngestionService ingestionService;
+    private final DocumentProcessor documentProcessor;
 
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> upload(@RequestPart("files") List<MultipartFile> files,
-                                    @RequestPart("documents") List<DocumentDTO> documentDTOS) {
+    public ResponseEntity<?> createNewDocument(@RequestPart("files") List<MultipartFile> files,
+                                    @RequestPart("parentFolderIds") List<UUID> parentFolderIds) {
         log.info("Uploading {} files.", files.size());
-        List<DocumentEntity> results = ingestionService.processFiles(files, documentDTOS);
+        List<DocumentEntity> results = documentProcessor.saveNewDocuments(files, parentFolderIds);
         log.info("Uploaded {} files successfully.", results.size());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(results);
     }
 
+    @PatchMapping(value = "/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> editDocument(@RequestPart("file") MultipartFile file, @RequestPart("id") String id) {
+        DocumentEntity document = documentProcessor.editDocument(file, UUID.fromString(id));
 
-    @DeleteMapping("/delete")
+        return ResponseEntity.status(HttpStatus.OK).body(document);
+    }
+
+
+    @DeleteMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(@RequestBody List<UUID> ids) {
-        ingestionService.deleteFiles(ids);
+        documentProcessor.deleteDocuments(ids);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
                 .build();

@@ -7,6 +7,7 @@ import {
   deleteDocuments,
   deleteFolders,
   uploadFiles,
+  editDocument,
   setCurrentFolder,
   clearError,
   clearSuccess
@@ -260,6 +261,10 @@ const AdminUpload: React.FC = () => {
     if (selectedItems.length === 0 || !currentFolder) return;
     
     dispatch(clearSuccess()); // Clear any existing success messages
+    
+    // Save the current folder ID before fetching
+    const currentFolderId = currentFolder?.id;
+    
     try {
       // Separate selected items into documents and folders
       const selectedDocuments = selectedItems.filter(itemId => 
@@ -279,8 +284,17 @@ const AdminUpload: React.FC = () => {
       
       setSelectedItems([]);
       setIsSelectionMode(false);
+      
       // Refresh the folder structure after deletion
-      dispatch(fetchRootFolder());
+      const result = await dispatch(fetchRootFolder()).unwrap();
+      
+      // Navigate back to the current folder
+      if (currentFolderId && currentFolderId !== 'root') {
+        const targetFolder = findFolderById(currentFolderId, result);
+        if (targetFolder) {
+          dispatch(setCurrentFolder(targetFolder));
+        }
+      }
     } catch (error) {
       console.error('Delete failed:', error);
     }
@@ -317,16 +331,18 @@ const AdminUpload: React.FC = () => {
     setIsSaving(true);
     dispatch(clearSuccess());
     
+    // Save the current folder ID before fetching
+    const currentFolderId = currentFolder?.id;
+    
     try {
       // Create a new File object from the edited content
       const blob = new Blob([documentContent], { type: viewerDocument.contentType || 'text/plain' });
       const file = new File([blob], viewerDocument.name, { type: viewerDocument.contentType || 'text/plain' });
       
-      // Upload/replace the file using the Redux action
-      await dispatch(uploadFiles({ 
-        files: [file], 
-        parentFolderId: currentFolder?.id || 'root',
-        documentId: viewerDocument.id // Pass the document ID to update existing document
+      // Use editDocument action to update existing document
+      await dispatch(editDocument({ 
+        file, 
+        documentId: viewerDocument.id 
       })).unwrap();
       
       // Update original content to reflect the saved content
@@ -337,7 +353,15 @@ const AdminUpload: React.FC = () => {
       setIsViewerOpen(false);
       
       // Refresh folder structure
-      dispatch(fetchRootFolder());
+      const result = await dispatch(fetchRootFolder()).unwrap();
+      
+      // Navigate back to the current folder
+      if (currentFolderId && currentFolderId !== 'root') {
+        const targetFolder = findFolderById(currentFolderId, result);
+        if (targetFolder) {
+          dispatch(setCurrentFolder(targetFolder));
+        }
+      }
     } catch (error) {
       console.error('Failed to save document:', error);
       setIsSaving(false);
@@ -348,15 +372,34 @@ const AdminUpload: React.FC = () => {
     if (!newFolderName.trim()) return;
     
     dispatch(clearSuccess()); // Clear any existing success messages
+    
+    // Save the current folder ID before fetching
+    const currentFolderId = currentFolder?.id;
+    
     try {
-      await dispatch(createFolder({
+      const folderData: { name: string; parentFolderId?: string } = {
         name: newFolderName.trim(),
-        parentFolderId: currentFolder?.id || 'root'
-      })).unwrap();
+      };
+      
+      // Always pass parentFolderId if we're not in root
+      if (currentFolder?.id && currentFolder.id !== 'root') {
+        folderData.parentFolderId = currentFolder.id;
+      }
+      
+      await dispatch(createFolder(folderData)).unwrap();
       setNewFolderName('');
       setIsCreateFolderModalOpen(false);
+      
       // Refresh the folder structure after creation
-      dispatch(fetchRootFolder());
+      const result = await dispatch(fetchRootFolder()).unwrap();
+      
+      // Navigate back to the current folder
+      if (currentFolderId && currentFolderId !== 'root') {
+        const targetFolder = findFolderById(currentFolderId, result);
+        if (targetFolder) {
+          dispatch(setCurrentFolder(targetFolder));
+        }
+      }
     } catch (error) {
       console.error('Create folder failed:', error);
     }
@@ -418,7 +461,7 @@ const AdminUpload: React.FC = () => {
         <meta name="description" content="Admin document management interface" />
       </Head>
       
-      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-950 to-black relative overflow-hidden">
+      <div className="flex h-screen bg-gradient-to-br from-gray-950 via-slate-950 to-black relative overflow-hidden">
         {/* Particles Background */}
         <div className="absolute inset-0 z-0">
           <ParticlesBackground />
@@ -434,48 +477,55 @@ const AdminUpload: React.FC = () => {
         {/* Subtle Grid Overlay */}
         <div className="absolute inset-0 z-0 bg-grid opacity-30 mask-radial-faded" />
         
-        {/* Header */}
-        <div className="relative z-10 bg-black/30 backdrop-blur-xl border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => router.push('/')}
-                  className="p-2 text-blue-200 hover:text-white hover:bg-blue-500/20 rounded-lg transition-all duration-200"
-                >
-                  <IconArrowLeft className="w-5 h-5" />
-                </button>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-                    <img
-                      src="/sa-logo.png"
-                      alt="Gisma Agent Logo"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-white">Document Management</h1>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-xs font-medium text-green-300">Admin Access</span>
+        {/* Sidebar */}
+        <div className="relative z-10 w-64 border-r border-white/10 bg-black/20 backdrop-blur-xl flex flex-col">
+          <div className="px-4 py-4 border-b border-white/10">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => router.push('/')}
+                className="p-2 text-blue-200 hover:text-white hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+              >
+                <IconArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                <img
+                  src="/sa-logo.png"
+                  alt="Gisma Agent Logo"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
+          
+          <div className="p-4 space-y-2">
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl w-full"
+            >
+              <IconPlus className="w-4 h-4" />
+              <span>Upload Files</span>
+            </button>
+            
+            <button
+              onClick={() => setIsCreateFolderModalOpen(true)}
+              className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl w-full"
+            >
+              <IconFolder className="w-4 h-4" />
+              <span>New Folder</span>
+            </button>
+          </div>
         </div>
 
-        {/* Breadcrumb Navigation */}
-        <div className="relative z-10 bg-black/20 backdrop-blur-sm border-b border-white/5">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col relative z-10">
+          {/* Breadcrumb Navigation */}
+          <div className="px-6 py-4">
             <div className="flex items-center space-x-2 text-sm">
               {breadcrumbs.map((crumb, index) => (
                 <React.Fragment key={crumb.id}>
                   <button
                     onClick={() => navigateToBreadcrumb(index)}
-                    className={`px-3 py-1 rounded-lg transition-all duration-200 ${
+                    className={`px-3 py-1 rounded-lg transition-all duration-200 whitespace-nowrap ${
                       index === breadcrumbs.length - 1
                         ? 'text-white bg-blue-500/20 ring-1 ring-blue-400/30'
                         : 'text-blue-200 hover:text-white hover:bg-blue-500/10'
@@ -484,36 +534,18 @@ const AdminUpload: React.FC = () => {
                     {crumb.name}
                   </button>
                   {index < breadcrumbs.length - 1 && (
-                    <IconChevronRight className="w-4 h-4 text-blue-300/60" />
+                    <IconChevronRight className="w-4 h-4 text-blue-300/60 flex-shrink-0" />
                   )}
                 </React.Fragment>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Action Bar */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setIsUploadModalOpen(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <IconPlus className="w-4 h-4" />
-                  <span>Upload Files</span>
-                </button>
-                
-                <button
-                  onClick={() => setIsCreateFolderModalOpen(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <IconFolder className="w-4 h-4" />
-                  <span>New Folder</span>
-                </button>
-                
+          {/* Main Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto">
+              {/* Info Bar */}
+              <div className="flex items-center justify-between mb-6">
                 {selectedItems.length > 0 && (
                   <button
                     onClick={handleDeleteSelected}
@@ -533,17 +565,16 @@ const AdminUpload: React.FC = () => {
                     )}
                   </button>
                 )}
+                
+                <div className="text-sm text-blue-200/70 ml-auto">
+                  {currentFolder.childrenFolders?.length || 0} folders, {currentFolder.childrenDocuments?.length || 0} files
+                  {isSelectionMode && (
+                    <span className="ml-2 px-2 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs">
+                      Selection Mode • Press Esc to exit
+                    </span>
+                  )}
+                </div>
               </div>
-              
-              <div className="text-sm text-blue-200/70">
-                {currentFolder.childrenFolders?.length || 0} folders, {currentFolder.childrenDocuments?.length || 0} files
-                {isSelectionMode && (
-                  <span className="ml-2 px-2 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs">
-                    Selection Mode • Press Esc to exit
-                  </span>
-                )}
-              </div>
-            </div>
 
             {/* File System Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
@@ -646,11 +677,13 @@ const AdminUpload: React.FC = () => {
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Upload Modal */}
-        {isUploadModalOpen && (
+      {/* Upload Modal */}
+      {isUploadModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsUploadModalOpen(false)} />
             <div className="relative bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 w-full max-w-2xl max-h-[95vh] overflow-y-auto">
@@ -824,9 +857,9 @@ const AdminUpload: React.FC = () => {
         {isViewerOpen && viewerDocument && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsViewerOpen(false)} />
-            <div className="relative bg-black/90 backdrop-blur-2xl rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[98vh] overflow-hidden flex flex-col">
+            <div className="relative bg-black/90 backdrop-blur-2xl rounded-2xl border border-white/10 p-6 w-[50vw] h-[80vh] flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
                     <IconEye className="w-5 h-5 text-blue-400" />
@@ -837,20 +870,27 @@ const AdminUpload: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {!isSaving && (
-                    <button
-                      onClick={handleSaveDocument}
-                      disabled={documentContent === originalContent}
-                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
-                        documentContent === originalContent
-                          ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-500 hover:to-emerald-500 shadow-lg hover:shadow-xl'
-                      }`}
-                    >
-                      <IconDeviceFloppy className="w-4 h-4" />
-                      <span>Save</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={handleSaveDocument}
+                    disabled={documentContent === originalContent || isSaving}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                      documentContent === originalContent || isSaving
+                        ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-500 hover:to-emerald-500 shadow-lg hover:shadow-xl'
+                    }`}
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <IconDeviceFloppy className="w-4 h-4" />
+                        <span>Save</span>
+                      </>
+                    )}
+                  </button>
                   <button
                     onClick={() => setIsViewerOpen(false)}
                     className="p-2 text-gray-400 hover:text-white hover:bg-gray-500/20 rounded-xl transition-all duration-200"
@@ -861,26 +901,18 @@ const AdminUpload: React.FC = () => {
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto bg-black/30 rounded-xl p-4">
-                {isSaving ? (
-                  <div className="flex items-center justify-center py-20">
-                    <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                    <span className="ml-3 text-white">Saving...</span>
-                  </div>
-                ) : (
-                  <textarea
-                    value={documentContent}
-                    onChange={(e) => setDocumentContent(e.target.value)}
-                    className="w-full h-full min-h-[400px] p-4 bg-black/50 border border-white/20 rounded-xl text-white font-mono text-sm resize-none focus:outline-none focus:border-blue-500/50"
-                    spellCheck={false}
-                    placeholder="Document content will be loaded here..."
-                  />
-                )}
+              <div className="flex-1 bg-black/30 rounded-xl p-4">
+                <textarea
+                  value={documentContent}
+                  onChange={(e) => setDocumentContent(e.target.value)}
+                  className="w-full h-full p-6 bg-black/50 border border-white/20 rounded-xl text-white font-mono text-base resize-none focus:outline-none focus:border-blue-500/50"
+                  spellCheck={false}
+                  placeholder="Document content will be loaded here..."
+                />
               </div>
             </div>
           </div>
         )}
-      </div>
     </>
   );
 };

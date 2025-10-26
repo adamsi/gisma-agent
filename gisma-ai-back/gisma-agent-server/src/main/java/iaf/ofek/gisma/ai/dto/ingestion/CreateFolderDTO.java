@@ -10,11 +10,11 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class FolderDTO {
+public class CreateFolderDTO {
 
     @NotNull(message = "can't be null")
     private String name;
 
-    private UUID parentId;
+    private UUID parentFolderId;
 
 }

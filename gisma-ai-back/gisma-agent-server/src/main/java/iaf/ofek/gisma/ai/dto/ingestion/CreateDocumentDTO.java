@@ -11,9 +11,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DocumentDTO {
-
-    private UUID documentId;
+public class CreateDocumentDTO {
 
     private UUID parentFolderId;
 

@@ -1,65 +1,74 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
-import iaf.ofek.gisma.ai.dto.ingestion.DocumentDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
-import iaf.ofek.gisma.ai.service.auth.AuthService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Service;
+import org.apache.tika.Tika;
+import org.apache.tika.exception.TikaException;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TextSplitter;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.Map;
 
-@Service
-@RequiredArgsConstructor
+@Component
 @Log4j2
+@Validated
 public class IngestionService {
 
-    private final AuthService authService;
+    public static final String USER_ID = "userId";
+    public static final String FILENAME = "filename";
+    public static final String CONTENT_TYPE = "contentType";
+    public static final String DOCUMENT_ID = "documentId";
 
-    private final DocumentProcessor documentProcessor;
+    private static final Tika tika = new Tika();
 
-    public List<DocumentEntity> processFiles(List<MultipartFile> files, List<DocumentDTO> documentDTOS) {
-        if (files.size() != documentDTOS.size()) {
-            throw new IllegalArgumentException("Files and documentDTOs must have the same size");
+    private static final TextSplitter textSplitter = new TokenTextSplitter();
+
+    private final VectorStore documentVectorStore;
+
+    public IngestionService(@Qualifier("documentVectorStore") VectorStore documentVectorStore) {
+        this.documentVectorStore = documentVectorStore;
+    }
+
+    public void ingestToVectorStore(MultipartFile file, DocumentEntity documentEntity, String userId) {
+        String filename = file.getOriginalFilename();
+        if (filename == null) {
+            throw new IllegalArgumentException("Failed processing file without filename");
         }
 
-        List<DocumentDTO> documents = IntStream.range(0, files.size())
-                .mapToObj(i -> new DocumentDTO(documentDTOS.get(i).getDocumentId(), documentDTOS.get(i).getParentFolderId(),
-                        files.get(i)))
-                .toList();
+        try (InputStream inputStream = file.getInputStream()) {
+            byte[] fileBytes = inputStream.readAllBytes();
+            String contentType = tika.detect(fileBytes);
+            String extractedText = tika.parseToString(new ByteArrayInputStream(fileBytes));
 
-        return processFiles(documents);
+            if (extractedText != null && !extractedText.trim().isEmpty()) {
+                Document document = new Document(extractedText, Map.of(
+                        DOCUMENT_ID, documentEntity.getId(),
+                        USER_ID, userId,
+                        FILENAME, filename,
+                        CONTENT_TYPE, contentType
+                ));
+
+                    deleteDocument(documentEntity); // remove old embeddings + file
+                List<Document> chunks = textSplitter.apply(List.of(document));
+                documentVectorStore.add(chunks);
+            }
+        } catch (IOException | TikaException e) {
+            log.warn("Failed to ingest file {}: {}", filename, e.getMessage());
+        }
     }
 
-
-    public List<DocumentEntity> processFiles(List<DocumentDTO> documents) {
-        String userId = authService.getCurrentUserId();
-
-        return documents.stream()
-                .filter(document -> isSupported(document.getFile()))
-                .map(document -> {
-                    try {
-                        return documentProcessor.processFile(document, userId);
-                    } catch (Exception e) {
-                        log.warn("Failed processing files: {}.", e.getMessage());
-                        throw new IllegalArgumentException("Failed processing files, try again...");
-                    }
-                })
-                .toList();
-    }
-
-    public void deleteFiles(List<UUID> ids) {
-         documentProcessor.deleteDocuments(ids);
-    }
-
-
-    private boolean isSupported(MultipartFile file) {
-        return !file.isEmpty() && file.getContentType() != null &&
-                List.of("application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                        .contains(file.getContentType());
+    public void deleteDocument(DocumentEntity document) {
+        documentVectorStore.delete("%s == '%s'".formatted(DOCUMENT_ID, document.getId()));
     }
 
 }

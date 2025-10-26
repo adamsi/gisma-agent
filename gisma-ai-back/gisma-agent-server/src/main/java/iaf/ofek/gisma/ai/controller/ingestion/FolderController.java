@@ -1,8 +1,9 @@
 package iaf.ofek.gisma.ai.controller.ingestion;
 
 
-import iaf.ofek.gisma.ai.dto.ingestion.FolderDTO;
+import iaf.ofek.gisma.ai.dto.ingestion.CreateFolderDTO;
 import iaf.ofek.gisma.ai.service.ingestion.FolderEntityService;
+import iaf.ofek.gisma.ai.service.ingestion.ParentFolderFetcherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,21 +23,23 @@ public class FolderController {
 
     private final FolderEntityService folderEntityService;
 
+    private final ParentFolderFetcherService folderFetcherService;
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getRootFolder() { // TODO: make reactive
         return ResponseEntity.status(HttpStatus.OK)
-                .body(folderEntityService.getRootFolder());
+                .body(folderFetcherService.getRootFolder());
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> createFolder(@RequestBody @Valid FolderDTO folderDTO) {
+    public ResponseEntity<?> createFolder(@RequestBody @Valid CreateFolderDTO createFolderDTO) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(folderEntityService.createFolder(folderDTO));
+                .body(folderEntityService.createFolder(createFolderDTO));
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(@RequestBody List<UUID> ids) {
         folderEntityService.deleteFolders(ids);

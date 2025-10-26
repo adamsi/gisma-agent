@@ -2,7 +2,6 @@ package iaf.ofek.gisma.ai.filter;
 
 import iaf.ofek.gisma.ai.exception.TokenProcessingException;
 import iaf.ofek.gisma.ai.service.auth.Token;
-import iaf.ofek.gisma.ai.service.auth.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -13,7 +12,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -31,9 +29,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
-    private final CustomUserDetailsService userDetailsService;
-
-
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         String servletPath = request.getServletPath();
@@ -48,9 +43,8 @@ public class JwtFilter extends OncePerRequestFilter {
                             UUID userId = jwtUtil.extractUserId(jwtToken);
 
                             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                                UserDetails userDetails = userDetailsService.loadUserById(userId);
                                 UsernamePasswordAuthenticationToken auth =
-                                        new UsernamePasswordAuthenticationToken(userDetails, null, Collections.emptyList());
+                                        new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
                                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                                 SecurityContextHolder.getContext().setAuthentication(auth);
                             }

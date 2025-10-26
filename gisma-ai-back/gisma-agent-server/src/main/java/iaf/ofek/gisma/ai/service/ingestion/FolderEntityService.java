@@ -1,10 +1,9 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
-import iaf.ofek.gisma.ai.dto.ingestion.FolderDTO;
+import iaf.ofek.gisma.ai.dto.ingestion.CreateFolderDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
 import iaf.ofek.gisma.ai.entity.ingestion.FolderEntity;
 import iaf.ofek.gisma.ai.repository.FolderEntityRepository;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,30 +19,13 @@ public class FolderEntityService {
 
     private final DocumentProcessor documentProcessor;
 
-    public FolderEntity getRootFolder() {
-        FolderEntity rootFolder = folderEntityRepository.findRootFolderWithChildrenFolders()
-                .orElseThrow(() -> new EntityNotFoundException("root folder not found"));
-
-        folderEntityRepository.findRootFolderWithChildrenDocuments()
-                .ifPresent(f -> rootFolder.setChildrenDocuments(f.getChildrenDocuments()));
-
-        return rootFolder;
-    }
-
-    public FolderEntity getFileParentFolder(UUID folderId) {
-        if (folderId == null) {
-            return getRootFolder();
-        }
-
-        return folderEntityRepository.findById(folderId)
-                .orElseThrow(() -> new EntityNotFoundException("folder with id: `%s` not found".formatted(folderId)));
-    }
+    private final ParentFolderFetcherService parentFolderFetcherService;
 
     @Transactional
-    public FolderEntity createFolder(FolderDTO folderDTO) {
-        FolderEntity parentFolder = getFileParentFolder(folderDTO.getParentId());
+    public FolderEntity createFolder(CreateFolderDTO createFolderDTO) {
+        FolderEntity parentFolder = parentFolderFetcherService.getParentFolder(createFolderDTO.getParentFolderId());
         FolderEntity newFolder = FolderEntity.builder()
-                .name(folderDTO.getName())
+                .name(createFolderDTO.getName())
                 .parentFolder(parentFolder)
                 .build();
 
