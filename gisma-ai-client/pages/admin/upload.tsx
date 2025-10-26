@@ -23,7 +23,9 @@ import {
   IconX,
   IconTrash,
   IconPlus,
-  IconCheck
+  IconCheck,
+  IconDeviceFloppy,
+  IconEye
 } from '@tabler/icons-react';
 import { FolderEntity, DocumentEntity } from '@/types/ingestion';
 import { FileUpload } from '@/components/Upload';
@@ -58,6 +60,11 @@ const AdminUpload: React.FC = () => {
     itemId: '',
     itemType: 'file'
   });
+  const [viewerDocument, setViewerDocument] = useState<DocumentEntity | null>(null);
+  const [documentContent, setDocumentContent] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -274,6 +281,81 @@ const AdminUpload: React.FC = () => {
       dispatch(fetchRootFolder());
     } catch (error) {
       console.error('Delete failed:', error);
+    }
+  };
+
+  const handleViewDocument = async (document: DocumentEntity) => {
+    setViewerDocument(document);
+    setIsViewerOpen(true);
+    setIsEditing(true); // Start in edit mode
+    setIsSaving(false);
+    
+    try {
+      // Fetch document content from the backend API
+      const response = await fetch(`/api/ingestion/documents/${document.id}/content`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const content = await response.text();
+        setDocumentContent(content);
+      } else {
+        // If specific endpoint doesn't exist, try fetching from document URL
+        const urlResponse = await fetch(document.url, { credentials: 'include' });
+        if (urlResponse.ok) {
+          const content = await urlResponse.text();
+          setDocumentContent(content);
+        } else {
+          setDocumentContent(''); // Start with empty content for new document
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load document content:', error);
+      setDocumentContent(''); // Start with empty content
+    }
+  };
+
+  const handleSaveDocument = async () => {
+    if (!viewerDocument) return;
+    
+    setIsSaving(true);
+    dispatch(clearSuccess());
+    
+    try {
+      // Create a new File object from the edited content
+      const blob = new Blob([documentContent], { type: viewerDocument.contentType || 'text/plain' });
+      const file = new File([blob], viewerDocument.name, { type: viewerDocument.contentType || 'text/plain' });
+      
+      // Upload/replace the file using the upload API
+      const formData = new FormData();
+      formData.append('files', file);
+      
+      const documents = [{
+        documentId: viewerDocument.id,
+        parentFolderId: currentFolder?.id || 'root'
+      }];
+      
+      const documentsBlob = new Blob([JSON.stringify(documents)], { type: 'application/json' });
+      formData.append('documents', documentsBlob, 'documents');
+      
+      await fetch('/api/ingestion/documents/upload', {
+        method: 'POST',
+        headers: {
+          // Don't set Content-Type, let the browser set it with boundary
+        },
+        credentials: 'include',
+        body: formData
+      });
+      
+      setIsSaving(false);
+      setIsEditing(false);
+      setIsViewerOpen(false);
+      
+      // Refresh folder structure
+      dispatch(fetchRootFolder());
+    } catch (error) {
+      console.error('Failed to save document:', error);
+      setIsSaving(false);
     }
   };
 
@@ -533,6 +615,8 @@ const AdminUpload: React.FC = () => {
                   onClick={() => {
                     if (isSelectionMode) {
                       handleItemSelect(document.id);
+                    } else {
+                      handleViewDocument(document);
                     }
                   }}
                   onContextMenu={(e) => handleContextMenu(e, document.id, 'file')}
@@ -748,6 +832,62 @@ const AdminUpload: React.FC = () => {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Document Viewer Modal */}
+        {isViewerOpen && viewerDocument && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsViewerOpen(false)} />
+            <div className="relative bg-black/90 backdrop-blur-2xl rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                    <IconEye className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">{viewerDocument.name}</h2>
+                    <p className="text-sm text-blue-200/70">{viewerDocument.contentType || 'Unknown type'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {!isSaving && (
+                    <button
+                      onClick={handleSaveDocument}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      <IconDeviceFloppy className="w-4 h-4" />
+                      <span>Save</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsViewerOpen(false)}
+                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-500/20 rounded-xl transition-all duration-200"
+                  >
+                    <IconX className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto bg-black/30 rounded-xl border border-white/10 p-4">
+                {isSaving ? (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="ml-3 text-white">Saving...</span>
+                  </div>
+                ) : (
+                  <textarea
+                    value={documentContent}
+                    onChange={(e) => setDocumentContent(e.target.value)}
+                    className="w-full h-full min-h-[400px] p-4 bg-black/50 border border-white/20 rounded-xl text-white font-mono text-sm resize-none focus:outline-none focus:border-blue-500/50"
+                    spellCheck={false}
+                    placeholder="Document content will be loaded here..."
+                  />
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

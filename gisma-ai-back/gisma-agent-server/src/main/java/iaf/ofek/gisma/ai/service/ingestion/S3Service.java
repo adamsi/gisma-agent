@@ -2,6 +2,7 @@ package iaf.ofek.gisma.ai.service.ingestion;
 
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Service
+@Log4j2
 public class S3Service {
 
     private final S3Client s3Client;
@@ -44,6 +46,7 @@ public class S3Service {
 
             return getFileUrl(key);
         } catch (IOException | S3Exception e) {
+            log.warn("Failed to upload file to S3: {}.", e.getMessage());
             throw new RuntimeException("Failed to upload file to S3", e);
         }
     }

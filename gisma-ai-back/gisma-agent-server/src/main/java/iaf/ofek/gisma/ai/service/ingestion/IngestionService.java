@@ -4,6 +4,7 @@ import iaf.ofek.gisma.ai.dto.ingestion.DocumentDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
 import iaf.ofek.gisma.ai.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,6 +14,7 @@ import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class IngestionService {
 
     private final AuthService authService;
@@ -42,6 +44,7 @@ public class IngestionService {
                     try {
                         return documentProcessor.processFile(document, userId);
                     } catch (Exception e) {
+                        log.warn("Failed processing files: {}.", e.getMessage());
                         throw new IllegalArgumentException("Failed processing files, try again...");
                     }
                 })
