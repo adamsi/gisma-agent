@@ -29,16 +29,15 @@ const initialState: UploadState = {
 
 export const uploadFiles = createAsyncThunk(
   'upload/uploadFiles',
-  async ({ files, parentFolderId }: { files: File[]; parentFolderId: string }, { rejectWithValue }) => {
+  async ({ files, parentFolderId, documentId }: { files: File[]; parentFolderId: string; documentId?: string }, { rejectWithValue }) => {
     try {
       const formData = new FormData();
       
       // Add all files
       files.forEach(file => formData.append('files', file));
       
-      // Create DocumentDTO array
       const documents = files.map(() => ({
-        documentId: crypto.randomUUID(),
+        documentId: documentId || null,
         parentFolderId
       }));
       

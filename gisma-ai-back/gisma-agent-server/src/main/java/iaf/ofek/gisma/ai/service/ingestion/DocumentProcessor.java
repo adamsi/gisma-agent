@@ -61,24 +61,40 @@ public class DocumentProcessor {
     @Transactional
     public DocumentEntity processFile(@Valid DocumentDTO documentInput, String userId) {
         AtomicBoolean toDelete = new AtomicBoolean(true);
+        DocumentEntity document;
 
-        DocumentEntity document = documentRepository.findById(documentInput.getDocumentId())
-                .orElseGet(() -> {
-                    toDelete.set(false);
-                    FolderEntity folder = folderEntityRepository.findById(documentInput.getParentFolderId())
-                            .orElseGet(() -> folderEntityRepository.findRootFolder()
-                                    .orElseThrow(() -> new EntityNotFoundException("Root Folder not found")));
+        if (documentInput.getDocumentId() != null) {
+             document = documentRepository.findById(documentInput.getDocumentId())
+                     .orElseThrow(()-> new EntityNotFoundException("Document with id '%s' not found"
+                             .formatted(documentInput.getDocumentId())));
+        } else {
+            toDelete.set(false);
+            FolderEntity folder = folderEntityRepository.findById(documentInput.getParentFolderId())
+                    .orElseGet(() -> folderEntityRepository.findRootFolder()
+                            .orElseThrow(() -> new EntityNotFoundException("Root Folder not found")));
 
-                    return documentRepository.save(DocumentEntity.builder()
-                            .parentFolder(folder)
-                            .build());
-                });
+            document = documentRepository.save(DocumentEntity.builder()
+                    .parentFolder(folder)
+                    .build());
+        }
+
         MultipartFile file = documentInput.getFile();
         ingestToVectorStore(file, document, userId, toDelete.get());
         String url = s3Service.uploadFile(file);
         document.setUrl(url);
         document.setName(file.getOriginalFilename());
         document.setContentType(file.getContentType());
+
+        if (toDelete.get()) {
+            var newDocument = DocumentEntity.builder()
+                    .url(document.getUrl())
+                    .name(document.getName())
+                    .contentType(document.getContentType())
+                    .parentFolder(document.getParentFolder())
+                    .build();
+            documentRepository.save(newDocument);
+            document = newDocument;
+        }
 
         return document;
     }

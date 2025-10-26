@@ -6,6 +6,7 @@ import {
   createFolder, 
   deleteDocuments,
   deleteFolders,
+  uploadFiles,
   setCurrentFolder,
   clearError,
   clearSuccess
@@ -62,6 +63,7 @@ const AdminUpload: React.FC = () => {
   });
   const [viewerDocument, setViewerDocument] = useState<DocumentEntity | null>(null);
   const [documentContent, setDocumentContent] = useState<string>('');
+  const [originalContent, setOriginalContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
@@ -297,12 +299,15 @@ const AdminUpload: React.FC = () => {
       if (response.ok) {
         const content = await response.text();
         setDocumentContent(content);
+        setOriginalContent(content); // Track original content
       } else {
         setDocumentContent(''); // Start with empty content
+        setOriginalContent(''); // Track original content
       }
     } catch (error) {
       console.error('Failed to load document content:', error);
       setDocumentContent(''); // Start with empty content
+      setOriginalContent(''); // Track original content
     }
   };
 
@@ -317,26 +322,15 @@ const AdminUpload: React.FC = () => {
       const blob = new Blob([documentContent], { type: viewerDocument.contentType || 'text/plain' });
       const file = new File([blob], viewerDocument.name, { type: viewerDocument.contentType || 'text/plain' });
       
-      // Upload/replace the file using the upload API
-      const formData = new FormData();
-      formData.append('files', file);
+      // Upload/replace the file using the Redux action
+      await dispatch(uploadFiles({ 
+        files: [file], 
+        parentFolderId: currentFolder?.id || 'root',
+        documentId: viewerDocument.id // Pass the document ID to update existing document
+      })).unwrap();
       
-      const documents = [{
-        documentId: viewerDocument.id,
-        parentFolderId: currentFolder?.id || 'root'
-      }];
-      
-      const documentsBlob = new Blob([JSON.stringify(documents)], { type: 'application/json' });
-      formData.append('documents', documentsBlob, 'documents');
-      
-      await fetch('/api/ingestion/documents/upload', {
-        method: 'POST',
-        headers: {
-          // Don't set Content-Type, let the browser set it with boundary
-        },
-        credentials: 'include',
-        body: formData
-      });
+      // Update original content to reflect the saved content
+      setOriginalContent(documentContent);
       
       setIsSaving(false);
       setIsEditing(false);
@@ -830,7 +824,7 @@ const AdminUpload: React.FC = () => {
         {isViewerOpen && viewerDocument && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsViewerOpen(false)} />
-            <div className="relative bg-black/90 backdrop-blur-2xl rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+            <div className="relative bg-black/90 backdrop-blur-2xl rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[98vh] overflow-hidden flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
@@ -846,7 +840,12 @@ const AdminUpload: React.FC = () => {
                   {!isSaving && (
                     <button
                       onClick={handleSaveDocument}
-                      className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl"
+                      disabled={documentContent === originalContent}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                        documentContent === originalContent
+                          ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-500 hover:to-emerald-500 shadow-lg hover:shadow-xl'
+                      }`}
                     >
                       <IconDeviceFloppy className="w-4 h-4" />
                       <span>Save</span>
@@ -862,7 +861,7 @@ const AdminUpload: React.FC = () => {
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto bg-black/30 rounded-xl border border-white/10 p-4">
+              <div className="flex-1 overflow-y-auto bg-black/30 rounded-xl p-4">
                 {isSaving ? (
                   <div className="flex items-center justify-center py-20">
                     <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
