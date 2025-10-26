@@ -291,23 +291,14 @@ const AdminUpload: React.FC = () => {
     setIsSaving(false);
     
     try {
-      // Fetch document content from the backend API
-      const response = await fetch(`/api/ingestion/documents/${document.id}/content`, {
-        credentials: 'include'
-      });
+      // Fetch document content directly from S3
+      const response = await fetch(document.url);
       
       if (response.ok) {
         const content = await response.text();
         setDocumentContent(content);
       } else {
-        // If specific endpoint doesn't exist, try fetching from document URL
-        const urlResponse = await fetch(document.url, { credentials: 'include' });
-        if (urlResponse.ok) {
-          const content = await urlResponse.text();
-          setDocumentContent(content);
-        } else {
-          setDocumentContent(''); // Start with empty content for new document
-        }
+        setDocumentContent(''); // Start with empty content
       }
     } catch (error) {
       console.error('Failed to load document content:', error);
