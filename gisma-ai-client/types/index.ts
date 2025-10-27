@@ -5,5 +5,6 @@ export * from './folder';
 export * from './ingestion';
 export * from './openai';
 export * from './plugin';
+export * from './responseFormat';
 export * from './user';
 export * from './websocket';

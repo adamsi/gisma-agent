@@ -1,7 +1,6 @@
 package iaf.ofek.gisma.ai.enums;
 
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
-import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -12,10 +11,12 @@ public enum ResponseFormat {
     SIMPLE {
         @Override
         public String getFormat(String schema) {
-                return  """
-                    Friendly, well-structured, using markdown sections (Overview, Steps, Example, Tip),
-                    clear formatting, and concise explanations. Include emojis in your responses naturally to enhance readability.
-                    """;
+            return """
+            Respond in a friendly, well-structured style:
+            - For specific queries: provide concise, factual answers.
+            - For broad or open-ended queries: include a short overview with markdown sections (Overview, Example, Tip).
+            - Use clear formatting and naturally include emojis to enhance readability.
+            """;
         }
     },
 
@@ -39,9 +40,5 @@ public enum ResponseFormat {
     };
 
     public abstract String getFormat(String schema);
-
-    public static String getFormat(UserPromptDTO prompt) {
-        return prompt.responseFormat().getFormat(prompt.schemaJson());
-    }
 
 }

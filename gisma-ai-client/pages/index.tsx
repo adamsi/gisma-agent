@@ -8,6 +8,7 @@ import { Navbar } from '@/components/Mobile/Navbar';
 import HomePage from '@/components/HomePage/HomePage';
 import LoadingSpinner from '@/components/Global/LoadingSpinner';
 import { ChatBody, Conversation, Message } from '@/types/chat';
+import { ResponseFormat } from '@/types/responseFormat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
 import { Folder, FolderType } from '@/types/folder';
@@ -193,6 +194,8 @@ const Home: React.FC<HomeProps> = ({
       try {
         await chatService.current.sendMessage(
           message.content,
+          updatedConversation.responseFormat,
+          updatedConversation.schemaJson,
           (chunk: string) => {
             // Debug: Log each chunk to see what's being received
             console.log('Received chunk:', JSON.stringify(chunk));
@@ -343,6 +346,7 @@ const Home: React.FC<HomeProps> = ({
       },
       prompt: DEFAULT_SYSTEM_PROMPT,
       folderId: null,
+      responseFormat: ResponseFormat.SIMPLE,
     };
 
     const updatedConversations = [...conversations, newConversation];
@@ -376,6 +380,7 @@ const Home: React.FC<HomeProps> = ({
         model: OpenAIModels[defaultModelId],
         prompt: DEFAULT_SYSTEM_PROMPT,
         folderId: null,
+        responseFormat: ResponseFormat.SIMPLE,
       });
       localStorage.removeItem('selectedConversation');
     }
@@ -410,6 +415,7 @@ const Home: React.FC<HomeProps> = ({
       model: OpenAIModels[defaultModelId],
       prompt: DEFAULT_SYSTEM_PROMPT,
       folderId: null,
+      responseFormat: ResponseFormat.SIMPLE,
     });
     localStorage.removeItem('selectedConversation');
 
@@ -509,6 +515,7 @@ const Home: React.FC<HomeProps> = ({
         model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
         prompt: DEFAULT_SYSTEM_PROMPT,
         folderId: null,
+        responseFormat: ResponseFormat.SIMPLE,
       });
     }
   }, [serverSideApiKeyIsSet]);

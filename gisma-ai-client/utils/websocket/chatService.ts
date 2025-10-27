@@ -50,6 +50,8 @@ export class ChatService {
 
   public async sendMessage(
     message: string,
+    responseFormat: string,
+    schemaJson?: string,
     onChunk: (chunk: string) => void,
     onComplete: () => void,
     onError: (error: string) => void
@@ -66,7 +68,14 @@ export class ChatService {
       await this.connect();
     }
 
-    this.wsManager.sendMessage(message, (response: WebSocketResponse) => {
+    // Construct the payload according to UserPromptDTO
+    const payload = {
+      query: message,
+      responseFormat: responseFormat,
+      schemaJson: schemaJson || null
+    };
+
+    this.wsManager.sendMessage(JSON.stringify(payload), (response: WebSocketResponse) => {
       if (this.stopped) return;
 
       if (response.error) {

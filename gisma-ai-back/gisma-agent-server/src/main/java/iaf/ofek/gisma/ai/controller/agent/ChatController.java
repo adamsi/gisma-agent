@@ -3,6 +3,7 @@ package iaf.ofek.gisma.ai.controller.agent;
 import iaf.ofek.gisma.ai.agent.orchestrator.AgentOrchestrator;
 import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -16,6 +17,7 @@ import java.security.Principal;
 
 @Controller
 @RequiredArgsConstructor
+@Log4j2
 public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -26,6 +28,7 @@ public class ChatController {
     // spring handles routing to specific user
     @MessageMapping("/chat")
     public Mono<Void> handlePrompt(@Payload UserPromptDTO prompt, Principal user) {
+        log.info("Received prompt: {}.", prompt);
         if (user instanceof Authentication auth) {
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(auth);

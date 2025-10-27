@@ -1,4 +1,5 @@
 import { OpenAIModel } from './openai';
+import { ResponseFormat } from './responseFormat';
 
 export interface Message {
   role: Role;
@@ -21,4 +22,6 @@ export interface Conversation {
   model: OpenAIModel;
   prompt: string;
   folderId: string | null;
+  responseFormat: ResponseFormat;
+  schemaJson?: string;
 }

@@ -1,4 +1,5 @@
 import { Conversation } from '@/types/chat';
+import { ResponseFormat } from '@/types/responseFormat';
 import { OpenAIModelID, OpenAIModels } from '@/types/openai';
 import { DEFAULT_SYSTEM_PROMPT } from './const';
 
@@ -33,6 +34,14 @@ export const cleanSelectedConversation = (conversation: Conversation) => {
     };
   }
 
+  // check for responseFormat on each conversation
+  if (!updatedConversation.responseFormat) {
+    updatedConversation = {
+      ...updatedConversation,
+      responseFormat: ResponseFormat.SIMPLE,
+    };
+  }
+
   return updatedConversation;
 };
 
@@ -59,6 +68,10 @@ export const cleanConversationHistory = (history: any[]): Conversation[] => {
 
       if (!conversation.folderId) {
         conversation.folderId = null;
+      }
+
+      if (!conversation.responseFormat) {
+        conversation.responseFormat = ResponseFormat.SIMPLE;
       }
 
       acc.push(conversation);

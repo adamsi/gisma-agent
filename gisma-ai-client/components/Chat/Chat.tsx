@@ -225,6 +225,8 @@ export const Chat: FC<Props> = memo(
               messageIsStreaming={messageIsStreaming}
               conversationIsEmpty={conversation.messages.length === 0}
               model={conversation.model}
+              conversation={conversation}
+              onUpdateConversation={onUpdateConversation}
               onSend={(message) => {
                 setCurrentMessage(message);
                 onSend(message, 0);
