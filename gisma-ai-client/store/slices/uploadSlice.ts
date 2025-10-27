@@ -37,12 +37,8 @@ export const uploadFiles = createAsyncThunk(
       // Add all files with the same key 'files' - Spring Boot will collect them into a List<MultipartFile>
       files.forEach(file => formData.append('files', file));
       
-      // Add parentFolderIds - Spring Boot will collect multiple parts with the same key into a List<UUID>
-      // Send each UUID as a separate part as plain text
-      const folderId = parentFolderId === 'root' ? 'root' : parentFolderId;
-      files.forEach(() => {
-        formData.append('parentFolderIds', folderId);
-      });
+      
+      formData.append('parentFolderId', parentFolderId);
 
       const response = await api.post('/ingestion/documents', formData, {
         headers: {

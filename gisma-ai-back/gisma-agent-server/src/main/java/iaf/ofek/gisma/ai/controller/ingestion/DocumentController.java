@@ -28,9 +28,9 @@ public class DocumentController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createNewDocument(@RequestPart("files") List<MultipartFile> files,
-                                    @RequestPart("parentFolderIds") List<UUID> parentFolderIds) {
+                                               @RequestPart("parentFolderId") String parentFolderId) {
         log.info("Uploading {} files.", files.size());
-        List<DocumentEntity> results = documentProcessor.saveNewDocuments(files, parentFolderIds);
+        List<DocumentEntity> results = documentProcessor.saveNewDocuments(files, List.of(UUID.fromString(parentFolderId)));
         log.info("Uploaded {} files successfully.", results.size());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(results);

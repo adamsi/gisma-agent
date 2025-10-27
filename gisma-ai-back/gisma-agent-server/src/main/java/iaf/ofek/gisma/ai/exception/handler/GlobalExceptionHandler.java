@@ -116,6 +116,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
         log.warn("Exception: {}", ex.getMessage(), ex);
+        ex.printStackTrace();
         ErrorResponse error = new ErrorResponse("Internal server error", ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
