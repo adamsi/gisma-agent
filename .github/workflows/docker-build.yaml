@@ -40,7 +40,7 @@ jobs:
           if [ "${GITHUB_REF##*/}" = "main" ]; then
             TAG=latest
           else
-            TAG=${GITHUB_REF##*/}"
+            TAG=${GITHUB_REF##*/}
           fi
 
           for SERVICE in $SERVICES; do
