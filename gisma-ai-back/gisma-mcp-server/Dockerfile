@@ -8,7 +8,7 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:17-jdk-jammy AS runtime
 WORKDIR /app
 
-COPY --from=build /app/gisma-mcp-server/target/*.jar app.jar
+COPY --from=build /app/gisma-mcp-server/target/gisma-mcp-server-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 
