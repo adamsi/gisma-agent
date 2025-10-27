@@ -1,18 +1,15 @@
 FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
-COPY ../../ ./
+COPY . .
 
-RUN chmod +x gisma-ai-back/gisma-mcp-server/mvnw
-
-WORKDIR /app/gisma-ai-back/gisma-mcp-server
-RUN ./mvnw clean package -DskipTests -B
+RUN mvn clean package -DskipTests -B
 
 FROM eclipse-temurin:17-jdk-jammy AS runtime
 WORKDIR /app
 
-COPY --from=build /app/gisma-ai-back/gisma-mcp-server/target/*.jar app.jar
+COPY --from=build /app/gisma-mcp-server/target/*.jar app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
