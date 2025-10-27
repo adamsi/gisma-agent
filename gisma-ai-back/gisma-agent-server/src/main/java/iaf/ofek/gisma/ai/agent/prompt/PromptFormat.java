@@ -25,4 +25,6 @@ public class PromptFormat {
 
     public static final String PLAN_AGGREGATED_OUTPUT = "{plan_aggregated_output}";
 
+    public static final String RESPONSE_FORMAT = "{response_format}";
+
 }

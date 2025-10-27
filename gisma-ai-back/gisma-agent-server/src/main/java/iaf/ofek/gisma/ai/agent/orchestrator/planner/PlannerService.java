@@ -31,9 +31,16 @@ public class PlannerService {
             - Always include 'input' and 'description'; add final 'explanation' for plan logic.
             
             Context:
+            ### TOOLS METADATA
             {tools_metadata}
+            
+            ### USER QUERY
             {user_query}
+            
+            ### QUICKSHOT RESPONSE
             {quickshot_response}
+            
+            ### SCHEMA JSON
             {schema_json}
             """;
 

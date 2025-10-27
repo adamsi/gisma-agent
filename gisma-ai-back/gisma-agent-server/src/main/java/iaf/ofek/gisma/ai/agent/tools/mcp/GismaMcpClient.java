@@ -8,6 +8,7 @@ import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlannerStep;
 import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.gisma.ai.dto.agent.StepExecutionResult;
+import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
@@ -32,6 +33,7 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
             4. Respect CHAT MEMORY — maintain context from previous user queries when deciding which tool to call or what filters to apply.
             5. Respect QUICKSHOT RESPONSE — the output of the QuickShot similarity search, which may already contain a sufficient answer.
             6. If the user’s request cannot be fulfilled with the available tools, ask for clarification or inform the user politely.
+            7. Always Provide a response that matches the RESPONSE FORMAT
             
             Never provide external knowledge or fabricate data. Always base your responses solely on tool outputs and previous conversation context.
             """;
@@ -42,6 +44,9 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
             
             ### QUICKSHOT RESPONSE:
             {quickshot_response}
+            
+            ### RESPONSE FORMAT
+            {response_format}
             """;
 
     private static final String STEP_SYSTEM_INSTRUCTIONS = """
@@ -76,10 +81,12 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
     }
 
     @Override
-    public Flux<String> execute(String query, PreflightClassifierResult classifierResponse) {
+    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse) {
         String userMessage = USER_PROMPT_TEMPLATE
-                .replace(PromptFormat.QUERY, query)
-                .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
+                .replace(PromptFormat.QUERY, prompt.query())
+                .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse())
+                .replace(PromptFormat.RESPONSE_FORMAT, prompt.responseFormat()
+                        .getFormat(prompt.schemaJson()));
 
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)

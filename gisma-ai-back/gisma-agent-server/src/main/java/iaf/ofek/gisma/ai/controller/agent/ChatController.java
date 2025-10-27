@@ -1,6 +1,7 @@
 package iaf.ofek.gisma.ai.controller.agent;
 
 import iaf.ofek.gisma.ai.agent.orchestrator.AgentOrchestrator;
+import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -24,7 +25,7 @@ public class ChatController {
     //client sends request to /app/chat and listens to response on /user/queue/reply,
     // spring handles routing to specific user
     @MessageMapping("/chat")
-    public Mono<Void> handlePrompt(@Payload String prompt, Principal user) {
+    public Mono<Void> handlePrompt(@Payload UserPromptDTO prompt, Principal user) {
         if (user instanceof Authentication auth) {
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(auth);

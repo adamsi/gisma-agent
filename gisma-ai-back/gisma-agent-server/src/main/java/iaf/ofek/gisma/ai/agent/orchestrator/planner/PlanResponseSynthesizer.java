@@ -3,6 +3,7 @@ package iaf.ofek.gisma.ai.agent.orchestrator.planner;
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlanExecutionResult;
+import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -24,7 +25,7 @@ public class PlanResponseSynthesizer {
             Rules:
             - Use only the given information; do not speculate or add facts.
             - If any step failed, mention that results may be incomplete.
-            - Keep the response clear, concise, and user-ready.
+            - The response should perfectly match the RESPONSE FORMAT
             """;
 
 
@@ -38,16 +39,19 @@ public class PlanResponseSynthesizer {
             ### Execution Status
             Overall Success: {plan_overall_success}
             
-            Please write a unified final answer using the above context.
+            ### RESPONSE FORMAT
+            {response_format}
             """;
 
 
-    public Flux<String> synthesizeResponse(String userQuery, PlanExecutionResult executionResult) {
+    public Flux<String> synthesizeResponse(UserPromptDTO prompt, PlanExecutionResult executionResult) {
         String aggregatedOutput = executionResult.aggregatedOutput() != null ? executionResult.aggregatedOutput() : "<No output available>";
         String userMessage = USER_PROMPT_TEMPLATE
-                .replace(PromptFormat.QUERY, userQuery)
+                .replace(PromptFormat.QUERY, prompt.query())
                 .replace(PromptFormat.PLAN_AGGREGATED_OUTPUT, aggregatedOutput)
-                .replace(PromptFormat.PLAN_OVERALL_SUCCESS, String.valueOf(executionResult.success()));
+                .replace(PromptFormat.PLAN_OVERALL_SUCCESS, String.valueOf(executionResult.success()))
+                .replace(PromptFormat.RESPONSE_FORMAT, prompt.responseFormat()
+                        .getFormat(prompt.schemaJson()));
 
         return llmCallerService.callLLM(chatClient ->
                         chatClient.prompt()

@@ -4,10 +4,7 @@ import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
-import iaf.ofek.gisma.ai.dto.agent.PlannerStep;
-import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;
-import iaf.ofek.gisma.ai.dto.agent.QuickShotResponse;
-import iaf.ofek.gisma.ai.dto.agent.StepExecutionResult;
+import iaf.ofek.gisma.ai.dto.agent.*;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -133,9 +130,9 @@ public class RagService implements DirectToolExecutor, StepExecutor {
     }
 
     @Override
-    public Flux<String> execute(String query, PreflightClassifierResult classifierResponse) {
+    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse) {
         String userMessage = USER_PROMPT_TEMPLATE
-                .replace(PromptFormat.QUERY, query)
+                .replace(PromptFormat.QUERY, prompt.query())
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .promptTemplate(new PromptTemplate(userMessage))
@@ -143,7 +140,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
 
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
-                .user(query)
+                .user(prompt.query())
                 .advisors(qaAdvisor));
     }
 
