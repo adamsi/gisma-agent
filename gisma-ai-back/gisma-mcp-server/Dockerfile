@@ -3,6 +3,8 @@ WORKDIR /app
 
 COPY ../../ ./
 
+RUN chmod +x gisma-ai-back/gisma-mcp-server/mvnw
+
 WORKDIR /app/gisma-ai-back/gisma-mcp-server
 RUN ./mvnw clean package -DskipTests -B
 
@@ -12,5 +14,5 @@ WORKDIR /app
 COPY --from=build /app/gisma-ai-back/gisma-mcp-server/target/*.jar app.jar
 
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
