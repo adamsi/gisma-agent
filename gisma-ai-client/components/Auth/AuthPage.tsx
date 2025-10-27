@@ -65,7 +65,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
         username: Yup.string().required('Username is required'),
         password: Yup.string()
           .min(6, 'Must be at least 6 characters')
-          .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Must include upper, lower, and number')
           .required('Password is required'),
       }),
     []
