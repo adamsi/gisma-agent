@@ -9,6 +9,9 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    env:
+      SERVICES: "gisma-mcp-server gisma-agent-server"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,9 +24,13 @@ jobs:
 
       - name: Build all microservices
         run: |
-          cd ./gisma-ai-back
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests
+          for SERVICE in $SERVICES; do
+            echo "🔨 Building $SERVICE"
+            cd ./gisma-ai-back/$SERVICE
+            chmod +x mvnw
+            ./mvnw clean package -DskipTests
+            cd ../../
+          done
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -33,13 +40,10 @@ jobs:
           if [ "${GITHUB_REF##*/}" = "main" ]; then
             TAG=latest
           else
-            TAG=${GITHUB_REF##*/}
+            TAG=${GITHUB_REF##*/}"
           fi
 
-          # Define service directories
-          SERVICES=("gisma-mcp-server" "gisma-agent-server")
-
-          for SERVICE in "${SERVICES[@]}"; do
+          for SERVICE in $SERVICES; do
             IMAGE=ghcr.io/${{ github.repository }}/$SERVICE:$TAG
             echo "🔨 Building and pushing $IMAGE"
             docker build -t $IMAGE ./gisma-ai-back/$SERVICE
