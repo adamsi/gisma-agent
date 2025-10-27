@@ -46,7 +46,7 @@ jobs:
           for SERVICE in $SERVICES; do
             IMAGE=ghcr.io/${{ github.repository }}/$SERVICE:$TAG
             echo "🔨 Building and pushing $IMAGE"
-            docker build -t $IMAGE ./gisma-ai-back/$SERVICE
+            docker build -f ./gisma-ai-back/$SERVICE/Dockerfile -t $IMAGE ./gisma-ai-back
             docker push $IMAGE
           done
 
