@@ -1,0 +1,63 @@
+name: Build & Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build all microservices
+        run: |
+          cd ./back
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and Push gisma services
+        run: |
+          if [ "${GITHUB_REF##*/}" = "main" ]; then
+            TAG=latest
+          else
+            TAG=${GITHUB_REF##*/}
+          fi
+
+          # Define service directories
+          SERVICES=("gisma-mcp-server" "gisma-agent-server")
+
+          for SERVICE in "${SERVICES[@]}"; do
+            IMAGE=ghcr.io/${{ github.repository }}/$SERVICE:$TAG
+            echo "🔨 Building and pushing $IMAGE"
+            docker build -t $IMAGE ./back/$SERVICE
+            docker push $IMAGE
+          done
+
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            cd /apps/gisma
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            if [ "${GITHUB_REF##*/}" = "main" ]; then
+              cd prod/
+              docker compose pull mcp-server agent
+              docker compose up -d
+            fi

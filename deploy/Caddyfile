@@ -1,0 +1,3 @@
+gisma-api.duckdns.org {
+    reverse_proxy agent:8080
+}
