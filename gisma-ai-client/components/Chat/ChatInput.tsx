@@ -125,8 +125,8 @@ export const ChatInput: FC<Props> = ({
   }, [content]);
 
   return (
-    <div className="absolute bottom-0 left-0 w-full border-transparent bg-gradient-to-b from-transparent via-white to-white pt-6 dark:border-white/20 dark:via-[#343541] dark:to-[#343541] md:pt-2">
-      <div className="stretch mx-2 mt-4 flex flex-row gap-3 last:mb-2 md:mx-4 md:mt-[52px] md:last:mb-6 lg:mx-auto lg:max-w-3xl">
+    <div className="absolute bottom-0 left-0 w-full border-transparent bg-gradient-to-b from-transparent via-white to-white pt-2 pb-safe dark:border-white/20 dark:via-[#343541] dark:to-[#343541] sm:pt-6 md:pt-2 md:pb-0">
+      <div className="stretch mx-2 mt-2 flex flex-row gap-2 last:mb-1 sm:mt-4 sm:gap-3 sm:last:mb-2 md:mx-4 md:mt-[52px] md:last:mb-6 lg:mx-auto lg:max-w-3xl">
         {messageIsStreaming && (
           <button
             className="absolute top-0 left-0 right-0 mx-auto mb-3 flex w-fit items-center gap-3 rounded border border-neutral-200 bg-white py-2 px-4 text-black hover:opacity-50 dark:border-neutral-600 dark:bg-[#343541] dark:text-white md:mb-0 md:mt-2"
@@ -182,7 +182,7 @@ export const ChatInput: FC<Props> = ({
           </div>
         </div>
       </div>
-      <div className="px-3 pt-2 pb-3 text-center text-[12px] text-black/50 dark:text-white/50 md:px-4 md:pt-3 md:pb-6">
+      <div className="px-3 pt-1 pb-2 text-center text-[10px] text-black/50 dark:text-white/50 sm:pt-2 sm:pb-3 sm:text-[12px] md:px-4 md:pt-3 md:pb-6">
         <a
           href="https://docs.spring.io/spring-ai/reference/api/retrieval-augmented-generation.html"
           target="_blank"
@@ -192,7 +192,7 @@ export const ChatInput: FC<Props> = ({
           Gisma Agent
         </a>
         .{' '}
-        Gisma Agent is an advanced legal assistant.
+        Gisma Agent is an advanced AI assistant.
       </div>
     </div>
   );
