@@ -6,9 +6,6 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { useEffect } from 'react';
-import { useAppDispatch } from '@/store/hooks';
-import { refreshToken } from '@/store/slices/authSlice';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -44,21 +41,6 @@ const darkTheme = createTheme({
 
 // Inner component that uses hooks
 function AppContent({ Component, pageProps, router }: AppProps<{}>) {
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    // Call refreshToken immediately on mount
-    dispatch(refreshToken());
-     
-    // Set up interval to refresh token every 10 minutes
-    const refreshTokenInterval = setInterval(() => {
-      dispatch(refreshToken());
-    }, 1000 * 60 * 10); // 10 minutes
-
-    // Clean up interval on unmount
-    return () => clearInterval(refreshTokenInterval);
-  }, [dispatch]);
-
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />

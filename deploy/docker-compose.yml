@@ -3,6 +3,9 @@ services:
     image: ghcr.io/adamsi/gisma-agent/gisma-mcp-server:latest
     container_name: mcp-server
     restart: always
+    networks:
+      - default
+      - dev_default
     expose:
       - "8081"
     env_file:
@@ -12,6 +15,9 @@ services:
     image: ghcr.io/adamsi/gisma-agent/gisma-agent-server:latest
     container_name: gisma-agent
     restart: always
+    networks:
+      - default
+      - dev_default
     expose:
       - "8080"
     env_file:
@@ -20,31 +26,19 @@ services:
       - db
 
   db:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: gisma-postgres
     restart: always
     env_file:
       - .env
     ports:
-    - "5433:5432"  
+      - "5435:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  caddy:
-    image: caddy:2
-    container_name: caddy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - agent, mcp-server
+networks:
+  dev_default:
+    external: true
 
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:

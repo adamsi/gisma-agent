@@ -75,8 +75,8 @@ const Home: React.FC<HomeProps> = ({
   // AUTHENTICATION EFFECT ----------------------------------------------
   useEffect(() => {
     const initializeAuth = async () => {
+        // Only refresh token, getUser will be called separately if needed
         await dispatch(refreshToken());
-        await dispatch(getUser());
        };
 
     // Only run once on mount
