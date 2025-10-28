@@ -461,7 +461,7 @@ const AdminUpload: React.FC = () => {
         <meta name="description" content="Admin document management interface" />
       </Head>
       
-      <div className="flex h-screen bg-gradient-to-br from-gray-950 via-slate-950 to-black relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row h-screen bg-gradient-to-br from-gray-950 via-slate-950 to-black relative overflow-hidden">
         {/* Particles Background */}
         <div className="absolute inset-0 z-0">
           <ParticlesBackground />
@@ -478,8 +478,8 @@ const AdminUpload: React.FC = () => {
         <div className="absolute inset-0 z-0 bg-grid opacity-30 mask-radial-faded" />
         
         {/* Sidebar */}
-        <div className="relative z-10 w-64 border-r border-white/10 bg-black/20 backdrop-blur-xl flex flex-col">
-          <div className="px-4 py-4 border-b border-white/10">
+        <div className="relative z-10 w-full sm:w-64 border-r border-white/10 bg-black/20 backdrop-blur-xl flex flex-row sm:flex-col">
+          <div className="px-4 py-4 border-r sm:border-r-0 sm:border-b border-white/10 flex-shrink-0">
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => router.push('/')}
@@ -497,21 +497,25 @@ const AdminUpload: React.FC = () => {
             </div>
           </div>
           
-          <div className="p-4 space-y-2">
+          <div className="p-4 flex flex-row sm:flex-col gap-2 sm:gap-0 sm:space-y-2 overflow-x-auto">
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl w-full"
+              className="flex items-center justify-center space-x-2 px-4 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap text-sm sm:w-full"
+              title="Upload Files"
             >
               <IconPlus className="w-4 h-4" />
-              <span>Upload Files</span>
+              <span className="hidden sm:inline">Upload Files</span>
+              <span className="sm:hidden">Upload</span>
             </button>
             
             <button
               onClick={() => setIsCreateFolderModalOpen(true)}
-              className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl w-full"
+              className="flex items-center justify-center space-x-2 px-4 h-11 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap text-sm sm:w-full"
+              title="New Folder"
             >
               <IconFolder className="w-4 h-4" />
-              <span>New Folder</span>
+              <span className="hidden sm:inline">New Folder</span>
+              <span className="sm:hidden">Folder</span>
             </button>
           </div>
         </div>
@@ -519,8 +523,8 @@ const AdminUpload: React.FC = () => {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col relative z-10">
           {/* Breadcrumb Navigation */}
-          <div className="px-6 py-4">
-            <div className="flex items-center space-x-2 text-sm">
+          <div className="px-3 sm:px-6 py-3 sm:py-4 overflow-x-auto">
+            <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
               {breadcrumbs.map((crumb, index) => (
                 <React.Fragment key={crumb.id}>
                   <button
@@ -542,7 +546,7 @@ const AdminUpload: React.FC = () => {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-8">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-8">
             <div className="max-w-7xl mx-auto">
               {/* Info Bar */}
               <div className="flex items-center justify-between mb-6">
@@ -577,7 +581,7 @@ const AdminUpload: React.FC = () => {
               </div>
 
             {/* File System Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {/* Folders */}
               {currentFolder.childrenFolders?.map((folder) => (
                 <div
