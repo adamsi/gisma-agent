@@ -57,7 +57,7 @@ jobs:
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            cd /apps/gisma
+            cd ../apps/gisma
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             if [ "${GITHUB_REF##*/}" = "main" ]; then
