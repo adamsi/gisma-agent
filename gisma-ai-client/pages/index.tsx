@@ -198,9 +198,7 @@ const Home: React.FC<HomeProps> = ({
           updatedConversation.responseFormat,
           updatedConversation.schemaJson,
           (chunk: string) => {
-            // Debug: Log each chunk to see what's being received
-            console.log('Received chunk:', JSON.stringify(chunk));
-      
+              
             if (stopConversationRef.current) {
               chatService.current.abortCurrentStream();
               finalizeStream();
