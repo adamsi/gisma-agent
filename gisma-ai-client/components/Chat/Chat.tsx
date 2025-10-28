@@ -212,7 +212,7 @@ export const Chat: FC<Props> = memo(
                   {loading && <ChatLoader /> }
 
                   <div
-                    className="h-[140px] bg-white dark:bg-[#343541] sm:h-[162px]"
+                    className="h-[20px] bg-white dark:bg-[#343541] sm:h-[162px]"
                     ref={messagesEndRef}
                   />
                 </>
