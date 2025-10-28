@@ -859,18 +859,18 @@ const AdminUpload: React.FC = () => {
 
         {/* Document Viewer Modal */}
         {isViewerOpen && viewerDocument && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsViewerOpen(false)} />
-            <div className="relative bg-black/90 backdrop-blur-2xl rounded-2xl border border-white/10 p-6 w-[50vw] h-[80vh] flex flex-col">
+            <div className="relative bg-black/90 backdrop-blur-2xl rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6 w-full sm:w-[50vw] h-[95vh] sm:h-[80vh] flex flex-col max-w-full">
               {/* Header */}
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                    <IconEye className="w-5 h-5 text-blue-400" />
+              <div className="flex items-start sm:items-center justify-between mb-3 sm:mb-4 flex-shrink-0 gap-2">
+                <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/20 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <IconEye className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">{viewerDocument.name}</h2>
-                    <p className="text-sm text-blue-200/70">{viewerDocument.contentType || 'Unknown type'}</p>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base sm:text-xl font-bold text-white truncate">{viewerDocument.name}</h2>
+                    <p className="text-xs sm:text-sm text-blue-200/70 truncate">{viewerDocument.contentType || 'Unknown type'}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -905,11 +905,11 @@ const AdminUpload: React.FC = () => {
               </div>
 
               {/* Content */}
-              <div className="flex-1 bg-black/30 rounded-xl p-4">
+              <div className="flex-1 bg-black/30 rounded-lg sm:rounded-xl p-3 sm:p-4 min-h-0">
                 <textarea
                   value={documentContent}
                   onChange={(e) => setDocumentContent(e.target.value)}
-                  className="w-full h-full p-6 bg-black/50 border border-white/20 rounded-xl text-white font-mono text-base resize-none focus:outline-none focus:border-blue-500/50"
+                  className="w-full h-full p-3 sm:p-6 bg-black/50 border border-white/20 rounded-lg sm:rounded-xl text-white font-mono text-xs sm:text-base resize-none focus:outline-none focus:border-blue-500/50"
                   spellCheck={false}
                   placeholder="Document content will be loaded here..."
                 />
