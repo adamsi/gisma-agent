@@ -861,7 +861,7 @@ const AdminUpload: React.FC = () => {
         {isViewerOpen && viewerDocument && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsViewerOpen(false)} />
-            <div className="relative bg-black/90 backdrop-blur-2xl rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6 w-full sm:w-[50vw] h-[95vh] sm:h-[80vh] flex flex-col max-w-full">
+            <div className="relative bg-black/90 backdrop-blur-2xl rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6 w-full sm:w-[50vw] h-[85vh] sm:h-[80vh] flex flex-col max-w-full">
               {/* Header */}
               <div className="flex items-start sm:items-center justify-between mb-3 sm:mb-4 flex-shrink-0 gap-2">
                 <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
