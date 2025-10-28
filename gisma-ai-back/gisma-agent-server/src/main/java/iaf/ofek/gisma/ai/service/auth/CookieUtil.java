@@ -44,7 +44,7 @@ public class CookieUtil {
                 .httpOnly(true)
                 .path("/")
                 .secure(true)
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
     }
