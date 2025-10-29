@@ -26,7 +26,7 @@ export const ChatbarSettings: FC<Props> = ({
   const avatarUrl = (user as any)?.picture || (user as any)?.image;
 
   return (
-    <div className="flex flex-col items-center space-y-1 border-t border-white/20 pt-1 text-sm">
+    <div className="flex flex-col items-center space-y-0.5 sm:space-y-1 border-t border-white/20 pt-0.5 sm:pt-1 text-xs sm:text-sm">
       {conversationsCount > 0 ? (
         <ClearConversations onClearConversations={onClearConversations} />
       ) : null}
@@ -34,7 +34,7 @@ export const ChatbarSettings: FC<Props> = ({
       <SidebarButton
         text={lightMode === 'light' ? 'Dark mode' : 'Light mode'}
         icon={
-          lightMode === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />
+          lightMode === 'light' ? <IconMoon size={16} /> : <IconSun size={16} />
         }
         onClick={() =>
           onToggleLightMode(lightMode === 'light' ? 'dark' : 'light')
@@ -45,15 +45,15 @@ export const ChatbarSettings: FC<Props> = ({
       {isAdmin && (
         <SidebarButton
           text="Upload Documents"
-          icon={<IconUpload size={18} />}
+          icon={<IconUpload size={16} />}
           onClick={() => router.push('/admin/upload')}
         />
       )}
 
       {/* User Profile Button */}
-      <div className="w-full pt-2 border-t border-white/20 mt-1">
+      <div className="w-full pt-1 sm:pt-2 border-t border-white/20 mt-0.5 sm:mt-1">
         <button
-          className="flex w-full items-center gap-3 rounded-lg py-2 px-3 hover:bg-gray-500/10"
+          className="flex w-full items-center gap-2 sm:gap-3 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 hover:bg-gray-500/10"
           onClick={() => setShowProfile((v) => !v)}
         >
           {avatarUrl ? (
@@ -61,37 +61,37 @@ export const ChatbarSettings: FC<Props> = ({
             <img
               src={avatarUrl}
               alt="User avatar"
-              className="h-6 w-6 rounded-full object-cover"
+              className="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover"
             />
           ) : (
-            <IconUser size={18} />
+            <IconUser size={16} />
           )}
           <div className="flex flex-col text-left">
-            <span className="text-white text-[12.5px] leading-4">
+            <span className="text-white text-[11px] sm:text-[12.5px] leading-3 sm:leading-4">
               {user?.username || 'User'}
             </span>
-            <span className="text-neutral-400 text-[11px] leading-3 truncate max-w-[140px]">
+            <span className="text-neutral-400 text-[10px] sm:text-[11px] leading-2 sm:leading-3 truncate max-w-[140px]">
               {user?.username || ''}
             </span>
           </div>
         </button>
 
         {showProfile && (
-          <div className="mt-2 rounded-lg border border-white/20 bg-[#161718] p-3">
-            <div className="mb-2 text-xs text-neutral-300">
+          <div className="mt-1.5 sm:mt-2 rounded-lg border border-white/20 bg-[#161718] p-2 sm:p-3">
+            <div className="mb-1.5 sm:mb-2 text-[10px] sm:text-xs text-neutral-300">
               <div className="font-semibold text-white">
                 {user?.username}
               </div>
               <div className="text-neutral-400 break-all">{user?.username}</div>
             </div>
             <button
-              className="flex w-full items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-left text-white hover:bg-gray-500/10"
+              className="flex w-full items-center gap-2 rounded-md border border-white/20 px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs sm:text-sm text-white hover:bg-gray-500/10"
               onClick={() => {
                 setShowProfile(false);
                 dispatch(logout());
               }}
             >
-              <IconLogout size={18} />
+              <IconLogout size={16} />
               <span>Log out</span>
             </button>
           </div>

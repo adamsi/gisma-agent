@@ -100,25 +100,25 @@ export const Chatbar: FC<Props> = ({
 
   return (
     <div
-      className={`fixed top-0 bottom-0 z-50 flex h-full w-[260px] flex-none flex-col space-y-2 bg-[#202123] p-2 transition-all sm:relative sm:top-0`}
+      className={`fixed top-0 bottom-0 z-50 flex h-full w-[260px] flex-none flex-col bg-[#202123] transition-all sm:relative sm:top-0 space-y-1 sm:space-y-2 p-1 sm:p-2`}
     >
       <div className="flex items-center">
         <button
-          className="flex w-[190px] flex-shrink-0 cursor-pointer select-none items-center gap-3 rounded-md border border-white/20 p-3 text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
+          className="flex w-[190px] flex-shrink-0 cursor-pointer select-none items-center gap-2 sm:gap-3 rounded-md border border-white/20 p-2 sm:p-3 text-[12px] sm:text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
           onClick={() => {
             onNewConversation();
             setSearchTerm('');
           }}
         >
-          <IconPlus size={18} />
+          <IconPlus size={16} />
           New chat
         </button>
 
         <button
-          className="ml-2 flex flex-shrink-0 cursor-pointer items-center gap-3 rounded-md border border-white/20 p-3 text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
+          className="ml-1 sm:ml-2 flex flex-shrink-0 cursor-pointer items-center gap-2 sm:gap-3 rounded-md border border-white/20 p-2 sm:p-3 text-[12px] sm:text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
           onClick={() => onCreateFolder('New folder')}
         >
-          <IconFolderPlus size={18} />
+          <IconFolderPlus size={16} />
         </button>
       </div>
 
@@ -152,7 +152,7 @@ export const Chatbar: FC<Props> = ({
 
         {conversations.length > 0 ? (
           <div
-            className="pt-2"
+            className="pt-1 sm:pt-2"
             onDrop={(e) => handleDrop(e)}
             onDragOver={allowDrop}
             onDragEnter={highlightDrop}
@@ -170,8 +170,8 @@ export const Chatbar: FC<Props> = ({
             />
           </div>
         ) : (
-          <div className="mt-8 flex flex-col items-center gap-3 text-sm leading-normal text-white opacity-50">
-            <IconMessagesOff />
+          <div className="mt-4 sm:mt-8 flex flex-col items-center gap-2 sm:gap-3 text-xs sm:text-sm leading-normal text-white opacity-50">
+            <IconMessagesOff size={16} className="sm:w-[18px] sm:h-[18px]" />
             No conversations.
           </div>
         )}
