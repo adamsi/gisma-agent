@@ -50,6 +50,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
 
   const isSignIn = currentMode === 'signin';
 
+  // Ensure cursor focuses the username input when on sign-in
+  useEffect(() => {
+    if (isSignIn) {
+      // Defer to after paint to avoid hydration/SSR timing issues
+      const t = setTimeout(() => {
+        const el = document.getElementById('username') as HTMLInputElement | null;
+        el?.focus();
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, [isSignIn]);
+
   const signInSchema = useMemo(
     () =>
       Yup.object({
@@ -167,6 +179,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
                           id="username"
                           name="username"
                           type="text"
+                          autoFocus
                           className="w-full pl-11 pr-4 py-3 rounded-xl bg-black/40 text-white placeholder-blue-300/60 ring-1 ring-white/10 focus:ring-2 focus:ring-blue-500 outline-none transition"
                           placeholder="Enter your username"
                         />
