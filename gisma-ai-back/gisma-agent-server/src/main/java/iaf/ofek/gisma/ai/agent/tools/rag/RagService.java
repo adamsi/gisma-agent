@@ -145,7 +145,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
     }
 
     public Mono<QuickShotResponse> quickShotSimilaritySearch(String query) {
-        QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
+        var qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .build();
         String systemMessage = QUICK_SHOT_SYSTEM_MESSAGE.replace(PromptFormat.SCHEMA_JSON, QUICK_SHOT_SCHEMA);
 
