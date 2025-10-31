@@ -522,7 +522,7 @@ const Home: React.FC<HomeProps> = ({
     <>
       <Head>
         <title>Gisma Agent</title>
-        <meta name="description" content="AI assistant with legal knowledge base." />
+        <meta name="description" content="AI assistant with gisma knowledge base." />
         <meta
           name="viewport"
           content="height=device-height ,width=device-width, initial-scale=1, user-scalable=no"

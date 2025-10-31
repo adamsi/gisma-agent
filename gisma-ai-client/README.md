@@ -1,11 +1,11 @@
 # Gisma Agent Frontend
 
-A modern, AI-powered legal assistant built with Next.js, TypeScript, and Redux.
+A modern, AI-powered gisma assistant built with Next.js, TypeScript, and Redux.
 
 ## Features
 
 - 🔐 **Authentication System**: Secure login/registration with JWT tokens
-- 🤖 **AI-Powered Chat**: Intelligent legal assistant with conversation history
+- 🤖 **AI-Powered Chat**: Intelligent gisma assistant with conversation history
 - 📁 **File Management**: Organize conversations and documents in folders
 - 🎨 **Modern UI**: Beautiful, responsive design with dark/light mode
 - 📱 **Mobile Responsive**: Works seamlessly on all devices
@@ -32,7 +32,7 @@ A modern, AI-powered legal assistant built with Next.js, TypeScript, and Redux.
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd legal-copilot-front
+cd gisma-copilot-front
 ```
 
 2. Install dependencies:
@@ -94,7 +94,7 @@ The frontend communicates with the backend through these endpoints:
 ## Project Structure
 
 ```
-legal-copilot-front/
+gisma-copilot-front/
 ├── components/           # React components
 │   ├── Chat/            # Chat interface components
 │   ├── HomePage/        # Landing page components

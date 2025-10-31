@@ -27,15 +27,15 @@ public class CookieUtil {
     }
 
     public void addCookies(final HttpServletResponse httpServletResponse, UUID userId) {
-        operateCookies(httpServletResponse, this::setAuthCookie, userId, null);
+        operateCookies(httpServletResponse, this::setAuthCookie, userId);
     }
 
     public void removeCookies(final HttpServletResponse httpServletResponse) {
-        operateCookies(httpServletResponse, this::clearAuthCookie, null, 0);
+        operateCookies(httpServletResponse, this::clearAuthCookie, null);
     }
 
-    private void operateCookies(final HttpServletResponse response, CookieGenerator generator, UUID userId, Integer expiration) {
-        cookies.forEach((cookie, expirationMs) -> generator.generate(response, userId, cookie, expiration != null ? expiration : expirationMs));
+    private void operateCookies(final HttpServletResponse response, CookieGenerator generator, UUID userId) {
+        cookies.forEach((cookie, expirationMs) -> generator.generate(response, userId, cookie, expirationMs));
     }
 
     private void setAuthCookie(final HttpServletResponse response, final UUID userId, final String cookieName, final Integer expirationMs) {
@@ -49,12 +49,15 @@ public class CookieUtil {
         response.addHeader("Set-Cookie", cookie.toString());
     }
 
-    private void clearAuthCookie(HttpServletResponse response, final UUID name, final String cookieName, final Integer expirationMs) {
-        Cookie cookie = new Cookie(cookieName, null);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(expirationMs);
-        response.addCookie(cookie);
+    private void clearAuthCookie(HttpServletResponse response, final UUID userId, final String cookieName, final Integer expirationMs) {
+        ResponseCookie cookie = ResponseCookie.from(cookieName, "")
+                .httpOnly(true)
+                .path("/")
+                .secure(true)
+                .sameSite("None")
+                .maxAge(0)
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
     }
 
     public UUID extractUserId(String refreshToken) {

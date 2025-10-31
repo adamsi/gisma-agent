@@ -144,7 +144,7 @@ export const Chat: FC<Props> = memo(
               Welcome to Gisma Agent
             </div>
             <div className="text-center text-lg text-black dark:text-white">
-              <div className="mb-8">{`Gisma Agent is an AI assistant with access to legal knowledge base.`}</div>
+              <div className="mb-8">{`Gisma Agent is an AI assistant with access to gisma knowledge base.`}</div>
               <div className="mb-2 font-bold">
                 Important: Make sure your Gisma Agent backend is running.
               </div>
@@ -152,7 +152,7 @@ export const Chat: FC<Props> = memo(
             <div className="text-center text-gray-500 dark:text-gray-400">
               <div className="mb-2">
                 Gisma Agent connects to your local RAG backend to provide
-                accurate legal information and assistance.
+                accurate gisma information and assistance.
               </div>
               <div className="mb-2">
                 Please ensure your backend is running at the configured host.
