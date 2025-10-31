@@ -31,7 +31,7 @@ public class S3Service {
 
     public String uploadFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            return "";
+        throw new IllegalArgumentException("Uploaded file is empty");
         }
 
         try {

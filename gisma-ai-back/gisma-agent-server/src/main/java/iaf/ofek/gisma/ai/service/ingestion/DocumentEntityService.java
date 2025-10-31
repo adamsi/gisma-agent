@@ -29,8 +29,9 @@ public class DocumentEntityService {
     @Transactional
     public List<DocumentEntity> createNewDocuments(List<CreateDocumentDTO> documents, String userId) {
         return documents.stream()
-                .filter(document -> isSupported(document.getFile()))
                 .map(document -> {
+                    validateFile(document.getFile());
+
                     try {
                         return createNewDocument(document, userId);
                     } catch (Exception e) {
@@ -53,9 +54,7 @@ public class DocumentEntityService {
 
     @Transactional
     public DocumentEntity editDocument(MultipartFile file, UUID documentId, String userId) {
-        if (!isSupported(file)) {
-           throw new IllegalArgumentException("File is not supported");
-        }
+        validateFile(file);
 
         var documentEntity = documentEntityRepository.findById(documentId)
                 .orElseThrow(() -> new EntityNotFoundException("Document with id: `%s` not found".formatted(documentId)));
@@ -87,10 +86,16 @@ public class DocumentEntityService {
     }
 
 
-    private boolean isSupported(MultipartFile file) {
-        return !file.isEmpty() && file.getContentType() != null &&
-                List.of("application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                        .contains(file.getContentType());
+    private void validateFile(MultipartFile file) {
+        if (file.isEmpty() || file.getContentType() == null) {
+            throw new IllegalArgumentException("Uploaded file is empty");
+        }
+
+        if (!List.of("application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                .contains(file.getContentType())) {
+            throw new IllegalArgumentException("Uploaded file contentType is not supported");
+        }
+
     }
 
 }
