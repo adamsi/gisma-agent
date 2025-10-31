@@ -27,15 +27,15 @@ public class CookieUtil {
     }
 
     public void addCookies(final HttpServletResponse httpServletResponse, UUID userId) {
-        operateCookies(httpServletResponse, this::setAuthCookie, userId);
+        operateCookies(httpServletResponse, this::setAuthCookie, userId, null);
     }
 
     public void removeCookies(final HttpServletResponse httpServletResponse) {
-        operateCookies(httpServletResponse, this::clearAuthCookie, null);
+        operateCookies(httpServletResponse, this::clearAuthCookie, null, 0);
     }
 
-    private void operateCookies(final HttpServletResponse response, CookieGenerator generator, UUID userId) {
-        cookies.forEach((cookie, expirationMs) -> generator.generate(response, userId, cookie, expirationMs));
+    private void operateCookies(final HttpServletResponse response, CookieGenerator generator, UUID userId, Integer expiration) {
+        cookies.forEach((cookie, expirationMs) -> generator.generate(response, userId, cookie, expiration != null ? expiration : expirationMs));
     }
 
     private void setAuthCookie(final HttpServletResponse response, final UUID userId, final String cookieName, final Integer expirationMs) {

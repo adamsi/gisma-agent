@@ -25,6 +25,7 @@ public class PreflightClassifierService {
             
             Tasks:
             - Set `sufficient` true if QuickShotResponse fully answers query.
+            - If the user query involves data retrieval, APIs, or any external information (e.g., “get”, “fetch”, “show data”, “from database”, “API result”), set `sufficient` to false and use MCP_CLIENT as a tool.
             - If false, choose `actionMode`: "DIRECT_TOOL" or "PLANNER".
             - Always include `rephrasedResponse`: correct grammar and structure.
             - Output valid JSON per {schema_json}.
@@ -60,7 +61,7 @@ public class PreflightClassifierService {
                   "description": "A list of recommended tools to use. One tool for DIRECT_TOOL, multiple for PLANNER.",
                   "items": {
                     "type": "String",
-                    "enum": ["RAG_SERVICE", "MCP_CLIENT"]
+                    "enum": ["RAG_SERVICE", "MCP_CLIENT", "LLM_REASONER"]
                   }
                 },
                 "rephrasedResponse": "string"
