@@ -25,7 +25,9 @@ public class PreflightClassifierService {
             
             Tasks:
             - Only set `sufficient` to true when the query does NOT require data retrieval and the QuickShotResponse fully answers it.
-            - If `sufficient` is false, choose an `actionMode`: either "DIRECT_TOOL" or "PLANNER".
+            - If sufficient is false, set actionMode:
+            Use "DIRECT_TOOL" if a single tool can answer the query directly.
+            Use "PLANNER" if the query requires multiple tools, multi-step reasoning, or data synthesis across sources.
             - Always include `rephrasedResponse`: a grammatically correct and well-structured version of the user query + relevant data from quickShot response.
             - Output valid JSON according to {schema_json}.
             """;
