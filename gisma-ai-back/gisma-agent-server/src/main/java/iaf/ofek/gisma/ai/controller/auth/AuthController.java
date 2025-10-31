@@ -42,6 +42,10 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<User> registerUser(@RequestBody @Valid RegisterUserDto user) {
+        if (true) {
+            throw new RuntimeException("Currently unavailable feature");
+        }
+
        User createdUser = userService.createUser(user);
 
        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
