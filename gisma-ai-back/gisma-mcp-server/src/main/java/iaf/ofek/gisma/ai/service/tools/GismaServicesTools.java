@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.service.tools;
 
-import iaf.ofek.gisma.ai.demo.Fruit;
+import com.fasterxml.jackson.databind.JsonNode;
 import iaf.ofek.gisma.ai.service.webApiClient.GismaServicesClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -17,7 +17,12 @@ public class GismaServicesTools {
     private final GismaServicesClient gismaServicesClient;
 
     @Tool(description = "Get all fruits")
-    public List<Fruit> getAllFruits() {
+    public List<JsonNode> getAllFruits() {
+        return gismaServicesClient.getAllFruits();
+    }
+
+    @Tool(description = "Get fruit by name")
+    public List<JsonNode> getFruitByName(String name) {
         return gismaServicesClient.getAllFruits();
     }
 

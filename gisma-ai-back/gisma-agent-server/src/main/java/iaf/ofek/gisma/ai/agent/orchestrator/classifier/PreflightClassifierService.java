@@ -25,10 +25,16 @@ public class PreflightClassifierService {
             
             Tasks:
             - Only set `sufficient` to true when the query does NOT require data retrieval and the QuickShotResponse fully answers it.
-            - If sufficient is false, set actionMode:
-            Use "DIRECT_TOOL" if a single tool can answer the query directly.
-            Use "PLANNER" if the query requires multiple tools, multi-step reasoning, or data synthesis across sources.
-            - Always include `rephrasedResponse`: a grammatically correct and well-structured version of the user query + relevant data from quickShot response.
+            
+            - If `sufficient` is false, choose `actionMode` based on the following rules:
+              1. **DIRECT_TOOL** → Use this when the query can be answered by a single tool.
+                 - Use **MCP_CLIENT** by default for any data, API, factual, numeric, or retrieval query (anything involving fetching from services, databases, or structured sources).
+                 - Use **RAG_SERVICE** only for queries that ask about:
+                     • Documentation, concepts, how-to guides
+              2. **PLANNER** → Use this when the query requires multiple tools, complex reasoning, or cross-source synthesis.
+            
+            - Always include `rephrasedResponse`: a grammatically correct and well-structured version of the user query combined with relevant details from QuickShotResponse.
+            
             - Output valid JSON according to {schema_json}.
             """;
 
@@ -62,7 +68,7 @@ public class PreflightClassifierService {
                   "description": "A list of recommended tools to use. One tool for DIRECT_TOOL, multiple for PLANNER.",
                   "items": {
                     "type": "String",
-                    "enum": ["RAG_SERVICE", "MCP_CLIENT"]
+                    "enum": ["MCP_CLIENT", "RAG_SERVICE"]
                   }
                 },
                 "rephrasedResponse": "string"
