@@ -2,9 +2,7 @@ import { Conversation, Message } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
 import { OpenAIModel } from '@/types/openai';
 import {
-  IconAdjustments,
   IconPlayerStop,
-  IconRepeat,
   IconSend,
 } from '@tabler/icons-react';
 import {

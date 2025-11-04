@@ -1,12 +1,10 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { refreshToken, getUser } from '@/store/slices/authSlice';
-import { showToast } from '@/store/slices/toastSlice';
 import { Chat } from '@/components/Chat/Chat';
 import { Chatbar } from '@/components/Chatbar/Chatbar';
 import HomePage from '@/components/HomePage/HomePage';
-import LoadingSpinner from '@/components/Global/LoadingSpinner';
-import { ChatBody, Conversation, Message } from '@/types/chat';
+import { Conversation, Message } from '@/types/chat';
 import { ResponseFormat } from '@/types/responseFormat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
@@ -48,7 +46,6 @@ const Home: React.FC<HomeProps> = ({
   defaultModelId,
 }) => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const { user } = useAppSelector((state) => state.auth);
 
   // STATE ----------------------------------------------
