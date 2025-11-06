@@ -91,6 +91,14 @@ public class RagService implements DirectToolExecutor, StepExecutor {
             {question_answer_context}
             """;
 
+    private static final String QUICK_SHOT_PROMPT_TEMPLATE = """
+            ### USER QUERY:
+            {query}
+            
+            ### DOCUMENT CONTEXT:
+            {question_answer_context}
+            """;
+
     private static final String QUICK_SHOT_SCHEMA = """
             {
               "$schema": "http://json-schema.org/draft-07/schema#",
@@ -156,6 +164,8 @@ public class RagService implements DirectToolExecutor, StepExecutor {
 
     public Mono<QuickShotResponse> quickShotSimilaritySearch(String query) {
         var qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
+                .promptTemplate(new PromptTemplate(QUICK_SHOT_PROMPT_TEMPLATE
+                        .replace(PromptFormat.QUERY, query)))
                 .order(3)
                 .build();
         String systemMessage = QUICK_SHOT_SYSTEM_MESSAGE.replace(PromptFormat.SCHEMA_JSON, QUICK_SHOT_SCHEMA);
