@@ -1,7 +1,6 @@
 package iaf.ofek.gisma.ai.agent.tools.mcp;
 
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
-import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
@@ -76,8 +75,8 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
     private final LLMCallerService llmCallerService;
 
 
-    public GismaMcpClient(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider, ToolCallbackProvider tools) {
-        this.llmCallerService = new LLMCallerService(builder, memoryAdvisorProvider, tools);
+    public GismaMcpClient(ChatClient.Builder builder, ToolCallbackProvider tools) {
+        this.llmCallerService = new LLMCallerService(builder, tools);
     }
 
     @Override

@@ -47,7 +47,7 @@ public class LLMCallerService {
                 .build();
     }
 
-    public LLMCallerService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider, ToolCallbackProvider toolCallbackProvider) {
+    public LLMCallerService(ChatClient.Builder builder, ToolCallbackProvider toolCallbackProvider) {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         this.chatClient = builder
                 .defaultAdvisors(loggerAdvisor)

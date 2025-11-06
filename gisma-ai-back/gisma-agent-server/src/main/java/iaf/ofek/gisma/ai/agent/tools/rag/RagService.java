@@ -59,7 +59,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
             You are the Gisma Knowledge Extractor.
             
             Task:
-            Retrieve the most relevant Gisma documentation fragments.
+            Retrieve the most relevant Gisma documentation fragments/ chat memory.
             
             Rules:
             - Respond in strict JSON as per {schema_json}.
@@ -132,6 +132,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
         this.documentVectorStore = documentVectorStore;
         this.llmCallerService = new LLMCallerService(builder,
                 MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.shortTermMemoryAdvisor())
+                        .order(90)
                         .build());
 //        memoryAdvisorProvider.longTermChatMemoryAdvisor(70);
         this.memoryAdvisorProvider = memoryAdvisorProvider;
