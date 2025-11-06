@@ -1,11 +1,14 @@
 package iaf.ofek.gisma.ai.agent.tools.rag;
 
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.*;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -120,13 +123,19 @@ public class RagService implements DirectToolExecutor, StepExecutor {
 
     private final LLMCallerService llmCallerService;
 
-
     private final VectorStore documentVectorStore;
 
-    public RagService(LLMCallerService llmCallerService,
+    private final ChatMemoryAdvisorProvider memoryAdvisorProvider;
+
+    public RagService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider,
                       @Qualifier("documentVectorStore") VectorStore documentVectorStore) {
-        this.llmCallerService = llmCallerService;
         this.documentVectorStore = documentVectorStore;
+        this.llmCallerService = new LLMCallerService(builder,
+                MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.shortTermMemoryAdvisor())
+                        .build());
+//        memoryAdvisorProvider.longTermChatMemoryAdvisor(70);
+        this.memoryAdvisorProvider = memoryAdvisorProvider;
+
     }
 
     @Override
@@ -146,14 +155,17 @@ public class RagService implements DirectToolExecutor, StepExecutor {
 
     public Mono<QuickShotResponse> quickShotSimilaritySearch(String query) {
         var qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
+                .order(3)
                 .build();
         String systemMessage = QUICK_SHOT_SYSTEM_MESSAGE.replace(PromptFormat.SCHEMA_JSON, QUICK_SHOT_SCHEMA);
 
         return ReactiveUtils.runBlockingAsync(() -> llmCallerService.callLLMWithSchemaValidation(chatClient ->
-                chatClient.prompt()
-                        .system(systemMessage)
-                        .user(query)
-                        .advisors(qaAdvisor), QuickShotResponse.class));
+                        chatClient.prompt()
+                                .system(systemMessage)
+                                .user(query)
+                                .advisors(qaAdvisor)
+                                .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer())
+                , QuickShotResponse.class));
     }
 
     @Override

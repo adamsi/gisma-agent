@@ -36,9 +36,11 @@ public class ChatController {
         }
 
         return agentOrchestrator.handleQuery(prompt)
-                .doOnNext(response ->
-                        messagingTemplate.convertAndSendToUser(
-                                user.getName(), "/queue/reply", response
+                .concatMap(response ->
+                        Mono.fromRunnable(() ->
+                                messagingTemplate.convertAndSendToUser(
+                                        user.getName(), "/queue/reply", response
+                                )
                         )
                 )
                 .then();

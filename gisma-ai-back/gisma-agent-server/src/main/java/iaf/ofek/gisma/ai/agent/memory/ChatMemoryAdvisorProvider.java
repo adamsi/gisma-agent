@@ -4,6 +4,7 @@ import iaf.ofek.gisma.ai.service.auth.AuthService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,14 +30,22 @@ public class ChatMemoryAdvisorProvider {
             {long_term_memory}
             """;
 
-    public VectorStoreChatMemoryAdvisor longTermChatMemoryAdvisor(int advisorOrder) {
+    public VectorStoreChatMemoryAdvisor longTermChatMemoryAdvisor(int order) {
         return VectorStoreChatMemoryAdvisor.builder(memoryVectorStore)
-                .order(advisorOrder)
+                .order(order)
                 .systemPromptTemplate(new PromptTemplate(CHAT_MEMORY_TEMPLATE))
                 .build();
     }
 
-    public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisor() {
+    public ChatMemory shortTermMemoryAdvisor() {
+        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+                .maxMessages(20)
+                .build();
+
+        return memory;
+    }
+
+    public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisorConsumer() {
         String userId = authService.getCurrentUserId();
 
         return a -> a.param(ChatMemory.CONVERSATION_ID, userId);
