@@ -129,7 +129,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
     public RagService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider,
                       @Qualifier("documentVectorStore") VectorStore documentVectorStore) {
         this.documentVectorStore = documentVectorStore;
-        this.llmCallerService = new LLMCallerService(builder,
+        this.llmCallerService = new LLMCallerService(builder, memoryAdvisorProvider,
                 MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.shortTermMemoryAdvisor())
                         .order(90)
                         .build());

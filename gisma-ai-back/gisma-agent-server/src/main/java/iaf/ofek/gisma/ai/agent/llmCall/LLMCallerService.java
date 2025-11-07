@@ -30,29 +30,34 @@ public class LLMCallerService {
 
     private final ChatClient chatClient;
 
+    private final ChatMemoryAdvisorProvider memoryAdvisorProvider;
+
     @Autowired
-    public LLMCallerService(ChatClient.Builder builder) {
+    public LLMCallerService(ChatClient.Builder builder, ChatMemoryAdvisorProvider chatMemoryAdvisorProvider) {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         this.chatClient = builder
                 .defaultAdvisors(loggerAdvisor)
                 .build();
+        this.memoryAdvisorProvider = chatMemoryAdvisorProvider;
     }
 
-    public LLMCallerService(ChatClient.Builder builder, Advisor... extraAdvisors) {
+    public LLMCallerService(ChatClient.Builder builder, ChatMemoryAdvisorProvider chatMemoryAdvisorProvider, Advisor... extraAdvisors) {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         List<Advisor> advisors = new ArrayList<>(Arrays.stream(extraAdvisors).toList());
         advisors.add(loggerAdvisor);
         this.chatClient = builder
                 .defaultAdvisors(advisors)
                 .build();
+        this.memoryAdvisorProvider = chatMemoryAdvisorProvider;
     }
 
-    public LLMCallerService(ChatClient.Builder builder, ToolCallbackProvider toolCallbackProvider) {
+    public LLMCallerService(ChatClient.Builder builder, ToolCallbackProvider toolCallbackProvider, ChatMemoryAdvisorProvider chatMemoryAdvisorProvider) {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         this.chatClient = builder
                 .defaultAdvisors(loggerAdvisor)
                 .defaultToolCallbacks(toolCallbackProvider)
                 .build();
+        this.memoryAdvisorProvider = chatMemoryAdvisorProvider;
     }
 
     // intermediate agent phases
