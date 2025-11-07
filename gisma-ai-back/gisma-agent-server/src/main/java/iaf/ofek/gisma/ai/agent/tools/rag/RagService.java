@@ -73,17 +73,11 @@ public class RagService implements DirectToolExecutor, StepExecutor {
             ### DOCUMENT CONTEXT:
             {question_answer_context}
             
-            ### USER QUERY:
-            {query}
-            
             ### QUICKSHOT RESPONSE:
             {quickshot_response}
             """;
 
     private static final String STEP_PROMPT_TEMPLATE = """
-            ### USER QUERY:
-            {query}
-            
              ### STEP DESCRIPTION:
             {step_description}
             
@@ -92,9 +86,6 @@ public class RagService implements DirectToolExecutor, StepExecutor {
             """;
 
     private static final String QUICK_SHOT_PROMPT_TEMPLATE = """
-            ### USER QUERY:
-            {query}
-            
             ### DOCUMENT CONTEXT:
             {question_answer_context}
             """;
@@ -150,7 +141,6 @@ public class RagService implements DirectToolExecutor, StepExecutor {
     @Override
     public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse) {
         String userMessage = USER_PROMPT_TEMPLATE
-                .replace(PromptFormat.QUERY, prompt.query())
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .promptTemplate(new PromptTemplate(userMessage))
@@ -164,8 +154,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
 
     public Mono<QuickShotResponse> quickShotSimilaritySearch(String query) {
         var qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
-                .promptTemplate(new PromptTemplate(QUICK_SHOT_PROMPT_TEMPLATE
-                        .replace(PromptFormat.QUERY, query)))
+                .promptTemplate(new PromptTemplate(QUICK_SHOT_PROMPT_TEMPLATE))
                 .order(3)
                 .build();
         String systemMessage = QUICK_SHOT_SYSTEM_MESSAGE.replace(PromptFormat.SCHEMA_JSON, QUICK_SHOT_SCHEMA);
@@ -183,11 +172,10 @@ public class RagService implements DirectToolExecutor, StepExecutor {
     public Mono<StepExecutionResult> executeStep(PlannerStep step) {
         String query = step.query() != null ? step.query() : "";
         String description = step.description() != null ? step.description() : "";
-        String userMessage = STEP_PROMPT_TEMPLATE
-                .replace(PromptFormat.QUERY, query)
+        String promptTemplate = STEP_PROMPT_TEMPLATE
                 .replace(PromptFormat.STEP_DESCRIPTION, description);
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
-                .promptTemplate(new PromptTemplate(userMessage))
+                .promptTemplate(new PromptTemplate(promptTemplate))
                 .build();
 
         return ReactiveUtils.runBlockingAsync(() ->

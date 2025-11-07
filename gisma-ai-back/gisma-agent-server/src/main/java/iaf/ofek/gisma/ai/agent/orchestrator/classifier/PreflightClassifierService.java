@@ -26,14 +26,19 @@ public class PreflightClassifierService {
             Tasks:
             - Only set `sufficient` to true when the query does NOT require data retrieval and the QuickShotResponse fully answers it.
             
-            - If `sufficient` is false, choose `actionMode` based on the following rules:
-              1. **DIRECT_TOOL** → Use this when the query can be answered by a single tool.
-                 - Use **MCP_CLIENT** by default for any data, API, factual, numeric, or retrieval query (anything involving fetching from services, databases, or structured sources).
-                 - Use **RAG_SERVICE** only for queries that ask about:
-                     • Documentation, concepts, how-to guides
-              2. **PLANNER** → Use this when the query requires multiple tools, complex reasoning, or cross-source synthesis.
+            - If `sufficient` is true:
+                • Set `rephrasedResponse` to a **user-customized response**: a clear, direct, and well-structured answer phrased naturally for the user, based on the QuickShotResponse content.
             
-            - Always include `rephrasedResponse`: a grammatically correct and well-structured version of the user query combined with relevant details from QuickShotResponse.
+            - If `sufficient` is false:
+                • Determine `actionMode` based on the following rules:
+                    1. **DIRECT_TOOL** → Use this when the query can be answered by a single tool.
+                       - Use **MCP_CLIENT** by default for any data, API, factual, numeric, or retrieval query (anything involving fetching from services, databases, or structured sources).
+                       - Use **RAG_SERVICE** only for queries that ask about:
+                           • Documentation
+                           • Concepts
+                           • How-to guides
+                    2. **PLANNER** → Use this when the query requires multiple tools, complex reasoning, or cross-source synthesis.
+                • Set `rephrasedResponse` to a **rewritten clarification of the user's intent** that guides the next step and aligns with the selected `actionMode`.
             
             - Output valid JSON according to {schema_json}.
             """;
