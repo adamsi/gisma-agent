@@ -8,7 +8,6 @@ import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.*;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -59,11 +58,12 @@ public class RagService implements DirectToolExecutor, StepExecutor {
             You are the Gisma Knowledge Extractor.
             
             Task:
-            Retrieve the most relevant Gisma documentation fragments/ chat memory.
+            Retrieve the most relevant Gisma documentation fragments/ chat memory data.
             
             Rules:
             - Respond in strict JSON as per {schema_json}.
             - Summarize key API concepts and relevant sections.
+            - When the user query is about their session/personal data, prioritize chat memory over documentation fragments.
             - Include concise references to endpoints or entities.
             - Be concise, factual, and precise.
             """;
@@ -124,15 +124,11 @@ public class RagService implements DirectToolExecutor, StepExecutor {
 
     private final VectorStore documentVectorStore;
 
-    private final ChatMemoryAdvisorProvider memoryAdvisorProvider;
-
     public RagService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider,
                       @Qualifier("documentVectorStore") VectorStore documentVectorStore) {
         this.documentVectorStore = documentVectorStore;
         this.llmCallerService = new LLMCallerService(builder, memoryAdvisorProvider);
 //        memoryAdvisorProvider.longTermChatMemoryAdvisor(70);
-        this.memoryAdvisorProvider = memoryAdvisorProvider;
-
     }
 
     @Override
@@ -161,7 +157,6 @@ public class RagService implements DirectToolExecutor, StepExecutor {
                                 .system(systemMessage)
                                 .user(query)
                                 .advisors(qaAdvisor)
-                                .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer())
                 , QuickShotResponse.class));
     }
 
