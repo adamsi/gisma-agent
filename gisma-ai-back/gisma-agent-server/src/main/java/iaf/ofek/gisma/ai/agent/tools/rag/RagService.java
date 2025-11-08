@@ -63,7 +63,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
             Rules:
             - Respond in strict JSON as per {schema_json}.
             - Summarize key API concepts and relevant sections.
-            - When the user query is about their session/personal data, prioritize chat memory over documentation fragments.
+            - When the user query is about their personal/session data, retrieve chat memory context.
             - Include concise references to endpoints or entities.
             - Be concise, factual, and precise.
             """;
