@@ -24,6 +24,9 @@ public class ChatMemoryAdvisorProvider {
         this.memoryVectorStore = memoryVectorStore;
     }
 
+    public static final MessageWindowChatMemory shortTermMemory = MessageWindowChatMemory.builder()
+            .maxMessages(20)
+            .build();
 
     private static final String CHAT_MEMORY_TEMPLATE = """
             ### CHAT MEMORY:
@@ -35,14 +38,6 @@ public class ChatMemoryAdvisorProvider {
                 .order(order)
                 .systemPromptTemplate(new PromptTemplate(CHAT_MEMORY_TEMPLATE))
                 .build();
-    }
-
-    public ChatMemory shortTermMemoryAdvisor() {
-        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
-                .maxMessages(20)
-                .build();
-
-        return memory;
     }
 
     public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisorConsumer() {
