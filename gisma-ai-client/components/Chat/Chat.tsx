@@ -37,6 +37,7 @@ interface Props {
   ) => void;
   onEditMessage: (message: Message, messageIndex: number) => void;
   stopConversationRef: MutableRefObject<boolean>;
+  onStop: () => void;
 }
 
 export const Chat: FC<Props> = memo(
@@ -52,6 +53,7 @@ export const Chat: FC<Props> = memo(
     onUpdateConversation,
     onEditMessage,
     stopConversationRef,
+    onStop,
   }) => {
     const [currentMessage, setCurrentMessage] = useState<Message>();
     const [autoScrollEnabled, setAutoScrollEnabled] = useState<boolean>(true);
@@ -222,6 +224,7 @@ export const Chat: FC<Props> = memo(
 
             <ChatInput
               stopConversationRef={stopConversationRef}
+              onStop={onStop}
               textareaRef={textareaRef}
               messageIsStreaming={messageIsStreaming}
               conversationIsEmpty={conversation.messages.length === 0}

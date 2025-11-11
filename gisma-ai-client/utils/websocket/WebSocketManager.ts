@@ -11,6 +11,7 @@ export class WebSocketManager {
   private maxReconnectAttempts: number;
   private reconnectDelay: number;
   private responseCallbacks: Map<string, (response: WebSocketResponse) => void> = new Map();
+  private subscription: any = null;
 
   constructor(config: WebSocketConfig) {
     this.config = config;
@@ -93,6 +94,31 @@ export class WebSocketManager {
     this.responseCallbacks.delete('default');
   }
 
+  public abort(): void {
+    // Unsubscribe from the response queue to stop receiving messages
+    if (this.subscription) {
+      try {
+        this.subscription.unsubscribe();
+        this.subscription = null;
+      } catch (error) {
+        console.error('Error unsubscribing from WebSocket:', error);
+      }
+    }
+    
+    // Clear response handlers
+    this.responseCallbacks.clear();
+    
+    // Disconnect the WebSocket to stop the stream
+    if (this.isConnected) {
+      try {
+        this.client.deactivate();
+        this.isConnected = false;
+      } catch (error) {
+        console.error('Error disconnecting WebSocket:', error);
+      }
+    }
+  }
+
   public connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.isConnected) {
@@ -111,7 +137,7 @@ export class WebSocketManager {
         this.reconnectAttempts = 0;
         
         // Subscribe to response queue
-        this.client.subscribe(WEBSOCKET_CONFIG.RECEIVE_DESTINATION, (message) => {
+        this.subscription = this.client.subscribe(WEBSOCKET_CONFIG.RECEIVE_DESTINATION, (message) => {
           try {
             // Debug: Log the raw message body to see what's being received
             console.log('WebSocket received chunk:', JSON.stringify(message.body));
@@ -149,6 +175,16 @@ export class WebSocketManager {
   }
 
   public disconnect(): void {
+    // Unsubscribe before disconnecting
+    if (this.subscription) {
+      try {
+        this.subscription.unsubscribe();
+        this.subscription = null;
+      } catch (error) {
+        console.error('Error unsubscribing from WebSocket:', error);
+      }
+    }
+    
     this.client.deactivate();
     this.isConnected = false;
     this.responseCallbacks.clear();

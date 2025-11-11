@@ -64,6 +64,7 @@ const Home: React.FC<HomeProps> = ({
 
   // REFS ----------------------------------------------
   const stopConversationRef = useRef<boolean>(false);
+  const finalizeStreamRef = useRef<(() => void) | null>(null);
   
   // WEBSOCKET SERVICE ----------------------------------------------
   const chatService = useRef<ChatService>(new ChatService(WEBSOCKET_CONFIG.SERVER_URL));
@@ -114,6 +115,27 @@ const Home: React.FC<HomeProps> = ({
   // Note: Avoid early returns that change hook order. Render conditionally in JSX below.
 
   // WEBSOCKET RESPONSE ----------------------------------------------
+  const handleStop = () => {
+    // Set the stop flag
+    stopConversationRef.current = true;
+    
+    // Immediately abort the WebSocket stream
+    chatService.current.abortCurrentStream();
+    
+    // Finalize the stream if there's an active one
+    if (finalizeStreamRef.current) {
+      finalizeStreamRef.current();
+    } else {
+      // If no finalize function, just update the streaming state
+      setMessageIsStreaming(false);
+    }
+    
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      stopConversationRef.current = false;
+    }, 1000);
+  };
+
   const handleSend = async (
     message: Message,
     deleteCount = 0,
@@ -186,13 +208,16 @@ const Home: React.FC<HomeProps> = ({
         setConversations(updatedConversations);
         saveConversations(updatedConversations);
         setMessageIsStreaming(false);
+        finalizeStreamRef.current = null;
       };
+      
+      // Store finalize function in ref so it can be called from stop handler
+      finalizeStreamRef.current = finalizeStream;
 
       try {
         await chatService.current.sendMessage(
           message.content,
           updatedConversation.responseFormat,
-          updatedConversation.schemaJson,
           (chunk: string) => {
               
             if (stopConversationRef.current) {
@@ -247,7 +272,8 @@ const Home: React.FC<HomeProps> = ({
             toast.error('Connection error. Please try again.');
             setAppLoading(false);
             setMessageIsStreaming(false);
-          }
+          },
+          updatedConversation.schemaJson
         );
       } catch (error) {
         console.error('Failed to send message:', error);
@@ -591,6 +617,7 @@ const Home: React.FC<HomeProps> = ({
                   onUpdateConversation={handleUpdateConversation}
                   onEditMessage={handleEditMessage}
                   stopConversationRef={stopConversationRef}
+                  onStop={handleStop}
                 />
               </div>
             </div>

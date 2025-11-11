@@ -51,10 +51,10 @@ export class ChatService {
   public async sendMessage(
     message: string,
     responseFormat: string,
-    schemaJson?: string,
     onChunk: (chunk: string) => void,
     onComplete: () => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
+    schemaJson?: string
   ): Promise<void> {
     // Don't send messages if user not authenticated
     if (!this.isAuthenticated) {
@@ -95,7 +95,8 @@ export class ChatService {
 
   public abortCurrentStream(): void {
     this.stopped = true;
-    this.wsManager.clearResponseHandler();
+    // Actually abort the WebSocket connection to stop receiving data
+    this.wsManager.abort();
   }
 
   public isConnected(): boolean {

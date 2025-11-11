@@ -25,6 +25,7 @@ interface Props {
   onSend: (message: Message) => void;
   onRegenerate: () => void;
   stopConversationRef: MutableRefObject<boolean>;
+  onStop: () => void;
   textareaRef: MutableRefObject<HTMLTextAreaElement | null>;
 }
 
@@ -37,6 +38,7 @@ export const ChatInput: FC<Props> = ({
   onSend,
   onRegenerate,
   stopConversationRef,
+  onStop,
   textareaRef,
 }) => {
 
@@ -76,10 +78,8 @@ export const ChatInput: FC<Props> = ({
   };
 
   const handleStopConversation = () => {
-    stopConversationRef.current = true;
-    setTimeout(() => {
-      stopConversationRef.current = false;
-    }, 1000);
+    // Call the parent's stop handler which will abort the stream immediately
+    onStop();
   };
 
   const isMobile = () => {
