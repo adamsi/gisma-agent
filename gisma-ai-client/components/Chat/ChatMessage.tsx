@@ -1,4 +1,4 @@
-import { Message } from '@/types/chat';
+import { Conversation, Message } from '@/types/chat';
 import { IconCheck, IconCopy, IconEdit, IconUser, IconRobot, IconRepeat } from '@tabler/icons-react';
 import { FC, memo, useEffect, useRef, useState } from 'react';
 import rehypeMathjax from 'rehype-mathjax';
@@ -10,13 +10,14 @@ import { MemoizedReactMarkdown } from '../Markdown/MemoizedReactMarkdown';
 interface Props {
   message: Message;
   messageIndex: number;
+  conversation: Conversation;
   onEditMessage: (message: Message, messageIndex: number) => void;
   isLastMessage?: boolean;
   onRegenerate?: () => void;
 }
 
 export const ChatMessage: FC<Props> = memo(
-  ({ message, messageIndex, onEditMessage, isLastMessage, onRegenerate }) => {
+  ({ message, messageIndex, conversation, onEditMessage, isLastMessage, onRegenerate }) => {
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [isTyping, setIsTyping] = useState<boolean>(false);
     const [messageContent, setMessageContent] = useState(message.content);
@@ -70,6 +71,8 @@ export const ChatMessage: FC<Props> = memo(
       }
     }, [isEditing]);
 
+    const textDirection = conversation.textDirection || 'ltr';
+
     return (
       <div
         className={`group px-4 ${
@@ -77,7 +80,7 @@ export const ChatMessage: FC<Props> = memo(
             ? 'border-b border-black/10 bg-gray-50 text-gray-800 dark:border-gray-900/50 dark:bg-[#444654] dark:text-gray-100'
             : 'border-b border-black/10 bg-white text-gray-800 dark:border-gray-900/50 dark:bg-[#343541] dark:text-gray-100'
         }`}
-        style={{ overflowWrap: 'anywhere' }}
+        style={{ overflowWrap: 'anywhere', direction: textDirection }}
       >
         <div className="relative m-auto flex gap-4 p-4 text-base md:max-w-2xl md:gap-6 md:py-6 lg:max-w-2xl lg:px-0 xl:max-w-3xl">
           <div className="min-w-[40px] text-right font-bold">
@@ -104,6 +107,7 @@ export const ChatMessage: FC<Props> = memo(
                         padding: '0',
                         margin: '0',
                         overflow: 'hidden',
+                        direction: textDirection,
                       }}
                     />
 
@@ -127,7 +131,10 @@ export const ChatMessage: FC<Props> = memo(
                     </div>
                   </div>
                 ) : (
-                  <div className="prose whitespace-pre-wrap dark:prose-invert">
+                  <div 
+                    className="prose whitespace-pre-wrap dark:prose-invert"
+                    style={{ direction: textDirection }}
+                  >
                     {message.content}
                   </div>
                 )}
@@ -178,7 +185,10 @@ export const ChatMessage: FC<Props> = memo(
                   )}
                 </div>
 
-                <div className="prose whitespace-pre-wrap dark:prose-invert">
+                <div 
+                  className="prose whitespace-pre-wrap dark:prose-invert"
+                  style={{ direction: textDirection }}
+                >
                   {message.content}
                 </div>
               </>

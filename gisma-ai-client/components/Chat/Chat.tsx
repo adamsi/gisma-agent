@@ -199,6 +199,7 @@ export const Chat: FC<Props> = memo(
                       key={index}
                       message={message}
                       messageIndex={index}
+                      conversation={conversation}
                       onEditMessage={onEditMessage}
                       isLastMessage={index === conversation.messages.length - 1}
                       onRegenerate={() => {

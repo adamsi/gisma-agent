@@ -154,7 +154,7 @@ export const ChatInput: FC<Props> = ({
 
             <textarea
               ref={textareaRef}
-              className="m-0 w-full resize-none border-0 bg-transparent p-0 py-2 pr-8 pl-2 text-black dark:bg-transparent dark:text-white md:py-3 md:pl-2"
+              className="m-0 w-full resize-none border-0 bg-transparent p-0 py-2 text-black dark:bg-transparent dark:text-white md:py-3"
               style={{
                 resize: 'none',
                 bottom: `${textareaRef?.current?.scrollHeight}px`,
@@ -164,9 +164,12 @@ export const ChatInput: FC<Props> = ({
                     ? 'auto'
                     : 'hidden'
                 }`,
+                direction: conversation.textDirection || 'ltr',
+                paddingLeft: conversation.textDirection === 'rtl' ? '2rem' : '0.5rem',
+                paddingRight: conversation.textDirection === 'rtl' ? '0.5rem' : '2rem',
               }}
               placeholder={
-                'Type a message...'
+                conversation.textDirection === 'rtl' ? 'הקלד הודעה...' : 'Type a message...'
               }
               value={content}
               rows={1}
@@ -177,7 +180,9 @@ export const ChatInput: FC<Props> = ({
             />
 
             <button
-              className="absolute right-2 top-2 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"
+              className={`absolute top-2 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200 ${
+                conversation.textDirection === 'rtl' ? 'left-2' : 'right-2'
+              }`}
               onClick={handleSend}
             >
               {messageIsStreaming ? (

@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @Service
 public class RagService implements DirectToolExecutor, StepExecutor {
 
@@ -132,7 +134,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
     }
 
     @Override
-    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse) {
+    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse, UUID userId) {
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
@@ -142,10 +144,10 @@ public class RagService implements DirectToolExecutor, StepExecutor {
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
                 .user(prompt.query())
-                .advisors(qaAdvisor));
+                .advisors(qaAdvisor), userId);
     }
 
-    public Mono<QuickShotResponse> quickShotSimilaritySearch(String query) {
+    public Mono<QuickShotResponse> quickShotSimilaritySearch(String query, UUID userId) {
         var qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .promptTemplate(new PromptTemplate(QUICK_SHOT_PROMPT_TEMPLATE))
                 .order(3)
@@ -157,11 +159,11 @@ public class RagService implements DirectToolExecutor, StepExecutor {
                                 .system(systemMessage)
                                 .user(query)
                                 .advisors(qaAdvisor)
-                , QuickShotResponse.class));
+                , QuickShotResponse.class, userId));
     }
 
     @Override
-    public Mono<StepExecutionResult> executeStep(PlannerStep step) {
+    public Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
         String query = step.query() != null ? step.query() : "";
         String description = step.description() != null ? step.description() : "";
         String promptTemplate = STEP_PROMPT_TEMPLATE
@@ -176,7 +178,8 @@ public class RagService implements DirectToolExecutor, StepExecutor {
                                 .system(STEP_SYSTEM_INSTRUCTIONS)
                                 .user(query)
                                 .advisors(qaAdvisor),
-                        StepExecutionResult.class
+                        StepExecutionResult.class,
+                        userId
                 ));
     }
 

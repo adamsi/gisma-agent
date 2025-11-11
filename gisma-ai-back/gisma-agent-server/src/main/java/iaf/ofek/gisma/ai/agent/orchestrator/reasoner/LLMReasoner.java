@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class LLMReasoner implements StepExecutor {
@@ -37,7 +39,7 @@ public class LLMReasoner implements StepExecutor {
     private final LLMCallerService llmCallerService;
 
     @Override
-    public Mono<StepExecutionResult> executeStep(PlannerStep step) {
+    public Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
         String query = step.query() != null ? step.query() : "";
         String description = step.description() != null ? step.description() : "";
 
@@ -50,7 +52,8 @@ public class LLMReasoner implements StepExecutor {
                         chatClient -> chatClient.prompt()
                                 .system(SYSTEM_INSTRUCTIONS)
                                 .user(userMessage),
-                        StepExecutionResult.class
+                        StepExecutionResult.class,
+                        userId
                 ));
     }
 

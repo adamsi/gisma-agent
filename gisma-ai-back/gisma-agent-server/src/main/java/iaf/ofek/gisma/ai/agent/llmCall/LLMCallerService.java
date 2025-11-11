@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -70,11 +71,11 @@ public class LLMCallerService {
     }
 
     // intermediate agent phases
-    public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType) {
+    public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType, UUID userId) {
         return RetryUtils.callWithRetriesBlocking(
                 () -> {
                     String rawResponse = callback.apply(chatClient)
-                            .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer())
+                            .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer(userId))
                             .call()
                             .content();
 
@@ -88,10 +89,10 @@ public class LLMCallerService {
     }
 
     // response to user call
-    public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback) {
+    public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, UUID userId) {
         return RetryUtils.callWithRetries(
                 () -> callback.apply(chatClient)
-                        .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer())
+                        .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer(userId))
                         .stream()
                         .content(),
                 MAX_LLM_RETRY_CALLS,

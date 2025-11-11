@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 
 @Service
 @RequiredArgsConstructor
@@ -101,7 +103,7 @@ public class PreflightClassifierService {
 
     private final LLMCallerService llmCallerService;
 
-    public Mono<PreflightClassifierResult> classify(String query, QuickShotResponse quickShotResponse) {
+    public Mono<PreflightClassifierResult> classify(String query, QuickShotResponse quickShotResponse, UUID userId) {
         String systemMessage = PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE
                 .replace(PromptFormat.SCHEMA_JSON, PREFLIGHT_CLASSIFIER_SCHEMA)
                 .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll());
@@ -113,7 +115,7 @@ public class PreflightClassifierService {
         return ReactiveUtils.runBlockingAsync(() -> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
-                        .user(userMessage), PreflightClassifierResult.class));
+                        .user(userMessage), PreflightClassifierResult.class, userId));
     }
 
 }

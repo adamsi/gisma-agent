@@ -25,12 +25,16 @@ export const AdvancedSettings: FC<Props> = ({
   const [localSchemaJson, setLocalSchemaJson] = useState<string>(
     conversation.schemaJson || '',
   );
+  const [localTextDirection, setLocalTextDirection] = useState<'ltr' | 'rtl'>(
+    conversation.textDirection || 'ltr',
+  );
   const [error, setError] = useState<string>('');
 
   // Update local state when conversation changes
   useEffect(() => {
     setLocalResponseFormat(conversation.responseFormat || ResponseFormat.SIMPLE);
     setLocalSchemaJson(conversation.schemaJson || '');
+    setLocalTextDirection(conversation.textDirection || 'ltr');
     setError('');
   }, [conversation]);
 
@@ -67,9 +71,25 @@ export const AdvancedSettings: FC<Props> = ({
     };
     
     // Then update schemaJson using the conversation that already has the updated responseFormat
-    onUpdateConversation(updatedWithFormat, {
+    const updatedWithSchema = {
+      ...updatedWithFormat,
+      schemaJson: localResponseFormat === ResponseFormat.SCHEMA ? localSchemaJson : undefined,
+    };
+    
+    onUpdateConversation(updatedWithSchema, {
       key: 'schemaJson',
       value: localResponseFormat === ResponseFormat.SCHEMA ? localSchemaJson : undefined,
+    });
+    
+    // Update textDirection
+    const updatedWithTextDirection = {
+      ...updatedWithSchema,
+      textDirection: localTextDirection,
+    };
+    
+    onUpdateConversation(updatedWithTextDirection, {
+      key: 'textDirection',
+      value: localTextDirection,
     });
     
     setIsOpen(false);
@@ -96,6 +116,7 @@ export const AdvancedSettings: FC<Props> = ({
             if (e.target === e.currentTarget) {
               setLocalResponseFormat(conversation.responseFormat || ResponseFormat.SIMPLE);
               setLocalSchemaJson(conversation.schemaJson || '');
+              setLocalTextDirection(conversation.textDirection || 'ltr');
               setIsOpen(false);
             }
           }}
@@ -111,6 +132,7 @@ export const AdvancedSettings: FC<Props> = ({
                   // Reset local state to conversation state
                   setLocalResponseFormat(conversation.responseFormat || ResponseFormat.SIMPLE);
                   setLocalSchemaJson(conversation.schemaJson || '');
+                  setLocalTextDirection(conversation.textDirection || 'ltr');
                   setIsOpen(false);
                 }}
               >
@@ -174,6 +196,28 @@ export const AdvancedSettings: FC<Props> = ({
                 </div>
               )}
 
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white">
+                  Language
+                </label>
+                <select
+                  value={localTextDirection}
+                  onChange={(e) =>
+                    setLocalTextDirection(e.target.value as 'ltr' | 'rtl')
+                  }
+                  className="w-full h-12 rounded-md border border-white/20 bg-[#343541] px-6 py-3 pr-16 text-white text-base focus:border-blue-500 focus:outline-none transition-all [&::-ms-expand]:hidden appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 5 5-5' stroke='%23fff' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 1rem center',
+                    backgroundSize: '1.5rem 1.5rem',
+                  }}
+                >
+                  <option value="ltr">English</option>
+                  <option value="rtl">Hebrew</option>
+                </select>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleSave}
@@ -186,6 +230,7 @@ export const AdvancedSettings: FC<Props> = ({
                     // Reset local state to conversation state
                     setLocalResponseFormat(conversation.responseFormat || ResponseFormat.SIMPLE);
                     setLocalSchemaJson(conversation.schemaJson || '');
+                    setLocalTextDirection(conversation.textDirection || 'ltr');
                     setIsOpen(false);
                   }}
                   className="flex-1 rounded-md border border-white/20 bg-[#343541] px-6 py-3 text-base font-medium text-white transition-colors hover:bg-gray-500/10 focus:outline-none"

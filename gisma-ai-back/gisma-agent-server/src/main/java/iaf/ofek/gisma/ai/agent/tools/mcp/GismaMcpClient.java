@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @Service
 @Log4j2
 public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
@@ -81,7 +83,7 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
     }
 
     @Override
-    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse) {
+    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse, UUID userId) {
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUERY, prompt.query())
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse())
@@ -90,11 +92,11 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
 
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
-                .user(userMessage));
+                .user(userMessage), userId);
     }
 
     @Override
-    public Mono<StepExecutionResult> executeStep(PlannerStep step) {
+    public Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
         String endpoints = (step.mcpEndpoints() != null && !step.mcpEndpoints().isEmpty())
                 ? String.join(", ", step.mcpEndpoints())
                 : "No specific endpoints provided";
@@ -115,7 +117,8 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
                         chatClient -> chatClient.prompt()
                                 .system(STEP_SYSTEM_INSTRUCTIONS)
                                 .user(userMessage),
-                        StepExecutionResult.class
+                        StepExecutionResult.class,
+                        userId
                 )
         );
     }

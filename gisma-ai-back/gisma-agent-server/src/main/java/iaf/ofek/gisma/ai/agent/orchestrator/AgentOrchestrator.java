@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -24,9 +25,9 @@ public class AgentOrchestrator {
 
     private final ActionModeExecutorRouter actionModeExecutorRouter;
 
-    public Flux<String> handleQuery(UserPromptDTO prompt) {
-        return ragService.quickShotSimilaritySearch(prompt.query())
-                .flatMap(quickShotResponse -> preflightClassifierService.classify(prompt.query(), quickShotResponse))
+    public Flux<String> handleQuery(UserPromptDTO prompt, UUID userId) {
+        return ragService.quickShotSimilaritySearch(prompt.query(), userId)
+                .flatMap(quickShotResponse -> preflightClassifierService.classify(prompt.query(), quickShotResponse, userId))
                 .flatMapMany(preflightClassifierResponse -> {
                     if (preflightClassifierResponse.sufficient()) {
                         return Flux.just(preflightClassifierResponse.rephrasedResponse());
@@ -34,18 +35,18 @@ public class AgentOrchestrator {
 
                     ActionModeExecutor executor = actionModeExecutorRouter.route(preflightClassifierResponse);
 
-                    return executor.execute(prompt, preflightClassifierResponse);
+                    return executor.execute(prompt, preflightClassifierResponse, userId);
                 });
     }
 
-    public String handleQueryBlocking(UserPromptDTO prompt) {
-        QuickShotResponse quickShotResponse = ragService.quickShotSimilaritySearch(prompt.query()).block();
+    public String handleQueryBlocking(UserPromptDTO prompt, UUID userId) {
+        QuickShotResponse quickShotResponse = ragService.quickShotSimilaritySearch(prompt.query(), userId).block();
 
         if (quickShotResponse == null) {
             throw new IllegalArgumentException("quickShotResponse must not be null");
         }
 
-        PreflightClassifierResult preflightClassifierResult =  preflightClassifierService.classify(prompt.query(), quickShotResponse).block();
+        PreflightClassifierResult preflightClassifierResult =  preflightClassifierService.classify(prompt.query(), quickShotResponse, userId).block();
 
         if (preflightClassifierResult == null) {
             throw new IllegalArgumentException("quickShotResponse must not be null");
@@ -58,7 +59,7 @@ public class AgentOrchestrator {
         ActionModeExecutor executor = actionModeExecutorRouter.route(preflightClassifierResult);
 
         return StringUtils.joinLines(
-                Objects.requireNonNull(executor.execute(prompt, preflightClassifierResult).collectList()                       // Collect all Flux<String> items into List<String>
+                Objects.requireNonNull(executor.execute(prompt, preflightClassifierResult, userId).collectList()                       // Collect all Flux<String> items into List<String>
                 .block())
         );
     }

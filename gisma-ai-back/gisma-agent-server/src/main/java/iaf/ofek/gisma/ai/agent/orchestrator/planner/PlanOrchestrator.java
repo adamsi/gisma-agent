@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class PlanOrchestrator implements ActionModeExecutor {
@@ -18,11 +20,11 @@ public class PlanOrchestrator implements ActionModeExecutor {
     private final PlanResponseSynthesizer planResponseSynthesizer;
 
     @Override
-    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse) {
-        return plannerService.plan(prompt.query(), classifierResponse)
-                .flatMap(planStepsExecutor::executePlan)
+    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse, UUID userId) {
+        return plannerService.plan(prompt.query(), classifierResponse, userId)
+                .flatMap((result)-> planStepsExecutor.executePlan(result, userId))
                 .flatMapMany(planExecutionResult ->
-                        planResponseSynthesizer.synthesizeResponse(prompt, planExecutionResult));
+                        planResponseSynthesizer.synthesizeResponse(prompt, planExecutionResult, userId));
     }
 
 }

@@ -6,9 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
@@ -35,14 +37,10 @@ public class AuthService {
     }
 
     public String getCurrentUserId() {
-        try {
-           return SecurityContextHolder.getContext()
-                    .getAuthentication()
-                    .getPrincipal()
-                    .toString();
-        } catch (Exception e) {
-            return "user";
-        }
+        return ReactiveSecurityContextHolder.getContext()
+                .map(ctx -> ctx.getAuthentication().getName())
+                .defaultIfEmpty("user").block();
     }
+
 
 }

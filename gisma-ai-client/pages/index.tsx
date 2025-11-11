@@ -342,6 +342,7 @@ const Home: React.FC<HomeProps> = ({
       prompt: DEFAULT_SYSTEM_PROMPT,
       folderId: null,
       responseFormat: ResponseFormat.SIMPLE,
+      textDirection: 'ltr',
     };
 
     const updatedConversations = [...conversations, newConversation];
@@ -376,6 +377,7 @@ const Home: React.FC<HomeProps> = ({
         prompt: DEFAULT_SYSTEM_PROMPT,
         folderId: null,
         responseFormat: ResponseFormat.SIMPLE,
+        textDirection: 'ltr',
       });
       localStorage.removeItem('selectedConversation');
     }
@@ -511,6 +513,7 @@ const Home: React.FC<HomeProps> = ({
         prompt: DEFAULT_SYSTEM_PROMPT,
         folderId: null,
         responseFormat: ResponseFormat.SIMPLE,
+        textDirection: 'ltr',
       });
     }
   }, [serverSideApiKeyIsSet]);

@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class PlannerService {
@@ -95,7 +97,7 @@ public class PlannerService {
 
     private final LLMCallerService llmCallerService;
 
-    public Mono<PlannerResult> plan(String userQuery, PreflightClassifierResult preflightClassifierResult) {
+    public Mono<PlannerResult> plan(String userQuery, PreflightClassifierResult preflightClassifierResult, UUID userId) {
         String systemMessage = SYSTEM_INSTRUCTIONS
                 .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll())
                 .replace(PromptFormat.QUERY, userQuery)
@@ -108,7 +110,7 @@ public class PlannerService {
                                 .system(SYSTEM_INSTRUCTIONS)
                                 .system(systemMessage)
                                 .user(userQuery),
-                        PlannerResult.class
+                        PlannerResult.class, userId
                 )
         );
     }

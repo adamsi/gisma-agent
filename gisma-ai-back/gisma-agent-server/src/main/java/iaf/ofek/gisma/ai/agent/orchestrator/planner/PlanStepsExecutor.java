@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -24,11 +25,11 @@ public class PlanStepsExecutor {
 
     private final Map<ToolManifest, StepExecutor> planStepExecutorMap;
 
-    public Mono<PlanExecutionResult> executePlan(PlannerResult plannerResult) {
+    public Mono<PlanExecutionResult> executePlan(PlannerResult plannerResult, UUID userId) {
         List<StepExecutionResult> stepResults = new ArrayList<>();
 
         return Flux.fromIterable(plannerResult.steps())
-                .flatMap(this::executeStep)
+                .flatMap((step)-> executeStep(step, userId))
                 .doOnNext(stepResults::add)
                 .then(ReactiveUtils.runBlockingAsync(() -> {
                     boolean overallSuccess = stepResults.stream()
@@ -38,9 +39,9 @@ public class PlanStepsExecutor {
                 }));
     }
 
-    private Mono<StepExecutionResult> executeStep(PlannerStep step) {
+    private Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
         return planStepExecutorMap.get(step.toolCategory())
-                .executeStep(step);
+                .executeStep(step, userId);
     }
 
 }

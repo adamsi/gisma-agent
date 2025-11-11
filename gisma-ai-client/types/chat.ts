@@ -24,4 +24,5 @@ export interface Conversation {
   folderId: string | null;
   responseFormat: ResponseFormat;
   schemaJson?: string;
+  textDirection?: 'ltr' | 'rtl';
 }

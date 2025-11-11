@@ -10,6 +10,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
 import java.util.function.Consumer;
 
 @Service
@@ -40,9 +41,7 @@ public class ChatMemoryAdvisorProvider {
                 .build();
     }
 
-    public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisorConsumer() {
-        String userId = authService.getCurrentUserId();
-
+    public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisorConsumer(UUID userId) {
         return a -> a.param(ChatMemory.CONVERSATION_ID, userId);
     }
 
