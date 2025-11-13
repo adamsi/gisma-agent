@@ -25,18 +25,24 @@ public class AgentOrchestrator {
 
     private final ActionModeExecutorRouter actionModeExecutorRouter;
 
+    private final OneShotExecutor oneShotExecutor;
+
+//    public Flux<String> handleQuery(UserPromptDTO prompt, UUID userId) {
+//        return ragService.quickShotSimilaritySearch(prompt.query(), userId)
+//                .flatMap(quickShotResponse -> preflightClassifierService.classify(prompt.query(), quickShotResponse, userId))
+//                .flatMapMany(preflightClassifierResponse -> {
+//                    if (preflightClassifierResponse.sufficient()) {
+//                        return Flux.just(preflightClassifierResponse.rephrasedResponse());
+//                    }
+//
+//                    ActionModeExecutor executor = actionModeExecutorRouter.route(preflightClassifierResponse);
+//
+//                    return executor.execute(prompt, preflightClassifierResponse, userId);
+//                });
+//    }
+
     public Flux<String> handleQuery(UserPromptDTO prompt, UUID userId) {
-        return ragService.quickShotSimilaritySearch(prompt.query(), userId)
-                .flatMap(quickShotResponse -> preflightClassifierService.classify(prompt.query(), quickShotResponse, userId))
-                .flatMapMany(preflightClassifierResponse -> {
-                    if (preflightClassifierResponse.sufficient()) {
-                        return Flux.just(preflightClassifierResponse.rephrasedResponse());
-                    }
-
-                    ActionModeExecutor executor = actionModeExecutorRouter.route(preflightClassifierResponse);
-
-                    return executor.execute(prompt, preflightClassifierResponse, userId);
-                });
+        return oneShotExecutor.execute(prompt, userId);
     }
 
     public String handleQueryBlocking(UserPromptDTO prompt, UUID userId) {
