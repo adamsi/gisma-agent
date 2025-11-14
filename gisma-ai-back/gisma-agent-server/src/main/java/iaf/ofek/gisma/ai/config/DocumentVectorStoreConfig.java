@@ -8,25 +8,28 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import static iaf.ofek.gisma.ai.constant.DBTableNames.DOCUMENT_VECTOR_STORE;
+import static iaf.ofek.gisma.ai.constant.DBTableNames.USER_DOCUMENT_VECTOR_STORE;
+
 @Configuration
-public class VectorStoreConfig {
+public class DocumentVectorStoreConfig {
 
     @Value("${spring.ai.vectorstore.pgvector.schema-name}")
     private String schema;
 
-    @Bean("memoryVectorStore")
-    public VectorStore memoryVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+    @Bean("userDocumentVectorStore")
+    public VectorStore userDocumentVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
         return PgVectorStore.builder(jdbcTemplate, embeddingModel)
                 .schemaName(schema)
-                .vectorTableName("memory_vector_store")
+                .vectorTableName(USER_DOCUMENT_VECTOR_STORE)
                 .build();
     }
 
     @Bean("documentVectorStore")
-    public VectorStore qaVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+    public VectorStore documentVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
         return PgVectorStore.builder(jdbcTemplate, embeddingModel)
                 .schemaName(schema)
-                .vectorTableName("document_vector_store")
+                .vectorTableName(DOCUMENT_VECTOR_STORE)
                 .build();
     }
 

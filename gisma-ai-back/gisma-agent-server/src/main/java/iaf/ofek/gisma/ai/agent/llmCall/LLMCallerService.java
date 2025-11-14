@@ -38,9 +38,9 @@ public class LLMCallerService {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         this.chatClient = builder
                 .defaultAdvisors(loggerAdvisor,
-                        MessageChatMemoryAdvisor.builder(ChatMemoryAdvisorProvider.shortTermMemory)
-                        .order(90)
-                        .build())
+                        MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
+                                .order(90)
+                                .build())
                 .build();
         this.memoryAdvisorProvider = memoryAdvisorProvider;
     }
@@ -49,7 +49,7 @@ public class LLMCallerService {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         List<Advisor> advisors = new ArrayList<>(Arrays.stream(extraAdvisors).toList());
         advisors.add(loggerAdvisor);
-        advisors.add(MessageChatMemoryAdvisor.builder(ChatMemoryAdvisorProvider.shortTermMemory)
+        advisors.add(MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
                 .order(90)
                 .build());
         this.chatClient = builder
@@ -62,7 +62,7 @@ public class LLMCallerService {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         this.chatClient = builder
                 .defaultAdvisors(loggerAdvisor,
-                        MessageChatMemoryAdvisor.builder(ChatMemoryAdvisorProvider.shortTermMemory)
+                        MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
                                 .order(90)
                                 .build())
                 .defaultToolCallbacks(toolCallbackProvider)

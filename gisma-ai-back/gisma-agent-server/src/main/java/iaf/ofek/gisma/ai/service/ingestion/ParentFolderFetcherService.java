@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
-import iaf.ofek.gisma.ai.entity.ingestion.FolderEntity;
+import iaf.ofek.gisma.ai.entity.ingestion.S3Folder;
 import iaf.ofek.gisma.ai.repository.FolderEntityRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ public class ParentFolderFetcherService {
 
     private final FolderEntityRepository folderEntityRepository;
 
-    public FolderEntity getParentFolder(UUID id) {
+    public S3Folder getParentFolder(UUID id) {
         if (id == null) {
             return getRootFolder();
         }
@@ -23,8 +23,8 @@ public class ParentFolderFetcherService {
                 .orElseThrow(() -> new EntityNotFoundException("folder with id: `%s` not found".formatted(id)));
     }
 
-    public FolderEntity getRootFolder() {
-        FolderEntity rootFolder = folderEntityRepository.findRootFolderWithChildrenFolders()
+    public S3Folder getRootFolder() {
+        S3Folder rootFolder = folderEntityRepository.findRootFolderWithChildrenFolders()
                 .orElseThrow(() -> new EntityNotFoundException("root folder not found"));
 
         folderEntityRepository.findRootFolderWithChildrenDocuments()

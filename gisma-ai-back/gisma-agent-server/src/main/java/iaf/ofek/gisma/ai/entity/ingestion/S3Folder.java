@@ -8,14 +8,16 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static iaf.ofek.gisma.ai.constant.DBTableNames.S3_FOLDERS;
+
 @Entity
-@Table(name = "folders")
+@Table(name = S3_FOLDERS)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FolderEntity extends GismaAiEntity {
+public class S3Folder extends GismaAiEntity {
 
     @Column
     private String name;
@@ -23,12 +25,12 @@ public class FolderEntity extends GismaAiEntity {
     @ManyToOne
     @JoinColumn(name = "parent_id")
     @JsonBackReference(value = "folder-folder")
-    private FolderEntity parentFolder;
+    private S3Folder parentFolder;
 
     @OneToMany(mappedBy = "parentFolder", cascade = CascadeType.ALL)
-    private List<FolderEntity> childrenFolders = new ArrayList<>();
+    private List<S3Folder> childrenFolders = new ArrayList<>();
 
     @OneToMany(mappedBy = "parentFolder", cascade = CascadeType.ALL)
-    private List<DocumentEntity> childrenDocuments = new ArrayList<>();
+    private List<S3Document> childrenDocuments = new ArrayList<>();
 
 }

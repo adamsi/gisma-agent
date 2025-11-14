@@ -1,7 +1,7 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
 import iaf.ofek.gisma.ai.dto.ingestion.CreateDocumentDTO;
-import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
+import iaf.ofek.gisma.ai.entity.ingestion.S3Document;
 import iaf.ofek.gisma.ai.repository.DocumentEntityRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class DocumentEntityService {
     private final S3Service s3Service;
 
     @Transactional
-    public List<DocumentEntity> createNewDocuments(List<CreateDocumentDTO> documents, String userId) {
+    public List<S3Document> createNewDocuments(List<CreateDocumentDTO> documents, String userId) {
         return documents.stream()
                 .map(document -> {
                     validateFile(document.getFile());
@@ -44,7 +44,7 @@ public class DocumentEntityService {
 
     @Transactional
     public void deleteDocuments(List<UUID> documentIds) {
-        List<DocumentEntity> documents = documentEntityRepository.findAllById(documentIds);
+        List<S3Document> documents = documentEntityRepository.findAllById(documentIds);
         documentEntityRepository.deleteAll(documents);
         documents.forEach(documentEntity -> {
             ingestionService.deleteDocument(documentEntity);
@@ -53,7 +53,7 @@ public class DocumentEntityService {
     }
 
     @Transactional
-    public DocumentEntity editDocument(MultipartFile file, UUID documentId, String userId) {
+    public S3Document editDocument(MultipartFile file, UUID documentId, String userId) {
         validateFile(file);
 
         var documentEntity = documentEntityRepository.findById(documentId)
@@ -69,20 +69,20 @@ public class DocumentEntityService {
         return documentEntityRepository.save(documentEntity);
     }
 
-    private DocumentEntity createNewDocument(CreateDocumentDTO document, String userId) {
+    private S3Document createNewDocument(CreateDocumentDTO document, String userId) {
         var file = document.getFile();
         var parentFolder = parentFolderFetcherService.getParentFolder(document.getParentFolderId());
-        DocumentEntity documentEntity = DocumentEntity.builder()
+        S3Document s3Document = S3Document.builder()
                 .name(file.getOriginalFilename())
                 .contentType(file.getContentType())
                 .parentFolder(parentFolder)
                 .build();
-        documentEntity = documentEntityRepository.save(documentEntity);
-        ingestionService.ingestToVectorStore(file, documentEntity, userId);
+        s3Document = documentEntityRepository.save(s3Document);
+        ingestionService.ingestToVectorStore(file, s3Document, userId);
         String url = s3Service.uploadFile(file);
-        documentEntity.setUrl(url);
+        s3Document.setUrl(url);
 
-        return documentEntity;
+        return s3Document;
     }
 
 
