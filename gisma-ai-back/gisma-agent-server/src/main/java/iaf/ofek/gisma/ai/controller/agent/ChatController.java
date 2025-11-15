@@ -12,6 +12,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.security.Principal;
@@ -54,35 +55,23 @@ public class ChatController {
         String userId = (String) auth.getPrincipal();
 
         return chatMemoryService.createChat(chatStart, userId)
-                .flatMap(chatStartResponse -> {
+                .flatMapMany(chatStartResponse -> {
                     String chatId = chatStartResponse.chatId();
-
-                    UserPrompt userPrompt = new UserPrompt(
-                            chatStart.query(),
-                            chatId,
-                            chatStart.responseFormat(),
-                            chatStart.schemaJson()
+                    Mono<Void> metadata = Mono.fromRunnable(() ->
+                            messagingTemplate.convertAndSendToUser(userId, "/queue/metadata", chatStartResponse)
                     );
+                    Flux<Void> responses = agentOrchestrator.handleQuery(
+                                    new UserPrompt(chatStart.query(), chatId, chatStart.responseFormat(), chatStart.schemaJson()),
+                                    chatId
+                            )
+                            .concatMap(response -> Mono.fromRunnable(() ->
+                                    messagingTemplate.convertAndSendToUser(chatId, "/queue/reply", response)
+                            ));
 
-                    return Mono.fromRunnable(() ->
-                                    messagingTemplate.convertAndSendToUser(
-                                            userId,
-                                            "/queue/metadata",
-                                            chatStartResponse
-                                    )
-                            )
-                            .thenMany(agentOrchestrator.handleQuery(userPrompt, chatId))
-                            .concatMap(response ->
-                                    Mono.fromRunnable(() ->
-                                            messagingTemplate.convertAndSendToUser(
-                                                    chatId,
-                                                    "/queue/reply",
-                                                    response
-                                            )
-                                    )
-                            )
-                            .then();
-                });
+                    return metadata.thenMany(responses);
+                })
+                .then();
+
     }
 
 }
