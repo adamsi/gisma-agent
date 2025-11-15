@@ -20,6 +20,7 @@ import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
+@MessageMapping("/chat")
 @Log4j2
 public class ChatController {
 
@@ -31,7 +32,7 @@ public class ChatController {
 
     //client sends request to /app/chat and listens to response on /user/queue/reply,
     // spring handles routing to specific user
-    @MessageMapping("/chat")
+    @MessageMapping
     public Mono<Void> handlePrompt(@Payload UserPrompt prompt) {
         log.info("Received prompt: {}.", prompt);
         String chatId = prompt.chatId();
@@ -49,7 +50,7 @@ public class ChatController {
                 .then();
     }
 
-    @MessageMapping("/chat/start")
+    @MessageMapping("/start")
     public Mono<Void> handleChatStartPrompt(@Payload ChatStartRequest chatStart, Principal user) {
         Authentication auth = (Authentication) user;
         String userId = (String) auth.getPrincipal();

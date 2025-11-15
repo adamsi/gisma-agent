@@ -38,6 +38,10 @@ public class ChatMemoryService {
         return chatMemoryRepository.getChatMessages(UUID.fromString(chatId));
     }
 
+    public void deleteChat(String chatId) {
+        chatMemoryRepository.delete(UUID.fromString(chatId));
+    }
+
     public Mono<ChatStartResponse> createChat(ChatStartRequest chatStartRequest, String userId) {
         return chatDescriptionGenerator.generateDescription(chatStartRequest.query())
                 .flatMap(description ->
