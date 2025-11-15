@@ -1,6 +1,7 @@
 package iaf.ofek.gisma.ai.controller.ingestion;
 
 
+import iaf.ofek.gisma.ai.annotation.AdminOnly;
 import iaf.ofek.gisma.ai.dto.ingestion.CreateFolderDTO;
 import iaf.ofek.gisma.ai.service.ingestion.FolderService;
 import iaf.ofek.gisma.ai.service.ingestion.ParentFolderFetcherService;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/ingestion/folders")
 @RequiredArgsConstructor
+@AdminOnly
 @Validated
 public class FolderController {
 
@@ -26,21 +28,18 @@ public class FolderController {
     private final ParentFolderFetcherService folderFetcherService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getRootFolder() { // TODO: make reactive
         return ResponseEntity.status(HttpStatus.OK)
                 .body(folderFetcherService.getRootFolder());
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createFolder(@RequestBody @Valid CreateFolderDTO createFolderDTO) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(folderService.createFolder(createFolderDTO));
     }
 
     @DeleteMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(@RequestBody List<UUID> ids) {
         folderService.deleteFolders(ids);
 
