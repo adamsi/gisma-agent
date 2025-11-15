@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex// this shit handler catches security exception,
                         // business exceptions caught by GlobalExceptionHandler
                         .authenticationEntryPoint((request, response, authException) -> {
+                            authException.printStackTrace();
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"error\": \"Unauthorized\"}");

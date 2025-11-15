@@ -8,8 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/chat-memory")
@@ -19,9 +19,8 @@ public class ChatMemoryController {
     private final ChatMemoryService chatMemoryService;
 
     @GetMapping
-    public List<ChatMetadata> getAllChats(Principal user) {
-        Authentication auth = (Authentication) user;
-        String userId = (String) auth.getPrincipal();
+    public List<ChatMetadata> getAllChats(Authentication authentication) {
+        UUID userId = (UUID) authentication.getPrincipal();
 
         return chatMemoryService.getAllChats(userId);
     }

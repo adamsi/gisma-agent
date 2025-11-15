@@ -27,8 +27,8 @@ public class ChatMemoryService {
     /**
      * Retrieves all chat conversations for display in the sidebar
      **/
-    public List<ChatMetadata> getAllChats(String userId) {
-        return this.chatMemoryRepository.getAllChatsForUser(UUID.fromString(userId));
+    public List<ChatMetadata> getAllChats(UUID userId) {
+        return this.chatMemoryRepository.getAllChatsForUser(userId);
     }
 
     /**

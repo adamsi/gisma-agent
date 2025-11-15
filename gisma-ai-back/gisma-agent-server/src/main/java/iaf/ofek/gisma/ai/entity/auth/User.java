@@ -1,5 +1,6 @@
 package iaf.ofek.gisma.ai.entity.auth;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import iaf.ofek.gisma.ai.entity.GismaAiEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class User extends GismaAiEntity {
     private String username;
 
     @Column
+    @JsonIgnore
     private String password;
 
     @Column
