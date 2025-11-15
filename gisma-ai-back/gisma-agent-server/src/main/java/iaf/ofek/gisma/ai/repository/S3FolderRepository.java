@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface FolderEntityRepository extends JpaRepository<S3Folder, UUID> {
+public interface S3FolderRepository extends JpaRepository<S3Folder, UUID> {
 
     @Query("""
                 SELECT DISTINCT f FROM S3Folder f  

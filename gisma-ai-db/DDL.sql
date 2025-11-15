@@ -71,12 +71,12 @@ CREATE TABLE ${SA_DB_SCHEMA}.user_s3_documents (
 
 /* Chat Memory */
 
-CREATE TABLE ${SA_DB_SCHEMA}.chat_memory_metadata (
+CREATE TABLE ${SA_DB_SCHEMA}.chat_memory (
     conversation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,
     description VARCHAR(256),
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES ${SA_DB_SCHEMA}.users (id)
 );
 
-CREATE INDEX idx_chat_memory_metadata_user_id ON ${SA_DB_SCHEMA}.chat_memory_metadata(user_id);
+CREATE INDEX idx_chat_memory_user_id ON ${SA_DB_SCHEMA}.chat_memory(user_id);
 

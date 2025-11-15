@@ -19,7 +19,7 @@ public class DocumentProcessor {
 
     private final AuthService authService;
 
-    private final DocumentEntityService documentEntityService;
+    private final DocumentService documentService;
 
     public List<S3Document> saveNewDocuments(List<MultipartFile> files, List<UUID> parentFolderIds) {
         if (files.size() != parentFolderIds.size()) {
@@ -31,17 +31,17 @@ public class DocumentProcessor {
                 .toList();
         String userId = authService.getCurrentUserId();
 
-        return documentEntityService.createNewDocuments(documents, userId);
+        return documentService.createNewDocuments(documents, userId);
     }
 
     public S3Document editDocument(MultipartFile file, UUID documentId) {
         String userId = authService.getCurrentUserId();
 
-        return documentEntityService.editDocument(file, documentId, userId);
+        return documentService.editDocument(file, documentId, userId);
     }
 
     public void deleteDocuments(List<UUID> ids) {
-         documentEntityService.deleteDocuments(ids);
+         documentService.deleteDocuments(ids);
     }
 
 }

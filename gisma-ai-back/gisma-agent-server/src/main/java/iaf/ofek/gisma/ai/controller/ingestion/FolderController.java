@@ -2,7 +2,7 @@ package iaf.ofek.gisma.ai.controller.ingestion;
 
 
 import iaf.ofek.gisma.ai.dto.ingestion.CreateFolderDTO;
-import iaf.ofek.gisma.ai.service.ingestion.FolderEntityService;
+import iaf.ofek.gisma.ai.service.ingestion.FolderService;
 import iaf.ofek.gisma.ai.service.ingestion.ParentFolderFetcherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,7 +21,7 @@ import java.util.UUID;
 @Validated
 public class FolderController {
 
-    private final FolderEntityService folderEntityService;
+    private final FolderService folderService;
 
     private final ParentFolderFetcherService folderFetcherService;
 
@@ -36,13 +36,13 @@ public class FolderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createFolder(@RequestBody @Valid CreateFolderDTO createFolderDTO) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(folderEntityService.createFolder(createFolderDTO));
+                .body(folderService.createFolder(createFolderDTO));
     }
 
     @DeleteMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(@RequestBody List<UUID> ids) {
-        folderEntityService.deleteFolders(ids);
+        folderService.deleteFolders(ids);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
                 .build();

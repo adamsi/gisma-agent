@@ -3,7 +3,7 @@ package iaf.ofek.gisma.ai.service.ingestion;
 import iaf.ofek.gisma.ai.dto.ingestion.CreateFolderDTO;
 import iaf.ofek.gisma.ai.entity.ingestion.S3Document;
 import iaf.ofek.gisma.ai.entity.ingestion.S3Folder;
-import iaf.ofek.gisma.ai.repository.FolderEntityRepository;
+import iaf.ofek.gisma.ai.repository.S3FolderRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,9 +13,9 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class FolderEntityService {
+public class FolderService {
 
-    private final FolderEntityRepository folderEntityRepository;
+    private final S3FolderRepository s3FolderRepository;
 
     private final DocumentProcessor documentProcessor;
 
@@ -29,13 +29,13 @@ public class FolderEntityService {
                 .parentFolder(parentFolder)
                 .build();
 
-        return folderEntityRepository.save(newFolder);
+        return s3FolderRepository.save(newFolder);
     }
 
     @Transactional
     public void deleteFolders(List<UUID> ids) {
         for (UUID id : ids) {
-            S3Folder folder = folderEntityRepository.findById(id)
+            S3Folder folder = s3FolderRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Failed to find folder with id: " + id));
 
             if (!folder.getChildrenDocuments().isEmpty()) {
@@ -56,7 +56,7 @@ public class FolderEntityService {
                 deleteFolders(childFolderIds);
             }
 
-            folderEntityRepository.delete(folder);
+            s3FolderRepository.delete(folder);
         }
     }
 

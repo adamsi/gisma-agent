@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public interface DocumentEntityRepository extends JpaRepository<S3Document, UUID> {
+public interface S3DocumentRepository extends JpaRepository<S3Document, UUID> {
 }
