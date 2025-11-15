@@ -71,7 +71,6 @@ public class ChatController {
                     return metadata.thenMany(responses);
                 })
                 .then();
-
     }
 
 }
