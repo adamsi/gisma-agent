@@ -11,6 +11,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,7 +21,6 @@ import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
-@MessageMapping("/chat")
 @Log4j2
 public class ChatController {
 
@@ -32,30 +32,28 @@ public class ChatController {
 
     //client sends request to /app/chat and listens to response on /user/queue/reply,
     // spring handles routing to specific user
-    @MessageMapping
-    public Mono<Void> handlePrompt(@Payload UserPrompt prompt) {
+    @MessageMapping("/chat")
+    public Mono<Void> handlePrompt(@Payload UserPrompt prompt, Principal user) {
         log.info("Received prompt: {}.", prompt);
         String chatId = prompt.chatId();
+        String userId = user.getName();
 
         return agentOrchestrator.handleQuery(prompt, chatId)
-                .concatMap(response ->
-                        Mono.fromRunnable(() ->
-                                messagingTemplate.convertAndSendToUser(
-                                        chatId,
-                                        "/queue/reply",
-                                        response
-                                )
+                .doOnNext(response ->
+                        messagingTemplate.convertAndSendToUser(
+                                userId,
+                                "/queue/chat." + chatId,
+                                response
                         )
                 )
                 .then();
     }
 
-    @MessageMapping("/start")
+    @MessageMapping("/chat/start")
     public Mono<Void> handleChatStartPrompt(@Payload ChatStartRequest chatStart, Principal user) {
-        Authentication auth = (Authentication) user;
-        String userId = (String) auth.getPrincipal();
+        String userId = user.getName();
 
-        return chatMemoryService.createChat(chatStart, userId)
+        return chatMemoryService.createChat(chatStart, UUID.fromString(userId))
                 .flatMapMany(chatStartResponse -> {
                     String chatId = chatStartResponse.chatId();
                     Mono<Void> metadata = Mono.fromRunnable(() ->
@@ -66,7 +64,7 @@ public class ChatController {
                                     chatId
                             )
                             .concatMap(response -> Mono.fromRunnable(() ->
-                                    messagingTemplate.convertAndSendToUser(chatId, "/queue/reply", response)
+                                    messagingTemplate.convertAndSendToUser(userId, "/queue/chat." + chatId, response)
                             ));
 
                     return metadata.thenMany(responses);

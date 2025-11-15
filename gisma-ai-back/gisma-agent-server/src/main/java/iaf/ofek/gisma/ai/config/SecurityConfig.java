@@ -4,6 +4,7 @@ import iaf.ofek.gisma.ai.filter.CustomUserDetailsService;
 import iaf.ofek.gisma.ai.filter.JwtFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@Log4j2
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -44,7 +46,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex// this shit handler catches security exception,
                         // business exceptions caught by GlobalExceptionHandler
                         .authenticationEntryPoint((request, response, authException) -> {
-                            authException.printStackTrace();
+                            log.warn("Unexpected error: {}.", authException.getMessage());
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"error\": \"Unauthorized\"}");

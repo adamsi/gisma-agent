@@ -21,26 +21,27 @@ public class ChatMemoryRepository {
     }
 
     public void delete(UUID chatId) {
-        String sql = "DELETE chat_memory WHERE chat_id = ?";
-        jdbcTemplate.queryForObject(sql, String.class, chatId);
+        String sql = "DELETE FROM chat_memory WHERE conversation_id = ?";
+        jdbcTemplate.update(sql, chatId);
     }
 
     public boolean chatIdExists(UUID chatId) {
         String sql = "SELECT COUNT(*) FROM chat_memory WHERE conversation_id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, chatId);
-        return count == 1;
+        return count != null && count == 1;
     }
 
     public List<ChatMetadata> getAllChatsForUser(UUID userId) {
         String sql = "SELECT conversation_id, description FROM chat_memory WHERE user_id = ? ORDER BY conversation_id DESC";
-        return jdbcTemplate.query(sql, (rs, ignored) ->
+        return jdbcTemplate.query(sql, (rs, rowNum) ->
                 new ChatMetadata(rs.getString("conversation_id"), rs.getString("description")), userId);
     }
 
-    public List<ChatMessage> getChatMessages(UUID chatId) {
+    public List<ChatMessage> getChatMessages(String chatId) {
         String sql = "SELECT content, type FROM spring_ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp ASC";
-        return jdbcTemplate.query(sql, (rs, ignored) ->
+        return jdbcTemplate.query(sql, (rs, rowNum) ->
                 new ChatMessage(rs.getString("content"), rs.getString("type")), chatId);
     }
+
 
 }

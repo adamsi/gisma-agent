@@ -19,10 +19,11 @@ public class ChatMemoryAdvisorProvider {
     private final ChatMemory chatMemory;
 
     public ChatMemoryAdvisorProvider(JdbcChatMemoryRepository jdbcChatMemoryRepository) {
-        this.chatMemory = MessageWindowChatMemory.builder()
+        MessageWindowChatMemory messageWindowChatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(jdbcChatMemoryRepository)
                 .maxMessages(10)
                 .build();
+        this.chatMemory = new CleanChatMemory(messageWindowChatMemory);
     }
 
     public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisorConsumer(String chatId) {

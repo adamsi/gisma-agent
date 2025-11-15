@@ -26,12 +26,12 @@ public class ChatMemoryController {
     }
 
     @GetMapping("/{chatId}")
-    public List<ChatMessage> getChatMessages(@PathVariable String chatId) {
+    public List<ChatMessage> getChatMessages(@PathVariable("chatId") String chatId) {
         return chatMemoryService.getChatMessages(chatId);
     }
 
     @DeleteMapping("/{chatId}")
-    public ResponseEntity<?> deleteChat(@PathVariable String chatId) {
+    public ResponseEntity<?> deleteChat(@PathVariable("chatId") String chatId) {
         chatMemoryService.deleteChat(chatId);
 
         return ResponseEntity.noContent().build();

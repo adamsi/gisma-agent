@@ -58,7 +58,7 @@ CREATE TABLE ${SA_DB_SCHEMA}.user_s3_folders (
     id UUID PRIMARY KEY,
     name VARCHAR(255),
     parent_id UUID,
-    CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES ${SA_DB_SCHEMA}.folders (id)
+    CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES ${SA_DB_SCHEMA}.user_s3_folders (id)
 );
 
 CREATE TABLE ${SA_DB_SCHEMA}.user_s3_documents (
@@ -67,7 +67,7 @@ CREATE TABLE ${SA_DB_SCHEMA}.user_s3_documents (
     name VARCHAR(255),
     content_type VARCHAR(255),
     folder_id UUID,
-    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES ${SA_DB_SCHEMA}.folders (id)
+    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES ${SA_DB_SCHEMA}.user_s3_folders (id)
 );
 
 CREATE INDEX idx_user_s3_documents_folder_id ON ${SA_DB_SCHEMA}.user_s3_documents(folder_id);
