@@ -3,6 +3,7 @@ package iaf.ofek.gisma.ai.agent.llmCall;
 import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.exception.SchemaValidationException;
 import iaf.ofek.gisma.ai.util.JsonUtils;
+import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import iaf.ofek.gisma.ai.util.RetryUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
@@ -13,6 +14,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -71,11 +73,11 @@ public class LLMCallerService {
     }
 
     // intermediate agent phases
-    public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType, UUID userId) {
+    public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType, String chatId) {
         return RetryUtils.callWithRetriesBlocking(
                 () -> {
                     String rawResponse = callback.apply(chatClient)
-                            .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer(userId))
+                            .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer(chatId))
                             .call()
                             .content();
 
@@ -89,12 +91,25 @@ public class LLMCallerService {
     }
 
     // response to user call
-    public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, UUID userId) {
+    public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId) {
         return RetryUtils.callWithRetries(
                 () -> callback.apply(chatClient)
-                        .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer(userId))
+                        .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer(chatId))
                         .stream()
                         .content(),
+                MAX_LLM_RETRY_CALLS,
+                Duration.ofSeconds(LLM_RETRY_DELAY_SECONDS),
+                ex -> false,
+                "callLLM"
+        );
+    }
+
+    public Mono<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback) {
+        return RetryUtils.callWithRetriesMono(
+                () -> ReactiveUtils.runBlockingAsync(() ->
+                        callback.apply(chatClient)
+                                .call()
+                                .content()),
                 MAX_LLM_RETRY_CALLS,
                 Duration.ofSeconds(LLM_RETRY_DELAY_SECONDS),
                 ex -> false,

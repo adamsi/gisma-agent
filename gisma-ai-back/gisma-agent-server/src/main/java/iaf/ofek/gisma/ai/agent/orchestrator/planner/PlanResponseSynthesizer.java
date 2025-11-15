@@ -3,13 +3,11 @@ package iaf.ofek.gisma.ai.agent.orchestrator.planner;
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlanExecutionResult;
-import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
+import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +44,7 @@ public class PlanResponseSynthesizer {
             """;
 
 
-    public Flux<String> synthesizeResponse(UserPromptDTO prompt, PlanExecutionResult executionResult, UUID userId) {
+    public Flux<String> synthesizeResponse(UserPrompt prompt, PlanExecutionResult executionResult, String chatId) {
         String aggregatedOutput = executionResult.aggregatedOutput() != null ? executionResult.aggregatedOutput() : "<No output available>";
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUERY, prompt.query())
@@ -58,7 +56,7 @@ public class PlanResponseSynthesizer {
         return llmCallerService.callLLM(chatClient ->
                         chatClient.prompt()
                                 .system(SYSTEM_INSTRUCTIONS)
-                                .user(userMessage), userId)
+                                .user(userMessage), chatId)
                 .onErrorResume(ex -> Mono.just("Something went wrong, try again... "));
 
     }

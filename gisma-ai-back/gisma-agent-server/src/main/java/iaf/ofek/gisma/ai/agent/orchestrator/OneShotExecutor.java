@@ -3,7 +3,7 @@ package iaf.ofek.gisma.ai.agent.orchestrator;
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
 import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
-import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
+import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -11,8 +11,6 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-
-import java.util.UUID;
 
 @Service
 public class OneShotExecutor {
@@ -54,7 +52,7 @@ public class OneShotExecutor {
                 .build();
     }
 
-    public Flux<String> execute(UserPromptDTO userPrompt, UUID userId) {
+    public Flux<String> execute(UserPrompt userPrompt, String chatId) {
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUERY, userPrompt.query())
                 .replace(PromptFormat.RESPONSE_FORMAT, userPrompt.responseFormat().getFormat(userPrompt.schemaJson()));
@@ -62,7 +60,7 @@ public class OneShotExecutor {
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_MESSAGE)
                 .user(userMessage)
-                .advisors(qaAdvisor), userId);
+                .advisors(qaAdvisor), chatId);
     }
 
 }

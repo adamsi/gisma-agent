@@ -6,11 +6,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import static iaf.ofek.gisma.ai.constant.DBTableNames.S3_DOCUMENTS;
+import static iaf.ofek.gisma.ai.constant.DBTableNames.S3_FOLDERS;
 
 @Entity
 @Table(name = S3_DOCUMENTS)
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

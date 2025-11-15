@@ -103,7 +103,7 @@ public class PreflightClassifierService {
 
     private final LLMCallerService llmCallerService;
 
-    public Mono<PreflightClassifierResult> classify(String query, QuickShotResponse quickShotResponse, UUID userId) {
+    public Mono<PreflightClassifierResult> classify(String query, QuickShotResponse quickShotResponse, String chatId) {
         String systemMessage = PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE
                 .replace(PromptFormat.SCHEMA_JSON, PREFLIGHT_CLASSIFIER_SCHEMA)
                 .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll());
@@ -115,7 +115,7 @@ public class PreflightClassifierService {
         return ReactiveUtils.runBlockingAsync(() -> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
-                        .user(userMessage), PreflightClassifierResult.class, userId));
+                        .user(userMessage), PreflightClassifierResult.class, chatId));
     }
 
 }

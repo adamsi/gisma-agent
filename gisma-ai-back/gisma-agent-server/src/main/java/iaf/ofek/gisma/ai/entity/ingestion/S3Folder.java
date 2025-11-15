@@ -12,8 +12,8 @@ import static iaf.ofek.gisma.ai.constant.DBTableNames.S3_FOLDERS;
 
 @Entity
 @Table(name = S3_FOLDERS)
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

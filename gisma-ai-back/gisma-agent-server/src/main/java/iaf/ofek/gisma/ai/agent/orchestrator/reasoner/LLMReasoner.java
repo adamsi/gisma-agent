@@ -39,7 +39,7 @@ public class LLMReasoner implements StepExecutor {
     private final LLMCallerService llmCallerService;
 
     @Override
-    public Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
+    public Mono<StepExecutionResult> executeStep(PlannerStep step, String chatId) {
         String query = step.query() != null ? step.query() : "";
         String description = step.description() != null ? step.description() : "";
 
@@ -53,7 +53,7 @@ public class LLMReasoner implements StepExecutor {
                                 .system(SYSTEM_INSTRUCTIONS)
                                 .user(userMessage),
                         StepExecutionResult.class,
-                        userId
+                        chatId
                 ));
     }
 

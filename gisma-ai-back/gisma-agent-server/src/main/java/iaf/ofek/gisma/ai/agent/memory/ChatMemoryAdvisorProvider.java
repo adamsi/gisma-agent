@@ -25,8 +25,8 @@ public class ChatMemoryAdvisorProvider {
                 .build();
     }
 
-    public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisorConsumer(UUID userId) {
-        return a -> a.param(ChatMemory.CONVERSATION_ID, userId);
+    public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisorConsumer(String chatId) {
+        return a -> a.param(ChatMemory.CONVERSATION_ID, chatId);
     }
 
 }

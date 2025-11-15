@@ -1,13 +1,12 @@
 package iaf.ofek.gisma.ai.agent.orchestrator;
 
-import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
+import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
 import iaf.ofek.gisma.ai.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.Objects;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -15,13 +14,13 @@ public class AgentOrchestrator {
 
     private final OneShotExecutor oneShotExecutor;
 
-    public Flux<String> handleQuery(UserPromptDTO prompt, UUID userId) {
-        return oneShotExecutor.execute(prompt, userId);
+    public Flux<String> handleQuery(UserPrompt prompt, String chatId) {
+        return oneShotExecutor.execute(prompt, chatId);
     }
 
-    public String handleQueryBlocking(UserPromptDTO prompt, UUID userId) {
+    public String handleQueryBlocking(UserPrompt prompt, String chatId) {
         return StringUtils.joinLines(
-                Objects.requireNonNull(oneShotExecutor.execute(prompt, userId).collectList()                       // Collect all Flux<String> items into List<String>
+                Objects.requireNonNull(oneShotExecutor.execute(prompt, chatId).collectList()                       // Collect all Flux<String> items into List<String>
                         .block())
         );
     }

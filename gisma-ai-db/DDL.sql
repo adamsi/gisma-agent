@@ -71,19 +71,11 @@ CREATE TABLE ${SA_DB_SCHEMA}.user_s3_documents (
 
 /* Chat Memory */
 
-CREATE TABLE ${SA_DB_SCHEMA}.spring_ai_chat_memory (
-    conversation_id VARCHAR(36) NOT NULL,
-    content TEXT NOT NULL,
-    type VARCHAR(10) NOT NULL CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')),
-    "timestamp" TIMESTAMP NOT NULL
-);
-
-CREATE INDEX idx_spring_ai_chat_memory_conversation_id_timestamp ON ${SA_DB_SCHEMA}.spring_ai_chat_memory(conversation_id, "timestamp");
-
 CREATE TABLE ${SA_DB_SCHEMA}.chat_memory_metadata (
-    conversation_id UUID PRIMARY KEY,
+    conversation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,
-    description VARCHAR(256)
+    description VARCHAR(256),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES ${SA_DB_SCHEMA}.users (id)
 );
 
 CREATE INDEX idx_chat_memory_metadata_user_id ON ${SA_DB_SCHEMA}.chat_memory_metadata(user_id);
