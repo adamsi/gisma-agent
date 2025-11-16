@@ -1,16 +1,18 @@
 package iaf.ofek.gisma.ai.agent.memory;
 
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
-@RequiredArgsConstructor
 public class ChatDescriptionGenerator {
 
     private final LLMCallerService llmCallerService;
+
+    public ChatDescriptionGenerator(@Qualifier("llmCallerService") LLMCallerService llmCallerService) {
+        this.llmCallerService = llmCallerService;
+    }
 
     private static final String SYSTEM_INSTRUCTIONS = """
     Generate a chat description based on the message, 

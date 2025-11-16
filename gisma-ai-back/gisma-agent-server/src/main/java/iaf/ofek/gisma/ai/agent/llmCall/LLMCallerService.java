@@ -1,17 +1,15 @@
 package iaf.ofek.gisma.ai.agent.llmCall;
 
-import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.exception.SchemaValidationException;
 import iaf.ofek.gisma.ai.util.JsonUtils;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import iaf.ofek.gisma.ai.util.RetryUtils;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,11 +18,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Service
-@Log4j2
+@Qualifier("llmCallerService")
 public class LLMCallerService {
 
     private static final int MAX_LLM_RETRY_CALLS = 3;
@@ -33,51 +31,39 @@ public class LLMCallerService {
 
     private final ChatClient chatClient;
 
-    private final ChatMemoryAdvisorProvider memoryAdvisorProvider;
-
     @Autowired
-    public LLMCallerService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider) {
+    public LLMCallerService(ChatClient.Builder builder) {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         this.chatClient = builder
-                .defaultAdvisors(loggerAdvisor,
-                        MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
-                                .order(90)
-                                .build())
+                .defaultAdvisors(loggerAdvisor)
                 .build();
-        this.memoryAdvisorProvider = memoryAdvisorProvider;
     }
 
-    public LLMCallerService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider, Advisor... extraAdvisors) {
+    public LLMCallerService(ChatClient.Builder builder, Advisor... extraAdvisors) {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
         List<Advisor> advisors = new ArrayList<>(Arrays.stream(extraAdvisors).toList());
         advisors.add(loggerAdvisor);
-        advisors.add(MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
-                .order(90)
-                .build());
         this.chatClient = builder
                 .defaultAdvisors(advisors)
                 .build();
-        this.memoryAdvisorProvider = memoryAdvisorProvider;
     }
 
-    public LLMCallerService(ChatClient.Builder builder, ToolCallbackProvider toolCallbackProvider, ChatMemoryAdvisorProvider memoryAdvisorProvider) {
+    public LLMCallerService(ChatClient.Builder builder, ToolCallbackProvider toolCallbackProvider, Advisor... extraAdvisors) {
         SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
+        List<Advisor> advisors = new ArrayList<>(Arrays.stream(extraAdvisors).toList());
+        advisors.add(loggerAdvisor);
         this.chatClient = builder
-                .defaultAdvisors(loggerAdvisor,
-                        MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
-                                .order(90)
-                                .build())
+                .defaultAdvisors(advisors)
                 .defaultToolCallbacks(toolCallbackProvider)
                 .build();
-        this.memoryAdvisorProvider = memoryAdvisorProvider;
     }
 
     // intermediate agent phases
-    public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType, String chatId) {
+    public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
         return RetryUtils.callWithRetriesBlocking(
                 () -> {
                     String rawResponse = callback.apply(chatClient)
-                            .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer(chatId))
+                            .advisors(consumer.apply(chatId))
                             .call()
                             .content();
 
@@ -91,10 +77,10 @@ public class LLMCallerService {
     }
 
     // response to user call
-    public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId) {
+    public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
         return RetryUtils.callWithRetries(
                 () -> callback.apply(chatClient)
-                        .advisors(memoryAdvisorProvider.shortTermMemoryAdvisorConsumer(chatId))
+                        .advisors(consumer.apply(chatId))
                         .stream()
                         .content(),
                 MAX_LLM_RETRY_CALLS,
@@ -115,6 +101,12 @@ public class LLMCallerService {
                 ex -> false,
                 "callLLM"
         );
+    }
+
+    protected static Advisor[] combineAdvisors(Advisor[] extra, Advisor additional) {
+        Advisor[] combined = Arrays.copyOf(extra, extra.length + 1);
+        combined[extra.length] = additional;
+        return combined;
     }
 
 }

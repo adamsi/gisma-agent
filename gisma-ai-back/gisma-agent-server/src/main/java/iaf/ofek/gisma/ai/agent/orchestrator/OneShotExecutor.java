@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.agent.orchestrator;
 
-import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
@@ -39,14 +39,14 @@ public class OneShotExecutor {
             """;
 
 
-    private final LLMCallerService llmCallerService;
+    private final LLMCallerWithMemoryService llmCallerService;
 
     private final QuestionAnswerAdvisor qaAdvisor;
 
     public OneShotExecutor(@Qualifier("documentVectorStore") VectorStore documentVectorStore,
                            ChatClient.Builder builder, ToolCallbackProvider tools,
                            ChatMemoryAdvisorProvider memoryAdvisorProvider) {
-        this.llmCallerService = new LLMCallerService(builder, tools, memoryAdvisorProvider);
+        this.llmCallerService = new LLMCallerWithMemoryService(builder, tools, memoryAdvisorProvider);
         this.qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .order(3)
                 .build();

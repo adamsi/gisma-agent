@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.agent.tools.rag;
 
-import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
@@ -120,14 +120,14 @@ public class RagService implements DirectToolExecutor, StepExecutor {
             }
             """;
 
-    private final LLMCallerService llmCallerService;
+    private final LLMCallerWithMemoryService llmCallerService;
 
     private final VectorStore documentVectorStore;
 
     public RagService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider,
                       @Qualifier("documentVectorStore") VectorStore documentVectorStore) {
         this.documentVectorStore = documentVectorStore;
-        this.llmCallerService = new LLMCallerService(builder, memoryAdvisorProvider);
+        this.llmCallerService = new LLMCallerWithMemoryService(builder, memoryAdvisorProvider);
 //        memoryAdvisorProvider.longTermChatMemoryAdvisor(70);
     }
 

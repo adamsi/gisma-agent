@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.agent.orchestrator.planner;
 
-import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlanExecutionResult;
 import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class PlanResponseSynthesizer {
 
-    private final LLMCallerService llmCallerService;
+    private final LLMCallerWithMemoryService llmCallerService;
 
     private static final String SYSTEM_INSTRUCTIONS = """
             You are the Gisma Synthesizer.
