@@ -121,14 +121,17 @@ const Home: React.FC<HomeProps> = ({
           const existing = prevConversations.find(c => c.chatId === chat.chatId);
           if (existing) {
             // Update existing conversation with latest messages and description
-            const messages: Message[] = (chatMessages[chat.chatId] || []).map((msg: ChatMessage) => ({
+            // Preserve existing messages if they have more content (streaming) or backend is empty
+            const backendMessages: Message[] = (chatMessages[chat.chatId] || []).map((msg: ChatMessage) => ({
               role: msg.type === 'USER' ? 'user' : 'assistant',
               content: msg.content,
             }));
+            // Use existing messages if they have more content or backend is empty
+            const useExistingMessages = existing.messages.length > backendMessages.length || backendMessages.length === 0;
             return {
               ...existing,
               name: chat.description,
-              messages,
+              messages: useExistingMessages ? existing.messages : backendMessages,
             };
           }
 
@@ -153,13 +156,16 @@ const Home: React.FC<HomeProps> = ({
 
         // Keep conversations without chatId (new conversations that haven't received metadata yet)
         const conversationsWithoutChatId = prevConversations.filter(c => !c.chatId);
-        // Merge: new conversations first, then existing chats in reverse order (newest first)
-        const existingChatIds = new Set(chatConversations.map(c => c.chatId));
+        
+        // Reverse chats so newest appears first, then merge
+        const reversedChats = [...chatConversations].reverse();
+        const existingChatIds = new Set(reversedChats.map(c => c.chatId));
         const uniqueNewConversations = conversationsWithoutChatId.filter(c => 
           !c.chatId || !existingChatIds.has(c.chatId)
         );
-        // Reverse chats so newest appears first
-        return [...uniqueNewConversations, ...chatConversations.reverse()];
+        
+        // New conversations first, then reversed chats (newest first)
+        return [...uniqueNewConversations, ...reversedChats];
       });
     }
   }, [chats, chatMessages, defaultModelId]);
@@ -324,9 +330,8 @@ const Home: React.FC<HomeProps> = ({
           },
           (metadata) => {
             receivedChatId = metadata.chatId;
-            dispatch(addChat({ chatId: metadata.chatId, description: metadata.description }));
             
-            // Update conversation with generated description and put it first
+            // Update conversation state with generated description and add to conversations list
             setSelectedConversation((prev) => {
               if (!prev || prev.id !== updatedConversation.id) return prev;
               
@@ -336,28 +341,20 @@ const Home: React.FC<HomeProps> = ({
                 name: metadata.description,
               };
               
-              // Update in conversations list and put it first (smooth update)
+              // Add to conversations list so messages can update it
               setConversations((prevConvs) => {
-                // Check if already exists (by id or chatId)
-                const existingById = prevConvs.find(c => c.id === updatedConversation.id);
-                const existingByChatId = prevConvs.find(c => c.chatId === metadata.chatId && c.id !== updatedConversation.id);
-                
-                if (existingById) {
-                  // Update existing and move to first
-                  const others = prevConvs.filter(c => c.id !== updatedConversation.id && c.chatId !== metadata.chatId);
-                  return [updatedConv, ...others];
-                } else if (existingByChatId) {
-                  // Replace the one with same chatId
-                  const others = prevConvs.filter(c => c.chatId !== metadata.chatId);
-                  return [updatedConv, ...others];
-                } else {
-                  // Add new and put first
-                  return [updatedConv, ...prevConvs];
-                }
+                const filtered = prevConvs.filter(c => 
+                  c.id !== updatedConversation.id && c.chatId !== metadata.chatId
+                );
+                // Add at top - effect will handle final ordering
+                return [updatedConv, ...filtered];
               });
               
               return updatedConv;
             });
+            
+            // Dispatch to Redux - effect will handle final ordering
+            dispatch(addChat({ chatId: metadata.chatId, description: metadata.description }));
           },
           updatedConversation.schemaJson
         );
