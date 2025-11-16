@@ -25,4 +25,16 @@ export interface Conversation {
   responseFormat: ResponseFormat;
   schemaJson?: string;
   textDirection?: 'ltr' | 'rtl';
+  chatId?: string;
+}
+
+// Backend types
+export interface ChatMetadata {
+  chatId: string;
+  description: string;
+}
+
+export interface ChatMessage {
+  content: string;
+  type: 'USER' | 'ASSISTANT';
 }

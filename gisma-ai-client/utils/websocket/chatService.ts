@@ -1,5 +1,5 @@
 import { WebSocketManager } from './WebSocketManager';
-import { WebSocketResponse } from '../../types/websocket';
+import { WebSocketResponse, ChatStartResponse } from '../../types/websocket';
 import { WEBSOCKET_CONFIG } from './config';
 
 export class ChatService {
@@ -14,23 +14,19 @@ export class ChatService {
       serverUrl,
       reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
       reconnectDelay: WEBSOCKET_CONFIG.RECONNECT_DELAY,
-      // No token needed for cookie-based authentication
     });
   }
 
   public setAuthenticated(authenticated: boolean): void {
     this.isAuthenticated = authenticated;
-    // Recreate the WebSocket manager when authentication state changes
     this.wsManager = new WebSocketManager({
       serverUrl: this.serverUrl,
       reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
       reconnectDelay: WEBSOCKET_CONFIG.RECONNECT_DELAY,
-      // No token needed for cookie-based authentication
     });
   }
 
   public async connect(): Promise<void> {
-    // Don't connect if user not authenticated
     if (!this.isAuthenticated) {
       console.warn('ChatService: User not authenticated, skipping WebSocket connection');
       return;
@@ -48,17 +44,16 @@ export class ChatService {
     this.wsManager.disconnect();
   }
 
-  public async sendMessage(
+  public async startNewChat(
     message: string,
     responseFormat: string,
     onChunk: (chunk: string) => void,
     onComplete: () => void,
     onError: (error: string) => void,
+    onMetadata: (metadata: ChatStartResponse) => void,
     schemaJson?: string
   ): Promise<void> {
-    // Don't send messages if user not authenticated
     if (!this.isAuthenticated) {
-      console.warn('ChatService: User not authenticated, cannot send message');
       onError('User not authenticated');
       return;
     }
@@ -68,34 +63,84 @@ export class ChatService {
       await this.connect();
     }
 
-    // Construct the payload according to UserPromptDTO
+    // Subscribe to metadata first - when chatId arrives, subscribe to chat-specific queue
+    this.wsManager.subscribeToMetadata((metadata: ChatStartResponse) => {
+      // Notify caller about metadata
+      onMetadata(metadata);
+      
+      // Subscribe to the chat-specific reply queue
+      const replyDestination = `/user/queue/chat.${metadata.chatId}`;
+      this.wsManager.subscribeToReply(replyDestination, (response: WebSocketResponse) => {
+        if (this.stopped) return;
+        if (response.error) {
+          onError(response.error);
+          return;
+        }
+        if (response.content) {
+          onChunk(response.content);
+        }
+        if (response.isComplete) {
+          onComplete();
+        }
+      }, metadata.chatId);
+    }, 'start-chat');
+
+    // Send start chat message
     const payload = {
       query: message,
       responseFormat: responseFormat,
       schemaJson: schemaJson || null
     };
 
-    this.wsManager.sendMessage(JSON.stringify(payload), (response: WebSocketResponse) => {
-      if (this.stopped) return;
+    this.wsManager.sendMessage(JSON.stringify(payload), WEBSOCKET_CONFIG.SEND_START_DESTINATION);
+  }
 
+  public async sendMessage(
+    message: string,
+    chatId: string,
+    responseFormat: string,
+    onChunk: (chunk: string) => void,
+    onComplete: () => void,
+    onError: (error: string) => void,
+    schemaJson?: string
+  ): Promise<void> {
+    if (!this.isAuthenticated) {
+      onError('User not authenticated');
+      return;
+    }
+
+    this.stopped = false;
+    if (!this.wsManager.isWebSocketConnected()) {
+      await this.connect();
+    }
+
+    const replyDestination = `/user/queue/chat.${chatId}`;
+    this.wsManager.subscribeToReply(replyDestination, (response: WebSocketResponse) => {
+      if (this.stopped) return;
       if (response.error) {
         onError(response.error);
         return;
       }
-
       if (response.content) {
         onChunk(response.content);
       }
-
       if (response.isComplete) {
         onComplete();
       }
-    });
+    }, chatId);
+
+    const payload = {
+      query: message,
+      responseFormat: responseFormat,
+      schemaJson: schemaJson || null,
+      chatId: chatId
+    };
+
+    this.wsManager.sendMessage(JSON.stringify(payload), WEBSOCKET_CONFIG.SEND_DESTINATION);
   }
 
   public abortCurrentStream(): void {
     this.stopped = true;
-    // Actually abort the WebSocket connection to stop receiving data
     this.wsManager.abort();
   }
 

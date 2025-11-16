@@ -17,3 +17,8 @@ export interface WebSocketConfig {
   reconnectDelay?: number;
   token?: string;
 }
+
+export interface ChatStartResponse {
+  chatId: string;
+  description: string;
+}

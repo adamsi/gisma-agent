@@ -78,11 +78,13 @@ CREATE INDEX idx_user_s3_folders_parent_id ON ${SA_DB_SCHEMA}.user_s3_folders(pa
 /* Chat Memory */
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE SEQUENCE ${SA_DB_SCHEMA}.conversation_sequence START 1;
 
 CREATE TABLE ${SA_DB_SCHEMA}.chat_memory (
     conversation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,
     description VARCHAR(256),
+    sequence_number BIGINT DEFAULT nextval('adam.conversation_sequence'),
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES ${SA_DB_SCHEMA}.users (id)
 );
 

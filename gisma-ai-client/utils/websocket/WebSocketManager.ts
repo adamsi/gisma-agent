@@ -11,7 +11,8 @@ export class WebSocketManager {
   private maxReconnectAttempts: number;
   private reconnectDelay: number;
   private responseCallbacks: Map<string, (response: WebSocketResponse) => void> = new Map();
-  private subscription: any = null;
+  private metadataCallbacks: Map<string, (response: any) => void> = new Map();
+  private subscriptions: Map<string, any> = new Map();
 
   constructor(config: WebSocketConfig) {
     this.config = config;
@@ -95,18 +96,19 @@ export class WebSocketManager {
   }
 
   public abort(): void {
-    // Unsubscribe from the response queue to stop receiving messages
-    if (this.subscription) {
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach((subscription) => {
       try {
-        this.subscription.unsubscribe();
-        this.subscription = null;
+        subscription.unsubscribe();
       } catch (error) {
         console.error('Error unsubscribing from WebSocket:', error);
       }
-    }
+    });
+    this.subscriptions.clear();
     
     // Clear response handlers
     this.responseCallbacks.clear();
+    this.metadataCallbacks.clear();
     
     // Disconnect the WebSocket to stop the stream
     if (this.isConnected) {
@@ -135,18 +137,6 @@ export class WebSocketManager {
         clearTimeout(timeout);
         this.isConnected = true;
         this.reconnectAttempts = 0;
-        
-        // Subscribe to response queue
-        this.subscription = this.client.subscribe(WEBSOCKET_CONFIG.RECEIVE_DESTINATION, (message) => {
-          try {
-            // Debug: Log the raw message body to see what's being received
-            console.log('WebSocket received chunk:', JSON.stringify(message.body));
-            this.handleResponse({ type: 'response', content: message.body, isComplete: false });
-          } catch (_error) {
-            console.error('Error parsing message:', _error);
-          }
-        });
-        
         resolve();
       };
 
@@ -175,33 +165,98 @@ export class WebSocketManager {
   }
 
   public disconnect(): void {
-    // Unsubscribe before disconnecting
-    if (this.subscription) {
+    this.subscriptions.forEach((subscription) => {
       try {
-        this.subscription.unsubscribe();
-        this.subscription = null;
+        subscription.unsubscribe();
       } catch (error) {
         console.error('Error unsubscribing from WebSocket:', error);
       }
-    }
+    });
+    this.subscriptions.clear();
     
     this.client.deactivate();
     this.isConnected = false;
     this.responseCallbacks.clear();
+    this.metadataCallbacks.clear();
   }
 
-  public sendMessage(message: string, onResponse: (response: WebSocketResponse) => void): void {
+  public unsubscribe(destination: string): void {
+    const subscription = this.subscriptions.get(destination);
+    if (subscription) {
+      try {
+        subscription.unsubscribe();
+        this.subscriptions.delete(destination);
+      } catch (error) {
+        console.error(`Error unsubscribing from ${destination}:`, error);
+      }
+    }
+  }
+
+  public subscribeToReply(
+    destination: string,
+    onResponse: (response: WebSocketResponse) => void,
+    callbackKey: string = 'default'
+  ): void {
     if (!this.isConnected) {
       console.error('WebSocket not connected');
       return;
     }
 
-    // Store the callback for handling responses
-    this.responseCallbacks.set('default', onResponse);
+    this.unsubscribe(destination);
+    this.responseCallbacks.set(callbackKey, onResponse);
 
-    // Send message to configured destination
+    const subscription = this.client.subscribe(destination, (message) => {
+      try {
+        const callback = this.responseCallbacks.get(callbackKey);
+        if (callback) {
+          // Check if message body is empty or indicates completion
+          const isComplete = !message.body || message.body.trim() === '' || message.body === '[DONE]';
+          callback({ type: 'response', content: message.body || '', isComplete });
+        }
+      } catch (_error) {
+        console.error('Error parsing message:', _error);
+      }
+    });
+
+    this.subscriptions.set(destination, subscription);
+  }
+
+  public subscribeToMetadata(
+    onMetadata: (response: any) => void,
+    callbackKey: string = 'default'
+  ): void {
+    if (!this.isConnected) {
+      console.error('WebSocket not connected');
+      return;
+    }
+
+    const destination = WEBSOCKET_CONFIG.RECEIVE_METADATA_DESTINATION;
+    this.unsubscribe(destination);
+    this.metadataCallbacks.set(callbackKey, onMetadata);
+
+    const subscription = this.client.subscribe(destination, (message) => {
+      try {
+        const metadata = JSON.parse(message.body);
+        const callback = this.metadataCallbacks.get(callbackKey);
+        if (callback) {
+          callback(metadata);
+        }
+      } catch (_error) {
+        console.error('Error parsing metadata:', _error);
+      }
+    });
+
+    this.subscriptions.set(destination, subscription);
+  }
+
+  public sendMessage(message: string, destination: string = WEBSOCKET_CONFIG.SEND_DESTINATION): void {
+    if (!this.isConnected) {
+      console.error('WebSocket not connected');
+      return;
+    }
+
     this.client.publish({
-      destination: WEBSOCKET_CONFIG.SEND_DESTINATION,
+      destination,
       body: message,
     });
   }

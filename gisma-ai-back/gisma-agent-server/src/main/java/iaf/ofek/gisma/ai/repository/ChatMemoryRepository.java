@@ -32,7 +32,7 @@ public class ChatMemoryRepository {
     }
 
     public List<ChatMetadata> getAllChatsForUser(UUID userId) {
-        String sql = "SELECT conversation_id, description FROM chat_memory WHERE user_id = ? ORDER BY conversation_id DESC";
+        String sql = "SELECT conversation_id, description FROM chat_memory WHERE user_id = ? ORDER BY sequence_number DESC";
         return jdbcTemplate.query(sql, (rs, rowNum) ->
                 new ChatMetadata(rs.getString("conversation_id"), rs.getString("description")), userId);
     }
@@ -42,6 +42,5 @@ public class ChatMemoryRepository {
         return jdbcTemplate.query(sql, (rs, rowNum) ->
                 new ChatMessage(rs.getString("content"), rs.getString("type")), chatId);
     }
-
 
 }
