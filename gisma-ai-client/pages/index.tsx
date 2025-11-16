@@ -30,6 +30,7 @@ import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatService } from '@/utils/websocket/chatService';
 import { WEBSOCKET_CONFIG } from '@/utils/websocket/config';
+import { fetchRootFolder } from '@/store/slices/uploadSlice';
 
 interface HomeProps {
   serverSideApiKeyIsSet: boolean;
@@ -41,7 +42,8 @@ const Home: React.FC<HomeProps> = ({
   defaultModelId,
 }) => {
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, isAdmin } = useAppSelector((state) => state.auth);
+  const { rootFolder } = useAppSelector((state) => state.upload);
   const { chats, chatMessages, loading: chatMemoryLoading } = useAppSelector((state) => state.chatMemory);
 
   // STATE ----------------------------------------------
@@ -87,6 +89,12 @@ const Home: React.FC<HomeProps> = ({
       dispatch(fetchAllChats());
     }
   }, [user, dispatch]);
+
+  useEffect(() => {
+    if (user && isAdmin && !rootFolder) {
+      dispatch(fetchRootFolder());
+    }
+  }, [dispatch, user, isAdmin, rootFolder]);
 
   // WEBSOCKET CLEANUP EFFECT ----------------------------------------------
   useEffect(() => {
@@ -146,7 +154,7 @@ const Home: React.FC<HomeProps> = ({
           }));
 
           return {
-            id: chat.chatId, // Use chatId as id for backend chats
+            id: uuidv4(),
             chatId: chat.chatId,
             name: chat.description,
             messages, // Use backend messages - they are fetched on mount
@@ -199,7 +207,7 @@ const Home: React.FC<HomeProps> = ({
           // For backend chats, try to find in conversations array
           if (conversations.length > 0) {
             const found = conversations.find(c => 
-              (parsed.id && c.id === parsed.id) || (parsed.chatId && c.chatId === parsed.chatId)
+              c.id === parsed.id || (parsed.chatId && c.chatId === parsed.chatId)
             );
             if (found) {
               setSelectedConversation(found);
@@ -237,7 +245,7 @@ const Home: React.FC<HomeProps> = ({
   useEffect(() => {
     if (!selectedConversation && user && conversations.length === 0 && chats.length === 0) {
       const newConversation: Conversation = {
-        id: '', // No ID until backend provides chatId
+        id: uuidv4(),
         name: 'New Conversation',
         messages: [],
         model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
@@ -540,7 +548,7 @@ const Home: React.FC<HomeProps> = ({
     const lastConversation = conversations[conversations.length - 1];
 
     const newConversation: Conversation = {
-      id: '', // No ID until backend provides chatId
+      id: uuidv4(),
       name: 'New Conversation',
       messages: [], // Always empty - no chatId means new conversation
       model: lastConversation?.model || {
@@ -587,7 +595,7 @@ const Home: React.FC<HomeProps> = ({
       saveConversation(updatedConversations[updatedConversations.length - 1]);
     } else {
       setSelectedConversation({
-        id: '', // No ID until backend provides chatId
+        id: uuidv4(),
         name: 'New conversation',
         messages: [],
         model: OpenAIModels[defaultModelId],
@@ -627,7 +635,7 @@ const Home: React.FC<HomeProps> = ({
     setConversations([]);
     localStorage.removeItem('conversationHistory');
     setSelectedConversation({
-      id: '', // No ID until backend provides chatId
+      id: uuidv4(),
       name: 'New conversation',
       messages: [],
       model: OpenAIModels[defaultModelId],
