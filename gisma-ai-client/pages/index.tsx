@@ -153,12 +153,13 @@ const Home: React.FC<HomeProps> = ({
 
         // Keep conversations without chatId (new conversations that haven't received metadata yet)
         const conversationsWithoutChatId = prevConversations.filter(c => !c.chatId);
-        // Merge: new conversations first, then existing chats (avoid duplicates)
+        // Merge: new conversations first, then existing chats in reverse order (newest first)
         const existingChatIds = new Set(chatConversations.map(c => c.chatId));
         const uniqueNewConversations = conversationsWithoutChatId.filter(c => 
           !c.chatId || !existingChatIds.has(c.chatId)
         );
-        return [...uniqueNewConversations, ...chatConversations];
+        // Reverse chats so newest appears first
+        return [...uniqueNewConversations, ...chatConversations.reverse()];
       });
     }
   }, [chats, chatMessages, defaultModelId]);

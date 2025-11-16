@@ -5,24 +5,34 @@ import iaf.ofek.gisma.ai.dto.agent.memory.ChatMetadata;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ChatMemoryRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
+    @Transactional
     public String generateChatId(UUID userId, String description) {
         String sql = "INSERT INTO chat_memory (user_id, description) VALUES (?, ?) RETURNING conversation_id";
         return jdbcTemplate.queryForObject(sql, String.class, userId, description);
     }
 
+    @Transactional
     public void delete(UUID chatId) {
-        String sql = "DELETE FROM chat_memory WHERE conversation_id = ?";
-        jdbcTemplate.update(sql, chatId);
+        jdbcTemplate.update(
+                "DELETE FROM spring_ai_chat_memory WHERE conversation_id = ?",
+                chatId.toString()
+        );
+        jdbcTemplate.update(
+                "DELETE FROM chat_memory WHERE conversation_id = ?",
+                chatId
+        );
     }
 
     public boolean chatIdExists(UUID chatId) {
