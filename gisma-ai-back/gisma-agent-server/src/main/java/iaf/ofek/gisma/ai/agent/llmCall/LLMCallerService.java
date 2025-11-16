@@ -9,7 +9,6 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -22,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Service
-@Qualifier("llmCallerService")
 public class LLMCallerService {
 
     private static final int MAX_LLM_RETRY_CALLS = 3;
@@ -101,12 +99,6 @@ public class LLMCallerService {
                 ex -> false,
                 "callLLM"
         );
-    }
-
-    protected static Advisor[] combineAdvisors(Advisor[] extra, Advisor additional) {
-        Advisor[] combined = Arrays.copyOf(extra, extra.length + 1);
-        combined[extra.length] = additional;
-        return combined;
     }
 
 }
