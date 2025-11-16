@@ -212,7 +212,7 @@ export const Chat: FC<Props> = memo(
                     />
                   ))}
 
-                  {loading && <ChatLoader /> }
+                  {messageIsStreaming && conversation.messages.length > 0 && conversation.messages[conversation.messages.length - 1].role !== 'assistant' && <ChatLoader /> }
 
                   <div
                     className="h-[120px] sm:h-[162px] bg-white dark:bg-[#343541]"

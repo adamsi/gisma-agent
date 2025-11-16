@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.agent.orchestrator.reasoner;
 
-import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlannerStep;
@@ -9,8 +9,6 @@ import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,10 +34,10 @@ public class LLMReasoner implements StepExecutor {
             {query}
             """;
 
-    private final LLMCallerService llmCallerService;
+    private final LLMCallerWithMemoryService llmCallerService;
 
     @Override
-    public Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
+    public Mono<StepExecutionResult> executeStep(PlannerStep step, String chatId) {
         String query = step.query() != null ? step.query() : "";
         String description = step.description() != null ? step.description() : "";
 
@@ -53,7 +51,7 @@ public class LLMReasoner implements StepExecutor {
                                 .system(SYSTEM_INSTRUCTIONS)
                                 .user(userMessage),
                         StepExecutionResult.class,
-                        userId
+                        chatId
                 ));
     }
 

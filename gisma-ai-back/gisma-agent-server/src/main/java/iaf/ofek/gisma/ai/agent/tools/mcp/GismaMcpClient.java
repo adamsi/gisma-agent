@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.agent.tools.mcp;
 
-import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
@@ -8,7 +8,7 @@ import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlannerStep;
 import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.gisma.ai.dto.agent.StepExecutionResult;
-import iaf.ofek.gisma.ai.dto.agent.UserPromptDTO;
+import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
@@ -16,8 +16,6 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 @Service
 @Log4j2
@@ -75,15 +73,15 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
             """;
 
 
-    private final LLMCallerService llmCallerService;
+    private final LLMCallerWithMemoryService llmCallerService;
 
 
     public GismaMcpClient(ChatClient.Builder builder, ToolCallbackProvider tools, ChatMemoryAdvisorProvider memoryAdvisorProvider) {
-        this.llmCallerService = new LLMCallerService(builder, tools, memoryAdvisorProvider);
+        this.llmCallerService = new LLMCallerWithMemoryService(builder, tools, memoryAdvisorProvider);
     }
 
     @Override
-    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse, UUID userId) {
+    public Flux<String> execute(UserPrompt prompt, PreflightClassifierResult classifierResponse, String chatId) {
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUERY, prompt.query())
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse())
@@ -92,11 +90,11 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
 
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
-                .user(userMessage), userId);
+                .user(userMessage), chatId);
     }
 
     @Override
-    public Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
+    public Mono<StepExecutionResult> executeStep(PlannerStep step, String chatId) {
         String endpoints = (step.mcpEndpoints() != null && !step.mcpEndpoints().isEmpty())
                 ? String.join(", ", step.mcpEndpoints())
                 : "No specific endpoints provided";
@@ -118,7 +116,7 @@ public class GismaMcpClient implements DirectToolExecutor, StepExecutor {
                                 .system(STEP_SYSTEM_INSTRUCTIONS)
                                 .user(userMessage),
                         StepExecutionResult.class,
-                        userId
+                        chatId
                 )
         );
     }

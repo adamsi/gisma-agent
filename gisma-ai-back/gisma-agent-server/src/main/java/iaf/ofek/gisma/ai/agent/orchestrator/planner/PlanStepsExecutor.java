@@ -25,11 +25,11 @@ public class PlanStepsExecutor {
 
     private final Map<ToolManifest, StepExecutor> planStepExecutorMap;
 
-    public Mono<PlanExecutionResult> executePlan(PlannerResult plannerResult, UUID userId) {
+    public Mono<PlanExecutionResult> executePlan(PlannerResult plannerResult, String chatId) {
         List<StepExecutionResult> stepResults = new ArrayList<>();
 
         return Flux.fromIterable(plannerResult.steps())
-                .flatMap((step)-> executeStep(step, userId))
+                .flatMap((step)-> executeStep(step, chatId))
                 .doOnNext(stepResults::add)
                 .then(ReactiveUtils.runBlockingAsync(() -> {
                     boolean overallSuccess = stepResults.stream()
@@ -39,9 +39,9 @@ public class PlanStepsExecutor {
                 }));
     }
 
-    private Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
+    private Mono<StepExecutionResult> executeStep(PlannerStep step, String chatId) {
         return planStepExecutorMap.get(step.toolCategory())
-                .executeStep(step, userId);
+                .executeStep(step, chatId);
     }
 
 }

@@ -1,7 +1,7 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
 import iaf.ofek.gisma.ai.dto.ingestion.CreateDocumentDTO;
-import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
+import iaf.ofek.gisma.ai.entity.ingestion.S3Document;
 import iaf.ofek.gisma.ai.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -19,9 +19,9 @@ public class DocumentProcessor {
 
     private final AuthService authService;
 
-    private final DocumentEntityService documentEntityService;
+    private final DocumentService documentService;
 
-    public List<DocumentEntity> saveNewDocuments(List<MultipartFile> files, List<UUID> parentFolderIds) {
+    public List<S3Document> saveNewDocuments(List<MultipartFile> files, List<UUID> parentFolderIds) {
         if (files.size() != parentFolderIds.size()) {
             throw new IllegalArgumentException("Files and documentDTOs must have the same size");
         }
@@ -31,17 +31,17 @@ public class DocumentProcessor {
                 .toList();
         String userId = authService.getCurrentUserId();
 
-        return documentEntityService.createNewDocuments(documents, userId);
+        return documentService.createNewDocuments(documents, userId);
     }
 
-    public DocumentEntity editDocument(MultipartFile file, UUID documentId) {
+    public S3Document editDocument(MultipartFile file, UUID documentId) {
         String userId = authService.getCurrentUserId();
 
-        return documentEntityService.editDocument(file, documentId, userId);
+        return documentService.editDocument(file, documentId, userId);
     }
 
     public void deleteDocuments(List<UUID> ids) {
-         documentEntityService.deleteDocuments(ids);
+         documentService.deleteDocuments(ids);
     }
 
 }

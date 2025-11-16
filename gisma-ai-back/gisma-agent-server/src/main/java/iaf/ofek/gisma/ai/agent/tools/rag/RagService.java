@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.agent.tools.rag;
 
-import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
 import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
@@ -15,8 +15,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 @Service
 public class RagService implements DirectToolExecutor, StepExecutor {
@@ -122,19 +120,19 @@ public class RagService implements DirectToolExecutor, StepExecutor {
             }
             """;
 
-    private final LLMCallerService llmCallerService;
+    private final LLMCallerWithMemoryService llmCallerService;
 
     private final VectorStore documentVectorStore;
 
     public RagService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider,
                       @Qualifier("documentVectorStore") VectorStore documentVectorStore) {
         this.documentVectorStore = documentVectorStore;
-        this.llmCallerService = new LLMCallerService(builder, memoryAdvisorProvider);
+        this.llmCallerService = new LLMCallerWithMemoryService(builder, memoryAdvisorProvider);
 //        memoryAdvisorProvider.longTermChatMemoryAdvisor(70);
     }
 
     @Override
-    public Flux<String> execute(UserPromptDTO prompt, PreflightClassifierResult classifierResponse, UUID userId) {
+    public Flux<String> execute(UserPrompt prompt, PreflightClassifierResult classifierResponse, String chatId) {
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUICKSHOT_RESPONSE, classifierResponse.rephrasedResponse());
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
@@ -144,10 +142,10 @@ public class RagService implements DirectToolExecutor, StepExecutor {
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_INSTRUCTIONS)
                 .user(prompt.query())
-                .advisors(qaAdvisor), userId);
+                .advisors(qaAdvisor), chatId);
     }
 
-    public Mono<QuickShotResponse> quickShotSimilaritySearch(String query, UUID userId) {
+    public Mono<QuickShotResponse> quickShotSimilaritySearch(String query, String chatId) {
         var qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
                 .promptTemplate(new PromptTemplate(QUICK_SHOT_PROMPT_TEMPLATE))
                 .order(3)
@@ -159,11 +157,11 @@ public class RagService implements DirectToolExecutor, StepExecutor {
                                 .system(systemMessage)
                                 .user(query)
                                 .advisors(qaAdvisor)
-                , QuickShotResponse.class, userId));
+                , QuickShotResponse.class, chatId));
     }
 
     @Override
-    public Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId) {
+    public Mono<StepExecutionResult> executeStep(PlannerStep step, String chatId) {
         String query = step.query() != null ? step.query() : "";
         String description = step.description() != null ? step.description() : "";
         String promptTemplate = STEP_PROMPT_TEMPLATE
@@ -179,7 +177,7 @@ public class RagService implements DirectToolExecutor, StepExecutor {
                                 .user(query)
                                 .advisors(qaAdvisor),
                         StepExecutionResult.class,
-                        userId
+                        chatId
                 ));
     }
 

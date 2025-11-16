@@ -3,6 +3,9 @@ CREATE SCHEMA ${SA_DB_SCHEMA};
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
+
+/* Global Context */
+
 CREATE TABLE ${SA_DB_SCHEMA}.document_vector_store (
     id UUID PRIMARY KEY,
     content TEXT,
@@ -10,7 +13,29 @@ CREATE TABLE ${SA_DB_SCHEMA}.document_vector_store (
     embedding vector(1536)
 );
 
-CREATE TABLE ${SA_DB_SCHEMA}.memory_vector_store
+CREATE TABLE ${SA_DB_SCHEMA}.s3_folders (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255),
+    parent_id UUID,
+    CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES ${SA_DB_SCHEMA}.s3_folders (id)
+);
+
+CREATE TABLE ${SA_DB_SCHEMA}.s3_documents (
+    id UUID PRIMARY KEY,
+    url TEXT,
+    name VARCHAR(255),
+    content_type VARCHAR(255),
+    folder_id UUID,
+    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES ${SA_DB_SCHEMA}.s3_folders (id)
+);
+
+CREATE INDEX idx_s3_documents_folder_id ON ${SA_DB_SCHEMA}.s3_documents(folder_id);
+CREATE INDEX idx_s3_folders_parent_id ON ${SA_DB_SCHEMA}.s3_folders(parent_id);
+
+
+/* User Context */
+
+CREATE TABLE ${SA_DB_SCHEMA}.user_document_vector_store
 (
     id        UUID PRIMARY KEY,
     content   TEXT,
@@ -29,18 +54,39 @@ CREATE TABLE ${SA_DB_SCHEMA}.users (
     picture        TEXT
 );
 
-CREATE TABLE ${SA_DB_SCHEMA}.folders (
+CREATE TABLE ${SA_DB_SCHEMA}.user_s3_folders (
     id UUID PRIMARY KEY,
     name VARCHAR(255),
     parent_id UUID,
-    CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES ${SA_DB_SCHEMA}.folders (id)
+    CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES ${SA_DB_SCHEMA}.user_s3_folders (id)
 );
 
-CREATE TABLE ${SA_DB_SCHEMA}.documents (
+CREATE TABLE ${SA_DB_SCHEMA}.user_s3_documents (
     id UUID PRIMARY KEY,
     url TEXT,
     name VARCHAR(255),
     content_type VARCHAR(255),
     folder_id UUID,
-    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES ${SA_DB_SCHEMA}.folders (id)
+    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES ${SA_DB_SCHEMA}.user_s3_folders (id)
 );
+
+CREATE INDEX idx_user_s3_documents_folder_id ON ${SA_DB_SCHEMA}.user_s3_documents(folder_id);
+CREATE INDEX idx_user_s3_folders_parent_id ON ${SA_DB_SCHEMA}.user_s3_folders(parent_id);
+
+
+
+/* Chat Memory */
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE SEQUENCE ${SA_DB_SCHEMA}.conversation_sequence START 1;
+
+CREATE TABLE ${SA_DB_SCHEMA}.chat_memory (
+    conversation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
+    description VARCHAR(256),
+    sequence_number BIGINT DEFAULT nextval('adam.conversation_sequence'),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES ${SA_DB_SCHEMA}.users (id)
+);
+
+CREATE INDEX idx_chat_memory_user_id ON ${SA_DB_SCHEMA}.chat_memory(user_id);
+

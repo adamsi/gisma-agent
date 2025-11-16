@@ -17,5 +17,7 @@ export const WEBSOCKET_CONFIG = {
   
   // Message destinations
   SEND_DESTINATION: '/app/chat',
+  SEND_START_DESTINATION: '/app/chat/start',
   RECEIVE_DESTINATION: '/user/queue/reply',
+  RECEIVE_METADATA_DESTINATION: '/user/queue/metadata',
 } as const;

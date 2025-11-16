@@ -42,9 +42,9 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<User> registerUser(@RequestBody @Valid RegisterUserDto user) {
-        if (true) {
-            throw new RuntimeException("Currently unavailable feature");
-        }
+//        if (true) {
+//            throw new RuntimeException("Currently unavailable feature");
+//        }
 
        User createdUser = userService.createUser(user);
 
@@ -69,12 +69,11 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserInfoDto> getUserInfo(@CookieValue(Token.ACCESS_TOKEN) String accessToken) {
+    public ResponseEntity<User> getUserInfo(@CookieValue(Token.ACCESS_TOKEN) String accessToken) {
         UUID userId = cookieUtil.extractUserId(accessToken);
         User user = userService.getUserById(userId);
-        UserInfoDto userInfo = userMapper.toDto(user);
 
-        return ResponseEntity.ok(userInfo);
+        return ResponseEntity.ok(user);
     }
 
 

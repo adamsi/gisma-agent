@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.agent.orchestrator.classifier;
 
-import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.gisma.ai.dto.agent.QuickShotResponse;
@@ -9,8 +9,6 @@ import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 
 @Service
@@ -101,9 +99,9 @@ public class PreflightClassifierService {
             }
             """;
 
-    private final LLMCallerService llmCallerService;
+    private final LLMCallerWithMemoryService llmCallerService;
 
-    public Mono<PreflightClassifierResult> classify(String query, QuickShotResponse quickShotResponse, UUID userId) {
+    public Mono<PreflightClassifierResult> classify(String query, QuickShotResponse quickShotResponse, String chatId) {
         String systemMessage = PREFLIGHT_CLASSIFIER_SYSTEM_MESSAGE
                 .replace(PromptFormat.SCHEMA_JSON, PREFLIGHT_CLASSIFIER_SCHEMA)
                 .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll());
@@ -115,7 +113,7 @@ public class PreflightClassifierService {
         return ReactiveUtils.runBlockingAsync(() -> llmCallerService.callLLMWithSchemaValidation(chatClient ->
                 chatClient.prompt()
                         .system(systemMessage)
-                        .user(userMessage), PreflightClassifierResult.class, userId));
+                        .user(userMessage), PreflightClassifierResult.class, chatId));
     }
 
 }

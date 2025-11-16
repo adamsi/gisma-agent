@@ -1,9 +1,7 @@
 import { Conversation } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
-import { Folder } from '@/types/folder';
-import { IconFolderPlus, IconMessagesOff, IconPlus } from '@tabler/icons-react';
+import { IconMessagesOff, IconPlus } from '@tabler/icons-react';
 import { FC, useEffect, useState } from 'react';
-import { ChatFolders } from '../Folders/Chat/ChatFolders';
 import { Search } from '../Sidebar/Search';
 import { ChatbarSettings } from './ChatbarSettings';
 import { Conversations } from './Conversations';
@@ -13,10 +11,6 @@ interface Props {
   conversations: Conversation[];
   lightMode: 'light' | 'dark';
   selectedConversation: Conversation;
-  folders: Folder[];
-  onCreateFolder: (name: string) => void;
-  onDeleteFolder: (folderId: string) => void;
-  onUpdateFolder: (folderId: string, name: string) => void;
   onNewConversation: () => void;
   onToggleLightMode: (mode: 'light' | 'dark') => void;
   onSelectConversation: (conversation: Conversation) => void;
@@ -33,10 +27,6 @@ export const Chatbar: FC<Props> = ({
   conversations,
   lightMode,
   selectedConversation,
-  folders,
-  onCreateFolder,
-  onDeleteFolder,
-  onUpdateFolder,
   onNewConversation,
   onToggleLightMode,
   onSelectConversation,
@@ -61,26 +51,6 @@ export const Chatbar: FC<Props> = ({
     setSearchTerm('');
   };
 
-  const handleDrop = (e: any) => {
-    if (e.dataTransfer) {
-      const conversation = JSON.parse(e.dataTransfer.getData('conversation'));
-      onUpdateConversation(conversation, { key: 'folderId', value: 0 });
-
-      e.target.style.background = 'none';
-    }
-  };
-
-  const allowDrop = (e: any) => {
-    e.preventDefault();
-  };
-
-  const highlightDrop = (e: any) => {
-    e.target.style.background = '#343541';
-  };
-
-  const removeHighlight = (e: any) => {
-    e.target.style.background = 'none';
-  };
 
   useEffect(() => {
     if (searchTerm) {
@@ -104,7 +74,7 @@ export const Chatbar: FC<Props> = ({
     >
       <div className="flex items-center">
         <button
-          className="flex w-[190px] flex-shrink-0 cursor-pointer select-none items-center gap-2 sm:gap-3 rounded-md border border-white/20 p-2 sm:p-3 text-[12px] sm:text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
+          className="flex w-full flex-shrink-0 cursor-pointer select-none items-center gap-2 sm:gap-3 rounded-md border border-white/20 p-2 sm:p-3 text-[12px] sm:text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
           onClick={() => {
             onNewConversation();
             setSearchTerm('');
@@ -112,13 +82,6 @@ export const Chatbar: FC<Props> = ({
         >
           <IconPlus size={16} />
           New chat
-        </button>
-
-        <button
-          className="ml-1 sm:ml-2 flex flex-shrink-0 cursor-pointer items-center gap-2 sm:gap-3 rounded-md border border-white/20 p-2 sm:p-3 text-[12px] sm:text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
-          onClick={() => onCreateFolder('New folder')}
-        >
-          <IconFolderPlus size={16} />
         </button>
       </div>
 
@@ -131,38 +94,11 @@ export const Chatbar: FC<Props> = ({
       )}
 
       <div className="flex-grow overflow-auto">
-        {folders.length > 0 && (
-          <div className="flex border-b border-white/20 pb-2">
-            <ChatFolders
-              searchTerm={searchTerm}
-              conversations={filteredConversations.filter(
-                (conversation) => conversation.folderId,
-              )}
-              folders={folders}
-              onDeleteFolder={onDeleteFolder}
-              onUpdateFolder={onUpdateFolder}
-              selectedConversation={selectedConversation}
-              loading={loading}
-              onSelectConversation={onSelectConversation}
-              onDeleteConversation={handleDeleteConversation}
-              onUpdateConversation={handleUpdateConversation}
-            />
-          </div>
-        )}
-
         {conversations.length > 0 ? (
-          <div
-            className="pt-1 sm:pt-2"
-            onDrop={(e) => handleDrop(e)}
-            onDragOver={allowDrop}
-            onDragEnter={highlightDrop}
-            onDragLeave={removeHighlight}
-          >
+          <div className="pt-1 sm:pt-2">
             <Conversations
               loading={loading}
-              conversations={filteredConversations.filter(
-                (conversation) => !conversation.folderId,
-              )}
+              conversations={filteredConversations}
               selectedConversation={selectedConversation}
               onSelectConversation={onSelectConversation}
               onDeleteConversation={handleDeleteConversation}
@@ -180,6 +116,7 @@ export const Chatbar: FC<Props> = ({
       <ChatbarSettings
         lightMode={lightMode}
         conversationsCount={conversations.length}
+        selectedConversation={selectedConversation}
         onToggleLightMode={onToggleLightMode}
         onClearConversations={onClearConversations}
       />

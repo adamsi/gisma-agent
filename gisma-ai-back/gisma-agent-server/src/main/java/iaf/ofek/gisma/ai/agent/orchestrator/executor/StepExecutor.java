@@ -8,6 +8,6 @@ import java.util.UUID;
 
 public interface StepExecutor {
 
-    Mono<StepExecutionResult> executeStep(PlannerStep step, UUID userId);
+    Mono<StepExecutionResult> executeStep(PlannerStep step, String chatId);
 
 }

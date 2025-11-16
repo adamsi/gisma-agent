@@ -24,7 +24,8 @@ public enum ResponseFormat {
         @Override
         public String getFormat(String schema) {
             return  """
-                   Response should be a JSON
+                    Only return valid JSON, nothing else.
+                    Do not prepend 'JSON:' or any extra text.
                     """;
         }
     },

@@ -5,14 +5,17 @@ import iaf.ofek.gisma.ai.entity.GismaAiEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import static iaf.ofek.gisma.ai.constant.DBTableNames.S3_DOCUMENTS;
+import static iaf.ofek.gisma.ai.constant.DBTableNames.S3_FOLDERS;
+
 @Entity
-@Table(name = "documents")
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Table(name = S3_DOCUMENTS)
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DocumentEntity extends GismaAiEntity {
+public class S3Document extends GismaAiEntity {
 
     @Column
     private String url;
@@ -26,6 +29,6 @@ public class DocumentEntity extends GismaAiEntity {
     @ManyToOne
     @JoinColumn(name = "folder_id")
     @JsonBackReference(value = "folder-document")
-    private FolderEntity parentFolder;
+    private S3Folder parentFolder;
 
 }

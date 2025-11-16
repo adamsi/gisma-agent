@@ -10,7 +10,6 @@ public class RegisterUserDto {
     @NotNull(message = "can't be null")
     private String username;
 
-    @NotNull(message = "can't be null")
     private String email;
 
     @NotNull(message = "can't be null")

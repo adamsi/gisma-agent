@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.service.ingestion;
 
-import iaf.ofek.gisma.ai.entity.ingestion.DocumentEntity;
+import iaf.ofek.gisma.ai.entity.ingestion.S3Document;
 import lombok.extern.log4j.Log4j2;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
@@ -39,7 +39,7 @@ public class IngestionService {
         this.documentVectorStore = documentVectorStore;
     }
 
-    public void ingestToVectorStore(MultipartFile file, DocumentEntity documentEntity, String userId) {
+    public void ingestToVectorStore(MultipartFile file, S3Document s3Document, String userId) {
         String filename = file.getOriginalFilename();
         if (filename == null) {
             throw new IllegalArgumentException("Failed processing file without filename");
@@ -52,13 +52,13 @@ public class IngestionService {
 
             if (extractedText != null && !extractedText.trim().isEmpty()) {
                 Document document = new Document(extractedText, Map.of(
-                        DOCUMENT_ID, documentEntity.getId(),
+                        DOCUMENT_ID, s3Document.getId(),
                         USER_ID, userId,
                         FILENAME, filename,
                         CONTENT_TYPE, contentType
                 ));
 
-                    deleteDocument(documentEntity); // remove old embeddings + file
+                    deleteDocument(s3Document); // remove old embeddings + file
                 List<Document> chunks = textSplitter.apply(List.of(document));
                 documentVectorStore.add(chunks);
             }
@@ -67,7 +67,7 @@ public class IngestionService {
         }
     }
 
-    public void deleteDocument(DocumentEntity document) {
+    public void deleteDocument(S3Document document) {
         documentVectorStore.delete("%s == '%s'".formatted(DOCUMENT_ID, document.getId()));
     }
 

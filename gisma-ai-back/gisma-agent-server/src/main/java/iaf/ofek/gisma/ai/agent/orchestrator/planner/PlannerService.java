@@ -1,6 +1,6 @@
 package iaf.ofek.gisma.ai.agent.orchestrator.planner;
 
-import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerService;
+import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlannerResult;
 import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;
@@ -9,8 +9,6 @@ import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -95,9 +93,9 @@ public class PlannerService {
             """;
 
 
-    private final LLMCallerService llmCallerService;
+    private final LLMCallerWithMemoryService llmCallerService;
 
-    public Mono<PlannerResult> plan(String userQuery, PreflightClassifierResult preflightClassifierResult, UUID userId) {
+    public Mono<PlannerResult> plan(String userQuery, PreflightClassifierResult preflightClassifierResult, String chatId) {
         String systemMessage = SYSTEM_INSTRUCTIONS
                 .replace(PromptFormat.TOOLS_METADATA, ToolManifest.describeAll())
                 .replace(PromptFormat.QUERY, userQuery)
@@ -110,7 +108,7 @@ public class PlannerService {
                                 .system(SYSTEM_INSTRUCTIONS)
                                 .system(systemMessage)
                                 .user(userQuery),
-                        PlannerResult.class, userId
+                        PlannerResult.class, chatId
                 )
         );
     }
