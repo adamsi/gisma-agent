@@ -5,10 +5,13 @@ import { ClearConversations } from './ClearConversations';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
 import { useRouter } from 'next/router';
+import { Conversation } from '@/types/chat';
+import { saveLastVisitedChat } from '@/utils/app/chatStorage';
 
 interface Props {
   lightMode: 'light' | 'dark';
   conversationsCount: number;
+  selectedConversation?: Conversation;
   onToggleLightMode: (mode: 'light' | 'dark') => void;
   onClearConversations: () => void;
 }
@@ -16,6 +19,7 @@ interface Props {
 export const ChatbarSettings: FC<Props> = ({
   lightMode,
   conversationsCount,
+  selectedConversation,
   onToggleLightMode,
   onClearConversations,
 }) => {
@@ -46,7 +50,11 @@ export const ChatbarSettings: FC<Props> = ({
         <SidebarButton
           text="Upload Documents"
           icon={<IconUpload size={16} />}
-          onClick={() => router.push('/admin/upload')}
+          onClick={() => {
+            // Save the current chatId before navigating to upload
+            saveLastVisitedChat(selectedConversation?.chatId || null);
+            router.push('/admin/upload');
+          }}
         />
       )}
 

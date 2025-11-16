@@ -21,6 +21,7 @@ import {
   saveConversations,
   updateConversation,
 } from '@/utils/app/conversation';
+import { saveChatMessages, saveLastVisitedChat } from '@/utils/app/chatStorage';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
@@ -103,14 +104,14 @@ const Home: React.FC<HomeProps> = ({
 
   // FETCH MESSAGES FOR ALL CHATS ON MOUNT ---------------------------
   useEffect(() => {
-    if (chats && chats.length > 0) {
+    if (chats && chats.length > 0 && user) {
       chats.forEach(async (chat) => {
         if (!chatMessages[chat.chatId]) {
           await dispatch(fetchChatMessages(chat.chatId));
         }
       });
     }
-  }, [chats, dispatch]);
+  }, [chats, user, dispatch]);
 
   // CONVERT CHATS TO CONVERSATIONS ---------------------------
   useEffect(() => {
@@ -126,26 +127,29 @@ const Home: React.FC<HomeProps> = ({
               role: msg.type === 'USER' ? 'user' : 'assistant',
               content: msg.content,
             }));
-            // Use existing messages if they have more content or backend is empty
-            const useExistingMessages = existing.messages.length > backendMessages.length || backendMessages.length === 0;
+            // Prefer existing messages if they have more content (streaming), otherwise use backend
+            // This preserves messages that were streamed in real-time, but loads from backend on mount
+            // If existing messages are empty, always use backend messages
+            const useExistingMessages = existing.messages.length > 0 && existing.messages.length > backendMessages.length;
             return {
               ...existing,
               name: chat.description,
-              messages: useExistingMessages ? existing.messages : backendMessages,
+              messages: useExistingMessages ? existing.messages : (backendMessages.length > 0 ? backendMessages : existing.messages),
             };
           }
 
           // Create new conversation from chat (only if not already in list)
+          // Always use backend messages if available, they are the source of truth
           const messages: Message[] = (chatMessages[chat.chatId] || []).map((msg: ChatMessage) => ({
             role: msg.type === 'USER' ? 'user' : 'assistant',
             content: msg.content,
           }));
 
           return {
-            id: uuidv4(),
+            id: chat.chatId, // Use chatId as id for backend chats
             chatId: chat.chatId,
             name: chat.description,
-            messages,
+            messages, // Use backend messages - they are fetched on mount
             model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
             prompt: DEFAULT_SYSTEM_PROMPT,
             folderId: null,
@@ -155,7 +159,10 @@ const Home: React.FC<HomeProps> = ({
         });
 
         // Keep conversations without chatId (new conversations that haven't received metadata yet)
-        const conversationsWithoutChatId = prevConversations.filter(c => !c.chatId);
+        // Ensure new conversations always have empty messages to prevent old messages from appearing
+        const conversationsWithoutChatId = prevConversations
+          .filter(c => !c.chatId)
+          .map(c => ({ ...c, messages: [] }));
         
         // Reverse chats so newest appears first, then merge
         const reversedChats = [...chatConversations].reverse();
@@ -170,11 +177,67 @@ const Home: React.FC<HomeProps> = ({
     }
   }, [chats, chatMessages, defaultModelId]);
 
-  // INITIALIZE NEW CONVERSATION ON MOUNT ---------------------------
+  // RESTORE SELECTED CONVERSATION FROM LOCALSTORAGE ---------------------------
   useEffect(() => {
     if (!selectedConversation && user) {
+      const savedSelected = localStorage.getItem('selectedConversation');
+      if (savedSelected) {
+        try {
+          const parsed: Conversation = JSON.parse(savedSelected);
+          
+          // If it's a new conversation (no chatId), use it directly with empty messages
+          // This ensures new conversations always start empty, even if saved with messages
+          if (!parsed.chatId) {
+            const newConversation = { ...parsed, messages: [] };
+            setSelectedConversation(newConversation);
+            saveConversation(newConversation);
+            // Clear last visited chatId for new conversations
+            saveLastVisitedChat(null);
+            return;
+          }
+          
+          // For backend chats, try to find in conversations array
+          if (conversations.length > 0) {
+            const found = conversations.find(c => 
+              (parsed.id && c.id === parsed.id) || (parsed.chatId && c.chatId === parsed.chatId)
+            );
+            if (found) {
+              setSelectedConversation(found);
+              saveConversation(found);
+              // If it's a backend chat, ensure messages are loaded
+              if (found.chatId && !chatMessages[found.chatId]) {
+                dispatch(fetchChatMessages(found.chatId));
+              }
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse selectedConversation from localStorage:', e);
+        }
+      }
+      
+      // If no saved conversation or not found, select first conversation
+      if (conversations.length > 0) {
+        const firstConv = conversations[0];
+        // If it's a new conversation (no chatId), ensure it has empty messages
+        const conversationToSelect = firstConv.chatId 
+          ? firstConv 
+          : { ...firstConv, messages: [] };
+        setSelectedConversation(conversationToSelect);
+        saveConversation(conversationToSelect);
+        // If it's a backend chat, ensure messages are loaded
+        if (firstConv.chatId && !chatMessages[firstConv.chatId]) {
+          dispatch(fetchChatMessages(firstConv.chatId));
+        }
+      }
+    }
+  }, [selectedConversation, user, conversations, chatMessages, dispatch]);
+
+  // INITIALIZE NEW CONVERSATION ON MOUNT (if no conversations exist) ---------------------------
+  useEffect(() => {
+    if (!selectedConversation && user && conversations.length === 0 && chats.length === 0) {
       const newConversation: Conversation = {
-        id: uuidv4(),
+        id: '', // No ID until backend provides chatId
         name: 'New Conversation',
         messages: [],
         model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
@@ -187,7 +250,7 @@ const Home: React.FC<HomeProps> = ({
       setSelectedConversation(newConversation);
       saveConversation(newConversation);
     }
-  }, [selectedConversation, user, defaultModelId]);
+  }, [selectedConversation, user, conversations.length, chats.length, defaultModelId]);
 
   // WEBSOCKET RESPONSE ----------------------------------------------
   const handleStop = () => {
@@ -261,6 +324,11 @@ const Home: React.FC<HomeProps> = ({
         );
         saveConversation(finalConversation);
         
+        // Save to localStorage per chatId
+        if (receivedChatId) {
+          saveChatMessages(receivedChatId, finalConversation.messages);
+        }
+        
         return finalConversation;
       });
       
@@ -316,6 +384,11 @@ const Home: React.FC<HomeProps> = ({
                 prevConvs.map((conv) => (conv.id === updated.id ? updated : conv))
               );
 
+              // Save to localStorage per chatId
+              if (updated.chatId) {
+                saveChatMessages(updated.chatId, updated.messages);
+              }
+
               return updated;
             });
           },
@@ -349,6 +422,9 @@ const Home: React.FC<HomeProps> = ({
                 // Add at top - effect will handle final ordering
                 return [updatedConv, ...filtered];
               });
+              
+              // Save last visited chatId when new conversation gets a chatId
+              saveLastVisitedChat(metadata.chatId);
               
               return updatedConv;
             });
@@ -409,6 +485,11 @@ const Home: React.FC<HomeProps> = ({
                 prevConvs.map((conv) => (conv.id === updated.id ? updated : conv))
               );
 
+              // Save to localStorage per chatId
+              if (updated.chatId) {
+                saveChatMessages(updated.chatId, updated.messages);
+              }
+
               return updated;
             });
           },
@@ -446,6 +527,12 @@ const Home: React.FC<HomeProps> = ({
   const handleSelectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
     saveConversation(conversation);
+    // Save last visited chatId
+    saveLastVisitedChat(conversation.chatId || null);
+    // If it's a backend chat, ensure messages are loaded
+    if (conversation.chatId && !chatMessages[conversation.chatId]) {
+      dispatch(fetchChatMessages(conversation.chatId));
+    }
   };
 
   // CONVERSATION OPERATIONS  --------------------------------------------
@@ -453,9 +540,9 @@ const Home: React.FC<HomeProps> = ({
     const lastConversation = conversations[conversations.length - 1];
 
     const newConversation: Conversation = {
-      id: uuidv4(),
+      id: '', // No ID until backend provides chatId
       name: 'New Conversation',
-      messages: [],
+      messages: [], // Always empty - no chatId means new conversation
       model: lastConversation?.model || {
         id: OpenAIModels[defaultModelId].id,
         name: OpenAIModels[defaultModelId].name,
@@ -469,6 +556,10 @@ const Home: React.FC<HomeProps> = ({
     };
 
     // Don't add to sidebar until description is generated
+    // Clear last visited chatId FIRST before setting new conversation
+    // This ensures it's cleared on the first click
+    saveLastVisitedChat(null);
+    // Set and save immediately to prevent restore effect from overwriting
     setSelectedConversation(newConversation);
     saveConversation(newConversation);
     setAppLoading(false);
@@ -496,7 +587,7 @@ const Home: React.FC<HomeProps> = ({
       saveConversation(updatedConversations[updatedConversations.length - 1]);
     } else {
       setSelectedConversation({
-        id: uuidv4(),
+        id: '', // No ID until backend provides chatId
         name: 'New conversation',
         messages: [],
         model: OpenAIModels[defaultModelId],
@@ -525,13 +616,18 @@ const Home: React.FC<HomeProps> = ({
 
     setSelectedConversation(single);
     setConversations(all);
+
+    // Save messages to localStorage if updated
+    if (data.key === 'messages' && single.chatId) {
+      saveChatMessages(single.chatId, single.messages);
+    }
   };
 
   const handleClearConversations = () => {
     setConversations([]);
     localStorage.removeItem('conversationHistory');
     setSelectedConversation({
-      id: uuidv4(),
+      id: '', // No ID until backend provides chatId
       name: 'New conversation',
       messages: [],
       model: OpenAIModels[defaultModelId],
@@ -565,6 +661,11 @@ const Home: React.FC<HomeProps> = ({
 
       setSelectedConversation(single);
       setConversations(all);
+
+      // Save to localStorage per chatId
+      if (single.chatId) {
+        saveChatMessages(single.chatId, single.messages);
+      }
 
       setCurrentMessage(message);
     }

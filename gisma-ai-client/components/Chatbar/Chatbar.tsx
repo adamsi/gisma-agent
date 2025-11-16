@@ -116,6 +116,7 @@ export const Chatbar: FC<Props> = ({
       <ChatbarSettings
         lightMode={lightMode}
         conversationsCount={conversations.length}
+        selectedConversation={selectedConversation}
         onToggleLightMode={onToggleLightMode}
         onClearConversations={onClearConversations}
       />

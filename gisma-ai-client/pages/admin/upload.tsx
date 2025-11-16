@@ -31,6 +31,7 @@ import {
 } from '@tabler/icons-react';
 import { FolderEntity, DocumentEntity } from '@/types/ingestion';
 import { FileUpload } from '@/components/Upload';
+import { getLastVisitedChat } from '@/utils/app/chatStorage';
 
 interface BreadcrumbItem {
   id: string;
@@ -482,7 +483,14 @@ const AdminUpload: React.FC = () => {
           <div className="px-4 py-4 border-r sm:border-r-0 sm:border-b border-white/10 flex-shrink-0">
             <div className="flex items-center space-x-3">
               <button
-                onClick={() => router.push('/')}
+                onClick={() => {
+                  const lastChatId = getLastVisitedChat();
+                  if (lastChatId) {
+                    router.push(`/chat/${lastChatId}`);
+                  } else {
+                    router.push('/');
+                  }
+                }}
                 className="p-2 text-blue-200 hover:text-white hover:bg-blue-500/20 rounded-lg transition-all duration-200"
               >
                 <IconArrowLeft className="w-5 h-5" />
