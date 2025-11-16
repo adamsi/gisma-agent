@@ -1,6 +1,6 @@
-package iaf.ofek.gisma.ai.agent.orchestrator.planner;
+package iaf.ofek.gisma.ai.agent.orchestrator.legacy.planner;
 
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.StepExecutor;
 import iaf.ofek.gisma.ai.dto.agent.PlanExecutionResult;
 import iaf.ofek.gisma.ai.dto.agent.PlannerResult;
 import iaf.ofek.gisma.ai.dto.agent.PlannerStep;
@@ -16,7 +16,6 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

@@ -1,6 +1,6 @@
-package iaf.ofek.gisma.ai.agent.orchestrator.planner;
+package iaf.ofek.gisma.ai.agent.orchestrator.legacy.planner;
 
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.ActionModeExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.ActionModeExecutor;
 import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
 import lombok.RequiredArgsConstructor;

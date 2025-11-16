@@ -1,7 +1,7 @@
-package iaf.ofek.gisma.ai.agent.orchestrator.reasoner;
+package iaf.ofek.gisma.ai.agent.orchestrator.legacy.reasoner;
 
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.StepExecutor;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlannerStep;
 import iaf.ofek.gisma.ai.dto.agent.StepExecutionResult;
