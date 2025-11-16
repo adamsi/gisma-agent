@@ -144,7 +144,6 @@ const ChatPage: React.FC<ChatPageProps> = ({
     
     // If chats have loaded but chat not found, redirect
     if (!chat && chats.length > 0) {
-      toast.error('Chat not found');
       router.push('/');
       return;
     }
