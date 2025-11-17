@@ -21,7 +21,7 @@ public class DocumentProcessor {
 
     private final DocumentService documentService;
 
-    public List<S3Document> saveNewDocuments(List<MultipartFile> files, List<UUID> parentFolderIds) {
+    public List<S3Document> saveNewDocuments(List<MultipartFile> files, List<UUID> parentFolderIds, String userId) {
         if (files.size() != parentFolderIds.size()) {
             throw new IllegalArgumentException("Files and documentDTOs must have the same size");
         }
@@ -29,14 +29,11 @@ public class DocumentProcessor {
         List<CreateDocumentDTO> documents = IntStream.range(0, files.size())
                 .mapToObj(i -> new CreateDocumentDTO(parentFolderIds.get(i), files.get(i)))
                 .toList();
-        String userId = authService.getCurrentUserId();
 
         return documentService.createNewDocuments(documents, userId);
     }
 
-    public S3Document editDocument(MultipartFile file, UUID documentId) {
-        String userId = authService.getCurrentUserId();
-
+    public S3Document editDocument(MultipartFile file, UUID documentId, String userId) {
         return documentService.editDocument(file, documentId, userId);
     }
 
