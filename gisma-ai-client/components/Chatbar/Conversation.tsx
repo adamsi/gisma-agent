@@ -3,12 +3,11 @@ import { KeyValuePair } from '@/types/data';
 import {
   IconCheck,
   IconMessage,
-  IconPencil,
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
-import { DragEvent, FC, KeyboardEvent, useEffect, useState } from 'react';
+import { DragEvent, FC, useState } from 'react';
 
 interface Props {
   selectedConversation: Conversation;
@@ -32,15 +31,6 @@ export const ConversationComponent: FC<Props> = ({
 }) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
-
-  const handleEnterDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleRename(selectedConversation);
-    }
-  };
 
   const handleDragStart = (
     e: DragEvent<HTMLButtonElement>,
@@ -51,97 +41,60 @@ export const ConversationComponent: FC<Props> = ({
     }
   };
 
-  const handleRename = (conversation: Conversation) => {
-    if (renameValue.trim().length > 0) {
-      onUpdateConversation(conversation, { key: 'name', value: renameValue });
-      setRenameValue('');
-      setIsRenaming(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isRenaming) {
-      setIsDeleting(false);
-    } else if (isDeleting) {
-      setIsRenaming(false);
-    }
-  }, [isRenaming, isDeleting]);
-
   return (
     <div className="relative flex items-center">
-      {isRenaming && (selectedConversation.id === conversation.id || 
-        (selectedConversation.chatId && conversation.chatId && 
-         selectedConversation.chatId === conversation.chatId)) ? (
-        <div className="flex w-full items-center gap-3 bg-[#343541]/90 p-3 rounded-lg">
-          <IconMessage size={18} />
-          <input
-            className="mr-12 flex-1 overflow-hidden overflow-ellipsis border-neutral-400 bg-transparent text-left text-[12.5px] leading-3 text-white outline-none focus:border-neutral-100"
-            type="text"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={handleEnterDown}
-            autoFocus
-          />
-        </div>
-      ) : (
-        <button
-          className={`flex w-full cursor-pointer items-center gap-3 rounded-lg p-3 text-sm transition-colors duration-200 hover:bg-[#343541]/90 ${
-            loading ? 'disabled:cursor-not-allowed' : ''
-          } ${
+      <button
+        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-sm transition-all duration-apple hover:bg-white/5 active:scale-[0.98] ${
+          loading ? 'disabled:cursor-not-allowed' : ''
+        } ${
+          (selectedConversation.id === conversation.id || 
+           (selectedConversation.chatId && conversation.chatId && 
+            selectedConversation.chatId === conversation.chatId)) ? 'bg-white/10 backdrop-blur-sm border border-white/20' : ''
+        }`}
+        onClick={() => {
+          // Update selected conversation immediately for instant UI feedback
+          onSelectConversation(conversation);
+          
+          if (conversation.chatId) {
+            router.push(`/chat/${conversation.chatId}`);
+          }
+        }}
+        disabled={loading}
+        draggable="true"
+        onDragStart={(e) => handleDragStart(e, conversation)}
+      >
+        <IconMessage size={18} />
+        <div
+          className={`relative max-h-8 flex-1 overflow-hidden text-ellipsis whitespace-nowrap break-all text-left text-sm leading-4 font-medium ${
             (selectedConversation.id === conversation.id || 
              (selectedConversation.chatId && conversation.chatId && 
-              selectedConversation.chatId === conversation.chatId)) ? 'bg-[#343541]/90' : ''
+              selectedConversation.chatId === conversation.chatId)) ? 'pr-12 text-white' : 'text-white/80'
           }`}
-          onClick={() => {
-            if (conversation.chatId) {
-              router.push(`/chat/${conversation.chatId}`);
-            } else {
-              onSelectConversation(conversation);
-            }
-          }}
-          disabled={loading}
-          draggable="true"
-          onDragStart={(e) => handleDragStart(e, conversation)}
         >
-          <IconMessage size={18} />
-          <div
-            className={`relative max-h-8 flex-1 overflow-hidden text-ellipsis whitespace-nowrap break-all text-left text-[12.5px] leading-4 ${
-              (selectedConversation.id === conversation.id || 
-               (selectedConversation.chatId && conversation.chatId && 
-                selectedConversation.chatId === conversation.chatId)) ? 'pr-12' : 'pr-1'
-            }`}
-          >
-            {conversation.name}
-          </div>
-        </button>
-      )}
+          {conversation.name}
+        </div>
+      </button>
 
-      {(isDeleting || isRenaming) &&
+      {isDeleting &&
         (selectedConversation.id === conversation.id || 
          (selectedConversation.chatId && conversation.chatId && 
           selectedConversation.chatId === conversation.chatId)) && (
-          <div className="absolute right-1 z-10 flex text-gray-300">
+          <div className="absolute right-1 z-10 flex gap-1 text-gray-300">
             <button
-              className="min-w-[20px] p-1 text-neutral-400 hover:text-neutral-100"
+              className="min-w-[28px] h-7 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-apple active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
-                if (isDeleting) {
-                  onDeleteConversation(conversation);
-                } else if (isRenaming) {
-                  handleRename(conversation);
-                }
+                onDeleteConversation(conversation);
                 setIsDeleting(false);
-                setIsRenaming(false);
               }}
             >
               <IconCheck size={18} />
             </button>
             <button
-              className="min-w-[20px] p-1 text-neutral-400 hover:text-neutral-100"
+              className="min-w-[28px] h-7 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-apple active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsDeleting(false);
-                setIsRenaming(false);
               }}
             >
               <IconX size={18} />
@@ -152,21 +105,10 @@ export const ConversationComponent: FC<Props> = ({
       {(selectedConversation.id === conversation.id || 
         (selectedConversation.chatId && conversation.chatId && 
          selectedConversation.chatId === conversation.chatId)) &&
-        !isDeleting &&
-        !isRenaming && (
-          <div className="absolute right-1 z-10 flex text-gray-300">
+        !isDeleting && (
+          <div className="absolute right-1 z-10 flex gap-1 text-gray-300">
             <button
-              className="min-w-[20px] p-1 text-neutral-400 hover:text-neutral-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsRenaming(true);
-                setRenameValue(selectedConversation.name);
-              }}
-            >
-              <IconPencil size={18} />
-            </button>
-            <button
-              className="min-w-[20px] p-1 text-neutral-400 hover:text-neutral-100"
+              className="min-w-[28px] h-7 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-apple active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsDeleting(true);

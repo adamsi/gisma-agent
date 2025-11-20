@@ -17,7 +17,7 @@ import {
   fallbackModelID,
 } from '@/types/openai';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import { updateConversation } from '@/utils/app/conversation';
+import { updateConversation, saveConversation } from '@/utils/app/conversation';
 import { saveChatMessages, loadChatMessages, saveLastVisitedChat } from '@/utils/app/chatStorage';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
 import { GetServerSideProps } from 'next';
@@ -399,6 +399,9 @@ const ChatPage: React.FC<ChatPageProps> = ({
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
+    // Update selected conversation immediately for instant UI feedback
+    setSelectedConversation(conversation);
+    
     if (conversation.chatId) {
       router.push(`/chat/${conversation.chatId}`);
     } else {
@@ -408,6 +411,23 @@ const ChatPage: React.FC<ChatPageProps> = ({
 
   // CONVERSATION OPERATIONS  --------------------------------------------
   const handleNewConversation = () => {
+    // Create a new empty conversation and save it before navigating
+    // This ensures the home page shows a new conversation instead of the first chat
+    const lastConversation = conversations[conversations.length - 1];
+    const newConversation: Conversation = {
+      id: uuidv4(),
+      name: 'New Conversation',
+      messages: [], // Always empty - no chatId means new conversation
+      model: lastConversation?.model || OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
+      prompt: DEFAULT_SYSTEM_PROMPT,
+      folderId: null,
+      responseFormat: ResponseFormat.SIMPLE,
+      textDirection: 'ltr',
+    };
+    
+    // Save the new conversation to localStorage so home page restores it
+    saveConversation(newConversation);
+    saveLastVisitedChat(null);
     router.push('/');
   };
 

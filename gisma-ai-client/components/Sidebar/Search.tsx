@@ -20,7 +20,7 @@ export const Search: FC<Props> = ({ placeholder, searchTerm, onSearch }) => {
   return (
     <div className="relative flex items-center">
       <input
-        className="w-full flex-1 rounded-md border border-neutral-600 bg-[#202123] px-4 py-3 pr-10 text-[14px] leading-3 text-white"
+        className="w-full flex-1 rounded-xl border border-white/20 bg-white/5 backdrop-blur-sm px-4 py-3 pr-10 text-sm text-white placeholder:text-white/40 transition-all duration-apple focus:border-white/30 focus:bg-white/10 focus:outline-none"
         type="text"
         placeholder={placeholder || ''}
         value={searchTerm}
@@ -29,7 +29,7 @@ export const Search: FC<Props> = ({ placeholder, searchTerm, onSearch }) => {
 
       {searchTerm && (
         <IconX
-          className="absolute right-4 cursor-pointer text-neutral-300 hover:text-neutral-400"
+          className="absolute right-4 cursor-pointer text-white/50 hover:text-white transition-colors duration-apple"
           size={18}
           onClick={clearSearch}
         />

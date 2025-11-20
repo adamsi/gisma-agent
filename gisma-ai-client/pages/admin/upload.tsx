@@ -479,7 +479,7 @@ const AdminUpload: React.FC = () => {
         <div className="absolute inset-0 z-0 bg-grid opacity-30 mask-radial-faded" />
         
         {/* Sidebar */}
-        <div className="relative z-10 w-full sm:w-64 border-r border-white/10 bg-black/20 backdrop-blur-xl flex flex-row sm:flex-col">
+        <div className="relative z-10 w-full sm:w-64 border-r border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl flex flex-row sm:flex-col">
           <div className="px-4 py-4 border-r sm:border-r-0 sm:border-b border-white/10 flex-shrink-0">
             <div className="flex items-center space-x-3">
               <button
@@ -491,7 +491,7 @@ const AdminUpload: React.FC = () => {
                     router.push('/');
                   }
                 }}
-                className="p-2 text-blue-200 hover:text-white hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+                className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-apple active:scale-[0.95]"
               >
                 <IconArrowLeft className="w-5 h-5" />
               </button>
@@ -505,10 +505,10 @@ const AdminUpload: React.FC = () => {
             </div>
           </div>
           
-          <div className="p-4 flex flex-row sm:flex-col gap-2 sm:gap-0 sm:space-y-2 overflow-x-auto">
+          <div className="p-4 flex flex-row sm:flex-col gap-3 overflow-x-auto">
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center justify-center space-x-2 px-4 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap text-sm sm:w-full"
+              className="flex items-center justify-center gap-2 px-4 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-apple shadow-lg hover:shadow-xl active:scale-[0.98] whitespace-nowrap text-sm font-medium sm:w-full"
               title="Upload Files"
             >
               <IconPlus className="w-4 h-4" />
@@ -518,7 +518,7 @@ const AdminUpload: React.FC = () => {
             
             <button
               onClick={() => setIsCreateFolderModalOpen(true)}
-              className="flex items-center justify-center space-x-2 px-4 h-11 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap text-sm sm:w-full"
+              className="flex items-center justify-center gap-2 px-4 h-11 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all duration-apple shadow-lg hover:shadow-xl active:scale-[0.98] whitespace-nowrap text-sm font-medium sm:w-full"
               title="New Folder"
             >
               <IconFolder className="w-4 h-4" />

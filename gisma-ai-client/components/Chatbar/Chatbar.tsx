@@ -70,17 +70,17 @@ export const Chatbar: FC<Props> = ({
 
   return (
     <div
-      className={`fixed top-0 bottom-0 z-50 flex h-full w-[260px] flex-none flex-col bg-[#202123] transition-all sm:relative sm:top-0 space-y-1 sm:space-y-2 p-1 sm:p-2`}
+      className={`fixed top-0 bottom-0 z-50 flex h-full w-[260px] flex-none flex-col bg-white/5 backdrop-blur-2xl border-r border-white/10 shadow-2xl transition-all duration-apple sm:relative sm:top-0 space-y-3 p-4`}
     >
       <div className="flex items-center">
         <button
-          className="flex w-full flex-shrink-0 cursor-pointer select-none items-center gap-2 sm:gap-3 rounded-md border border-white/20 p-2 sm:p-3 text-[12px] sm:text-[14px] leading-normal text-white transition-colors duration-200 hover:bg-gray-500/10"
+          className="flex w-full flex-shrink-0 cursor-pointer select-none items-center gap-3 rounded-xl border border-white/20 bg-white/5 backdrop-blur-sm px-4 py-3 text-sm font-medium leading-normal text-white transition-all duration-apple hover:bg-white/10 hover:border-white/30 active:scale-[0.98]"
           onClick={() => {
             onNewConversation();
             setSearchTerm('');
           }}
         >
-          <IconPlus size={16} />
+          <IconPlus size={18} />
           New chat
         </button>
       </div>
@@ -106,8 +106,8 @@ export const Chatbar: FC<Props> = ({
             />
           </div>
         ) : (
-          <div className="mt-4 sm:mt-8 flex flex-col items-center gap-2 sm:gap-3 text-xs sm:text-sm leading-normal text-white opacity-50">
-            <IconMessagesOff size={16} className="sm:w-[18px] sm:h-[18px]" />
+          <div className="mt-8 flex flex-col items-center gap-3 text-sm leading-normal text-white/60">
+            <IconMessagesOff size={18} />
             No conversations.
           </div>
         )}
