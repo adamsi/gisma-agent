@@ -169,7 +169,15 @@ const ChatPage: React.FC<ChatPageProps> = ({
       // Ensure messages are loaded
       if (!chatMessages[chatId]) {
         loadChatMessagesFromHook(chatId);
-        // Don't set selectedConversation yet - wait for messages to load
+        // Create placeholder conversation with empty messages to show sidebar while loading
+        const placeholderConversation: Conversation = {
+          ...conversation,
+          messages: [],
+        };
+        if (!selectedConversation || selectedConversation.chatId !== chatId) {
+          setSelectedConversation(placeholderConversation);
+          dispatch(setLastVisitedChatId(chatId));
+        }
         return;
       }
       // Only update if it's different to avoid unnecessary re-renders
@@ -196,7 +204,22 @@ const ChatPage: React.FC<ChatPageProps> = ({
     // Load messages and create conversation with chatId as id (temporary until backendConversations updates)
     if (!chatMessages[chatId]) {
       loadChatMessagesFromHook(chatId);
-      // Don't set selectedConversation yet - wait for messages to load
+      // Create placeholder conversation with empty messages to show sidebar while loading
+      const placeholderConversation: Conversation = {
+        id: chatId,
+        chatId: chat.chatId,
+        name: chat.description,
+        messages: [],
+        model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
+        prompt: DEFAULT_SYSTEM_PROMPT,
+        folderId: null,
+        responseFormat: ResponseFormat.SIMPLE,
+        textDirection: 'ltr',
+      };
+      if (!selectedConversation || selectedConversation.chatId !== chatId) {
+        setSelectedConversation(placeholderConversation);
+        dispatch(setLastVisitedChatId(chatId));
+      }
       return;
     }
 
@@ -228,18 +251,63 @@ const ChatPage: React.FC<ChatPageProps> = ({
     }
   }, [chatId, chats, chatMessages, backendConversations, user, defaultModelId, router, dispatch, loadChatMessagesFromHook, selectedConversation]);
 
+  // Update selected conversation when messages are loaded (replace placeholder with actual messages)
+  useEffect(() => {
+    if (!chatId || typeof chatId !== 'string' || !selectedConversation || !chatMessages[chatId]) return;
+    
+    // If we have a placeholder conversation (empty messages) and messages are now loaded, update it
+    if (selectedConversation.chatId === chatId && selectedConversation.messages.length === 0 && chatMessages[chatId].length > 0) {
+      // Try to find in backend conversations first
+      const backendConversation = backendConversations.find((c) => c.chatId === chatId);
+      if (backendConversation) {
+        // Use backend conversation which already has messages from useConversations hook
+        const preservedName = metadataDescriptionsRef.current[chatId] || backendConversation.name;
+        setSelectedConversation({
+          ...backendConversation,
+          name: preservedName,
+        });
+        return;
+      }
+      
+      // If not in backend conversations, create from chat and messages
+      const chat = chats.find((c) => c.chatId === chatId);
+      if (chat) {
+        const backendMessages: Message[] = chatMessages[chatId].map(
+          (msg) => ({
+            role: msg.type === 'USER' ? 'user' : 'assistant',
+            content: msg.content,
+          })
+        );
+        
+        const updatedConversation: Conversation = {
+          ...selectedConversation,
+          messages: backendMessages,
+          name: chat.description,
+        };
+        setSelectedConversation(updatedConversation);
+      }
+    }
+  }, [chatId, chatMessages, selectedConversation, backendConversations, chats]);
+
   // Update selected conversation when backend conversations update (to get stable id)
   // Also preserve metadata descriptions
   useEffect(() => {
     if (selectedConversation?.chatId) {
       const updatedConversation = backendConversations.find((c) => c.chatId === selectedConversation.chatId);
       if (updatedConversation) {
-        // Preserve description from metadata if it exists, otherwise use backend description
+        // Only update if messages are different or if we need to update the name
         const preservedName = metadataDescriptionsRef.current[selectedConversation.chatId] || updatedConversation.name;
-        setSelectedConversation({
-          ...updatedConversation,
-          name: preservedName,
-        });
+        const needsUpdate = 
+          updatedConversation.messages.length !== selectedConversation.messages.length ||
+          updatedConversation.name !== preservedName ||
+          updatedConversation.id !== selectedConversation.id;
+        
+        if (needsUpdate) {
+          setSelectedConversation({
+            ...updatedConversation,
+            name: preservedName,
+          });
+        }
       }
     }
   }, [backendConversations, selectedConversation?.chatId]);
@@ -378,45 +446,29 @@ const ChatPage: React.FC<ChatPageProps> = ({
     return <HomePage />;
   }
 
-  // Don't show fallback conversation - wait for actual conversation to load
-  // This prevents the flash of "Loading..." or default chat
-  if (!selectedConversation || (chatId && selectedConversation.chatId !== chatId)) {
-    // Show loading state while conversation is being loaded
-    return (
-      <>
-        <Head>
-          <title>Gisma Agent - Loading...</title>
-          <meta name="description" content="AI assistant with gisma knowledge base." />
-          <meta
-            name="viewport"
-            content="height=device-height ,width=device-width, initial-scale=1, user-scalable=no"
-          />
-          <link rel="icon" type="image/png" href="/sa-logo.png" />
-          <link rel="shortcut icon" type="image/png" href="/sa-logo.png" />
-          <link rel="apple-touch-icon" href="/sa-logo.png" />
-        </Head>
-        <main
-          className={`flex h-screen w-screen flex-col text-sm ${lightMode === 'light' ? 'text-gray-900 bg-gradient-to-br from-gray-50 via-white to-gray-100' : 'dark text-white bg-gradient-to-br from-gray-950 via-slate-950 to-black'} relative`}
-        >
-          {lightMode === 'dark' && (
-            <div className="absolute inset-0 z-0">
-              <ParticlesBackground />
-            </div>
-          )}
-          <div className="flex h-full w-full items-center justify-center relative z-10">
-            <div className="text-white/60">Loading conversation...</div>
-          </div>
-        </main>
-      </>
-    );
-  }
+  // Create a placeholder conversation if we have a chatId but no conversation yet
+  // This allows sidebar to show while messages are loading
+  const displayConversation = selectedConversation || (chatId && typeof chatId === 'string' ? {
+    id: chatId,
+    chatId: chatId,
+    name: '', // Empty name - title will be empty while loading
+    messages: [], // Empty messages - chat area will be empty until loaded
+    model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
+    prompt: DEFAULT_SYSTEM_PROMPT,
+    folderId: null,
+    responseFormat: ResponseFormat.SIMPLE,
+    textDirection: 'ltr' as const,
+  } : undefined);
 
-  const displayConversation = selectedConversation;
+  // Only show loading screen if we don't have a chatId at all
+  if (!displayConversation) {
+    return null;
+  }
 
   return (
     <>
       <Head>
-        <title>Gisma Agent - {displayConversation.name}</title>
+        <title>{displayConversation.name ? `Gisma Agent - ${displayConversation.name}` : 'Gisma Agent'}</title>
         <meta name="description" content="AI assistant with gisma knowledge base." />
         <meta
           name="viewport"

@@ -178,6 +178,9 @@ export const Chat: FC<Props> = memo(
                         <div>
                           <Spinner size="16px" className="mx-auto" />
                         </div>
+                      ) : conversation.chatId ? (
+                        // If we have a chatId but no messages, we're loading - show empty
+                        ''
                       ) : (
                         'Gisma Agent'
                       )}
