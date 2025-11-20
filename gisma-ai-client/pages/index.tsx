@@ -32,6 +32,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatService } from '@/utils/websocket/chatService';
 import { WEBSOCKET_CONFIG } from '@/utils/websocket/config';
 import { fetchRootFolder } from '@/store/slices/uploadSlice';
+import ParticlesBackground from '@/components/Global/Particles';
 
 interface HomeProps {
   serverSideApiKeyIsSet: boolean;
@@ -731,9 +732,13 @@ const Home: React.FC<HomeProps> = ({
       </Head>
       {user && selectedConversation ? (
           <main
-            className={`flex h-screen w-screen flex-col text-sm text-white dark:text-white ${lightMode}`}
+            className={`flex h-screen w-screen flex-col text-sm text-white dark:text-white ${lightMode} relative bg-gradient-to-br from-gray-950 via-slate-950 to-black`}
           >
-            <div className="flex h-full w-full">
+            {/* Particles Background */}
+            <div className="absolute inset-0 z-0">
+              <ParticlesBackground />
+            </div>
+            <div className="flex h-full w-full relative z-10">
               {showSidebar ? (
                 <div>
                   <Chatbar

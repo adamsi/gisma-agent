@@ -132,11 +132,11 @@ export const ChatInput: FC<Props> = ({
   }, [conversation.id, messageIsStreaming]);
 
   return (
-    <div className={`absolute left-0 w-full bottom-20 sm:bottom-0 border-transparent bg-gradient-to-b from-transparent via-white to-white pt-2 pb-safe dark:border-white/20 dark:via-[#343541] dark:to-[#343541] sm:pt-6 md:pt-2 md:pb-0`}>
+    <div className={`absolute left-0 w-full bottom-20 sm:bottom-0 border-transparent bg-gradient-to-b from-transparent via-white/50 to-white/50 pt-2 pb-safe dark:border-white/20 dark:via-[#343541]/50 dark:to-[#343541]/50 sm:pt-6 md:pt-2 md:pb-0`}>
       <div className="stretch mx-2 mt-2 flex flex-row gap-2 last:mb-1 sm:mt-4 sm:gap-3 sm:last:mb-2 md:mx-4 md:mt-[52px] md:last:mb-6 lg:mx-auto lg:max-w-3xl">
         {messageIsStreaming && (
           <button
-            className="absolute top-0 left-0 right-0 mx-auto mb-3 flex w-fit items-center gap-3 rounded border border-neutral-200 bg-white py-2 px-4 text-black hover:opacity-50 dark:border-neutral-600 dark:bg-[#343541] dark:text-white md:mb-0 md:mt-2"
+            className="absolute top-0 left-0 right-0 mx-auto mb-3 flex w-fit items-center gap-3 rounded border border-neutral-200 bg-white/50 py-2 px-4 text-black hover:opacity-50 dark:border-neutral-600 dark:bg-[#343541]/50 dark:text-white md:mb-0 md:mt-2"
             onClick={handleStopConversation}
           >
             <IconPlayerStop size={16} /> Stop Generating
@@ -150,7 +150,7 @@ export const ChatInput: FC<Props> = ({
             compact={true}
           />
 
-          <div className="relative flex w-full flex-grow flex-col rounded-md border border-black/10 bg-white shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:border-gray-900/50 dark:bg-[#40414F] dark:text-white dark:shadow-[0_0_15px_rgba(0,0,0,0.10)]">
+          <div className="relative flex w-full flex-grow flex-col rounded-md border border-black/10 bg-white/50 shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:border-gray-900/50 dark:bg-[#40414F]/50 dark:text-white dark:shadow-[0_0_15px_rgba(0,0,0,0.10)]">
 
             <textarea
               ref={textareaRef}

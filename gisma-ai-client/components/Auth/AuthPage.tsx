@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { showToast } from '@/store/slices/toastSlice';
 import { LoginUserDto } from '@/types';
 import { useRouter } from 'next/router';
+import ParticlesBackground from '@/components/Global/Particles';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -44,7 +45,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
   };
 
   const handleGoBack = () => {
-    router.push('/');
+    router.push('/home');
   };
 
 
@@ -104,6 +105,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
 
   return (
     <div className="relative min-h-screen md:h-screen md:overflow-hidden grid grid-cols-1 md:grid-cols-2 bg-gradient-to-br from-gray-950 via-slate-950 to-black">
+      {/* Particles Background */}
+      <div className="absolute inset-0 z-0">
+        <ParticlesBackground />
+      </div>
       {/* Decorative Background (same as footer) */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         {/* Base gradient backdrop */}
@@ -121,10 +126,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
       <div className="flex items-center justify-center py-10 md:py-0 px-6 sm:px-10 md:px-12 lg:px-16 md:h-screen">
         <div className="w-full max-w-md">
           {/* Go Back Button and Logo */}
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-8 flex items-center justify-between relative z-10">
             <button
+              type="button"
               onClick={handleGoBack}
-              className="inline-flex items-center gap-2 text-blue-300 hover:text-white transition-colors duration-200"
+              className="inline-flex items-center gap-2 text-blue-300 hover:text-white transition-colors duration-200 cursor-pointer relative z-10"
             >
               <IconArrowLeft className="h-5 w-5" />
               <span className="text-sm font-medium"></span>
