@@ -5,6 +5,7 @@ import { ChatMetadata, ChatMessage } from '@/types/chat';
 interface ChatMemoryState {
   chats: ChatMetadata[];
   chatMessages: Record<string, ChatMessage[]>; // chatId -> messages
+  lastVisitedChatId: string | null;
   loading: boolean;
   error: string | null;
 }
@@ -12,6 +13,7 @@ interface ChatMemoryState {
 const initialState: ChatMemoryState = {
   chats: [],
   chatMessages: {},
+  lastVisitedChatId: null,
   loading: false,
   error: null,
 };
@@ -77,6 +79,9 @@ const chatMemorySlice = createSlice({
     clearChatMessages: (state, action: PayloadAction<string>) => {
       delete state.chatMessages[action.payload];
     },
+    setLastVisitedChatId: (state, action: PayloadAction<string | null>) => {
+      state.lastVisitedChatId = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -102,6 +107,6 @@ const chatMemorySlice = createSlice({
   },
 });
 
-export const { addChat, updateChatDescription, addMessageToChat, clearChatMessages } = chatMemorySlice.actions;
+export const { addChat, updateChatDescription, addMessageToChat, clearChatMessages, setLastVisitedChatId } = chatMemorySlice.actions;
 export default chatMemorySlice.reducer;
 

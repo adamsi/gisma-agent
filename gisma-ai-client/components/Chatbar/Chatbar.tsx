@@ -70,11 +70,15 @@ export const Chatbar: FC<Props> = ({
 
   return (
     <div
-      className={`fixed top-0 bottom-0 z-50 flex h-full w-[260px] flex-none flex-col bg-white/5 backdrop-blur-2xl border-r border-white/10 shadow-2xl transition-all duration-apple sm:relative sm:top-0 space-y-3 p-4`}
+      className={`fixed top-0 bottom-0 z-50 flex h-full w-[260px] flex-none flex-col ${lightMode === 'light' ? 'bg-white/80 backdrop-blur-2xl border-r border-gray-200 shadow-lg' : 'bg-white/5 backdrop-blur-2xl border-r border-white/10 shadow-2xl'} transition-all duration-apple sm:relative sm:top-0 space-y-3 p-4`}
     >
       <div className="flex items-center">
         <button
-          className="flex w-full flex-shrink-0 cursor-pointer select-none items-center gap-3 rounded-xl border border-white/20 bg-white/5 backdrop-blur-sm px-4 py-3 text-sm font-medium leading-normal text-white transition-all duration-apple hover:bg-white/10 hover:border-white/30 active:scale-[0.98]"
+          className={`flex w-full flex-shrink-0 cursor-pointer select-none items-center gap-3 rounded-xl border backdrop-blur-sm px-4 py-3 text-sm font-medium leading-normal transition-all duration-apple active:scale-[0.98] ${
+            lightMode === 'light'
+              ? 'border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:border-gray-400'
+              : 'border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/30'
+          }`}
           onClick={() => {
             onNewConversation();
             setSearchTerm('');
@@ -90,6 +94,7 @@ export const Chatbar: FC<Props> = ({
           placeholder="Search conversations..."
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
+          lightMode={lightMode}
         />
       )}
 
@@ -103,10 +108,11 @@ export const Chatbar: FC<Props> = ({
               onSelectConversation={onSelectConversation}
               onDeleteConversation={handleDeleteConversation}
               onUpdateConversation={handleUpdateConversation}
+              lightMode={lightMode}
             />
           </div>
         ) : (
-          <div className="mt-8 flex flex-col items-center gap-3 text-sm leading-normal text-white/60">
+          <div className={`mt-8 flex flex-col items-center gap-3 text-sm leading-normal ${lightMode === 'light' ? 'text-gray-500' : 'text-white/60'}`}>
             <IconMessagesOff size={18} />
             No conversations.
           </div>

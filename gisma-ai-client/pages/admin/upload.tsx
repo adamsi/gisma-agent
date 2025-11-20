@@ -31,7 +31,6 @@ import {
 } from '@tabler/icons-react';
 import { FolderEntity, DocumentEntity } from '@/types/ingestion';
 import { FileUpload } from '@/components/Upload';
-import { getLastVisitedChat } from '@/utils/app/chatStorage';
 
 interface BreadcrumbItem {
   id: string;
@@ -43,6 +42,7 @@ const AdminUpload: React.FC = () => {
   const router = useRouter();
   const { user, isAdmin, loading } = useAppSelector((state) => state.auth);
   const { rootFolder, currentFolder, loading: uploadLoading, deleting, error, success } = useAppSelector((state) => state.upload);
+  const { lastVisitedChatId } = useAppSelector((state) => state.chatMemory);
   
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: 'root', name: '/' }]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -484,9 +484,8 @@ const AdminUpload: React.FC = () => {
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => {
-                  const lastChatId = getLastVisitedChat();
-                  if (lastChatId) {
-                    router.push(`/chat/${lastChatId}`);
+                  if (lastVisitedChatId) {
+                    router.push(`/chat/${lastVisitedChatId}`);
                   } else {
                     router.push('/');
                   }
