@@ -54,7 +54,7 @@ export const ConversationComponent: FC<Props> = ({
   return (
     <div className="relative flex items-center">
       <button
-        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-sm transition-all duration-apple active:scale-[0.98] ${
+        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-sm transition-transform duration-apple active:scale-[0.98] ${
           loading ? 'disabled:cursor-not-allowed' : ''
         } ${
           lightMode === 'light'
@@ -95,7 +95,7 @@ export const ConversationComponent: FC<Props> = ({
       >
         <IconMessage size={18} />
         <div
-          className={`relative max-h-8 flex-1 overflow-hidden text-ellipsis whitespace-nowrap break-all text-left text-sm leading-4 font-medium ${
+          className={`relative max-h-8 flex-1 overflow-hidden text-ellipsis whitespace-nowrap break-all text-left text-xs leading-4 font-medium ${
             isSelected
               ? lightMode === 'light' ? 'pr-12 text-gray-900' : 'pr-12 text-white'
               : lightMode === 'light' ? 'text-gray-700' : 'text-white/80'
