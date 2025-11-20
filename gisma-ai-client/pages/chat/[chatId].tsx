@@ -104,7 +104,8 @@ const ChatPage: React.FC<ChatPageProps> = ({
     window.addEventListener('websocket-disconnect', handleLogout);
 
     return () => {
-      chatService.current.disconnect();
+      // Don't disconnect on component unmount - connection should persist
+      // Only disconnect on explicit logout event
       window.removeEventListener('websocket-disconnect', handleLogout);
     };
   }, []);
@@ -231,7 +232,8 @@ const ChatPage: React.FC<ChatPageProps> = ({
   // WEBSOCKET RESPONSE ----------------------------------------------
   const handleStop = () => {
     stopConversationRef.current = true;
-    chatService.current.abortCurrentStream();
+    // Pass chatId to abort only this specific chat's stream
+    chatService.current.abortCurrentStream(selectedConversation?.chatId);
 
     if (finalizeStreamRef.current) {
       finalizeStreamRef.current();
@@ -321,7 +323,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
         updatedConversation.responseFormat,
         (chunk: string) => {
           if (stopConversationRef.current) {
-            chatService.current.abortCurrentStream();
+            chatService.current.abortCurrentStream(updatedConversation.chatId);
             finalizeStream();
             return;
           }

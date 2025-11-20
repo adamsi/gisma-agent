@@ -94,9 +94,10 @@ export const ChatbarSettings: FC<Props> = ({
             </div>
             <button
               className="flex w-full items-center gap-2 rounded-md border border-white/20 px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs sm:text-sm text-white hover:bg-gray-500/10"
-              onClick={() => {
+              onClick={async () => {
                 setShowProfile(false);
-                dispatch(logout());
+                await dispatch(logout());
+                router.replace('/home');
               }}
             >
               <IconLogout size={16} />

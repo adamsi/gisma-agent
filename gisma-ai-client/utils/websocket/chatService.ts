@@ -2,15 +2,23 @@ import { WebSocketManager } from './WebSocketManager';
 import { WebSocketResponse, ChatStartResponse } from '../../types/websocket';
 import { WEBSOCKET_CONFIG } from './config';
 
+/**
+ * Simplified Chat Service with automatic connection management
+ * 
+ * Features:
+ * - Automatic connection on first use
+ * - Simple message sending API
+ * - Automatic subscription management
+ * - No manual connection/disconnection needed
+ */
 export class ChatService {
   private wsManager: WebSocketManager;
   private serverUrl: string;
   private isAuthenticated: boolean = false;
-  private stopped: boolean = false;
 
   constructor(serverUrl: string = WEBSOCKET_CONFIG.SERVER_URL) {
     this.serverUrl = serverUrl;
-    this.wsManager = new WebSocketManager({
+    this.wsManager = WebSocketManager.getInstance({
       serverUrl,
       reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
       reconnectDelay: WEBSOCKET_CONFIG.RECONNECT_DELAY,
@@ -19,31 +27,23 @@ export class ChatService {
 
   public setAuthenticated(authenticated: boolean): void {
     this.isAuthenticated = authenticated;
-    this.wsManager = new WebSocketManager({
-      serverUrl: this.serverUrl,
-      reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
-      reconnectDelay: WEBSOCKET_CONFIG.RECONNECT_DELAY,
-    });
+    
+    if (!authenticated) {
+      // Disconnect when user logs out
+      this.wsManager.disconnect();
+    }
   }
 
-  public async connect(): Promise<void> {
+  private async ensureReady(): Promise<void> {
     if (!this.isAuthenticated) {
-      console.warn('ChatService: User not authenticated, skipping WebSocket connection');
-      return;
+      throw new Error('User not authenticated');
     }
-
-    try {
-      await this.wsManager.connect();
-    } catch (error) {
-      console.error('ChatService: Failed to connect to WebSocket:', error);
-      throw error;
-    }
+    await this.wsManager.ensureConnected();
   }
 
-  public disconnect(): void {
-    this.wsManager.disconnect();
-  }
-
+  /**
+   * Start a new chat conversation
+   */
   public async startNewChat(
     message: string,
     responseFormat: string,
@@ -53,25 +53,15 @@ export class ChatService {
     onMetadata: (metadata: ChatStartResponse) => void,
     schemaJson?: string
   ): Promise<void> {
-    if (!this.isAuthenticated) {
-      onError('User not authenticated');
-      return;
-    }
+    await this.ensureReady();
 
-    this.stopped = false;
-    if (!this.wsManager.isWebSocketConnected()) {
-      await this.connect();
-    }
-
-    // Subscribe to metadata first - when chatId arrives, subscribe to chat-specific queue
+    // Subscribe to metadata first
     this.wsManager.subscribeToMetadata((metadata: ChatStartResponse) => {
-      // Notify caller about metadata
       onMetadata(metadata);
       
-      // Subscribe to the chat-specific reply queue
+      // Once we have chatId, subscribe to chat-specific queue
       const replyDestination = `/user/queue/chat.${metadata.chatId}`;
       this.wsManager.subscribeToReply(replyDestination, (response: WebSocketResponse) => {
-        if (this.stopped) return;
         if (response.error) {
           onError(response.error);
           return;
@@ -92,9 +82,15 @@ export class ChatService {
       schemaJson: schemaJson || null
     };
 
-    this.wsManager.sendMessage(JSON.stringify(payload), WEBSOCKET_CONFIG.SEND_START_DESTINATION);
+    await this.wsManager.sendMessage(
+      JSON.stringify(payload), 
+      WEBSOCKET_CONFIG.SEND_START_DESTINATION
+    );
   }
 
+  /**
+   * Send a message to an existing chat
+   */
   public async sendMessage(
     message: string,
     chatId: string,
@@ -104,19 +100,12 @@ export class ChatService {
     onError: (error: string) => void,
     schemaJson?: string
   ): Promise<void> {
-    if (!this.isAuthenticated) {
-      onError('User not authenticated');
-      return;
-    }
-
-    this.stopped = false;
-    if (!this.wsManager.isWebSocketConnected()) {
-      await this.connect();
-    }
+    await this.ensureReady();
 
     const replyDestination = `/user/queue/chat.${chatId}`;
+    
+    // Subscribe to chat-specific reply queue
     this.wsManager.subscribeToReply(replyDestination, (response: WebSocketResponse) => {
-      if (this.stopped) return;
       if (response.error) {
         onError(response.error);
         return;
@@ -129,6 +118,7 @@ export class ChatService {
       }
     }, chatId);
 
+    // Send message
     const payload = {
       query: message,
       responseFormat: responseFormat,
@@ -136,14 +126,37 @@ export class ChatService {
       chatId: chatId
     };
 
-    this.wsManager.sendMessage(JSON.stringify(payload), WEBSOCKET_CONFIG.SEND_DESTINATION);
+    await this.wsManager.sendMessage(
+      JSON.stringify(payload), 
+      WEBSOCKET_CONFIG.SEND_DESTINATION
+    );
   }
 
-  public abortCurrentStream(): void {
-    this.stopped = true;
-    this.wsManager.abort();
+  /**
+   * Abort current stream (unsubscribe from current chat)
+   */
+  public abortCurrentStream(chatId?: string): void {
+    if (chatId) {
+      const replyDestination = `/user/queue/chat.${chatId}`;
+      this.wsManager.unsubscribe(replyDestination);
+      this.wsManager.clearResponseHandler(chatId);
+    }
+    
+    // Also clear metadata subscription
+    this.wsManager.unsubscribe(WEBSOCKET_CONFIG.RECEIVE_METADATA_DESTINATION);
+    this.wsManager.clearResponseHandler('start-chat');
   }
 
+  /**
+   * Disconnect websocket (usually on logout)
+   */
+  public disconnect(): void {
+    this.wsManager.disconnect();
+  }
+
+  /**
+   * Check if websocket is connected
+   */
   public isConnected(): boolean {
     return this.wsManager.isWebSocketConnected();
   }

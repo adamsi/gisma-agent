@@ -1,194 +1,265 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { WebSocketConfig, WebSocketMessage, WebSocketResponse } from '../../types/websocket';
+import { WebSocketConfig, WebSocketResponse } from '../../types/websocket';
 import { WEBSOCKET_CONFIG } from './config';
 
+/**
+ * Singleton WebSocket Manager with persistent connection and automatic reconnection
+ * 
+ * Features:
+ * - Single persistent connection across the app
+ * - Automatic reconnection with exponential backoff
+ * - Connection health monitoring
+ * - Visibility API integration (reconnect when tab becomes visible)
+ * - Simple subscription management with auto-cleanup
+ */
 export class WebSocketManager {
-  private client: Client;
+  private static instance: WebSocketManager | null = null;
+  private client: Client | null = null;
   private config: WebSocketConfig;
   private isConnected: boolean = false;
+  private isConnecting: boolean = false;
   private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number;
-  private reconnectDelay: number;
+  private maxReconnectAttempts: number = Infinity; // Never give up
+  private baseReconnectDelay: number;
+  private subscriptions: Map<string, any> = new Map();
   private responseCallbacks: Map<string, (response: WebSocketResponse) => void> = new Map();
   private metadataCallbacks: Map<string, (response: any) => void> = new Map();
-  private subscriptions: Map<string, any> = new Map();
+  private connectionPromise: Promise<void> | null = null;
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private visibilityHandler: (() => void) | null = null;
+  private shouldBeConnected: boolean = false;
 
-  constructor(config: WebSocketConfig) {
+  private constructor(config: WebSocketConfig) {
     this.config = config;
-    this.maxReconnectAttempts = config.reconnectAttempts || 5;
-    this.reconnectDelay = config.reconnectDelay || 3000;
+    this.baseReconnectDelay = config.reconnectDelay || 3000;
+    this.setupVisibilityHandler();
+  }
 
-    this.client = new Client({
+  public static getInstance(config?: WebSocketConfig): WebSocketManager {
+    if (!WebSocketManager.instance) {
+      if (!config) {
+        throw new Error('WebSocketManager: Config required for first initialization');
+      }
+      WebSocketManager.instance = new WebSocketManager(config);
+    }
+    return WebSocketManager.instance;
+  }
+
+  private setupVisibilityHandler(): void {
+    if (typeof window === 'undefined') return;
+    
+    this.visibilityHandler = () => {
+      if (document.visibilityState === 'visible' && this.shouldBeConnected && !this.isConnected && !this.isConnecting) {
+        console.log('WebSocket: Tab became visible, reconnecting...');
+        this.connect();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  private createClient(): Client {
+    const client = new Client({
       webSocketFactory: () => {
-        const sockjsUrl = `${config.serverUrl}${WEBSOCKET_CONFIG.WS_ENDPOINT}`;
+        const sockjsUrl = `${this.config.serverUrl}${WEBSOCKET_CONFIG.WS_ENDPOINT}`;
         const options: any = {
-          // Enable cookies for authentication
           withCredentials: true
         };
         
-        // Add token to headers if provided (for JWT-based auth)
-        if (config.token) {
+        if (this.config.token) {
           options.headers = {
-            'Authorization': `Bearer ${config.token}`
+            'Authorization': `Bearer ${this.config.token}`
           };
         }
         
         return new SockJS(sockjsUrl, null, options);
       },
-      debug: (str) => {
-      },
-      reconnectDelay: this.reconnectDelay,
+      debug: () => {}, // Disable debug logs
+      reconnectDelay: 0, // We handle reconnection manually
       heartbeatIncoming: WEBSOCKET_CONFIG.HEARTBEAT_INCOMING,
       heartbeatOutgoing: WEBSOCKET_CONFIG.HEARTBEAT_OUTGOING,
     });
 
-    this.setupEventHandlers();
-  }
-
-  private setupEventHandlers(): void {
-    this.client.onConnect = (frame) => {
+    client.onConnect = () => {
       this.isConnected = true;
+      this.isConnecting = false;
       this.reconnectAttempts = 0;
+      console.log('WebSocket: Connected successfully');
     };
 
-    this.client.onStompError = (frame) => {
-      console.error('STOMP Error:', frame.headers['message'], frame.body);
-      this.isConnected = false;
+    client.onStompError = (frame) => {
+      console.error('WebSocket STOMP Error:', frame.headers['message'], frame.body);
+      this.handleDisconnection();
     };
 
-    this.client.onWebSocketError = (error) => {
+    client.onWebSocketError = (error) => {
       console.error('WebSocket Error:', error);
-      this.isConnected = false;
-      this.attemptReconnect();
+      this.handleDisconnection();
     };
 
-    this.client.onDisconnect = () => {
-      this.isConnected = false;
-      this.attemptReconnect();
+    client.onDisconnect = () => {
+      this.handleDisconnection();
     };
+
+    return client;
   }
 
-  private attemptReconnect(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      
-      setTimeout(() => {
-        if (!this.isConnected) {
-          this.connect();
-        }
-      }, this.reconnectDelay);
-    } else {
-      console.error('Max reconnection attempts reached');
-    }
-  }
-
-  private handleResponse(response: WebSocketResponse): void {
-    // Handle the response - this will be called by the chat handler
-    const callback = this.responseCallbacks.get('default');
-    if (callback) {
-      callback(response);
-    }
-  }
-
-  public clearResponseHandler(): void {
-    this.responseCallbacks.delete('default');
-  }
-
-  public abort(): void {
-    // Unsubscribe from all subscriptions
-    this.subscriptions.forEach((subscription) => {
-      try {
-        subscription.unsubscribe();
-      } catch (error) {
-        console.error('Error unsubscribing from WebSocket:', error);
-      }
-    });
+  private handleDisconnection(): void {
+    if (!this.isConnected) return;
+    
+    this.isConnected = false;
+    this.isConnecting = false;
     this.subscriptions.clear();
     
-    // Clear response handlers
-    this.responseCallbacks.clear();
-    this.metadataCallbacks.clear();
-    
-    // Disconnect the WebSocket to stop the stream
-    if (this.isConnected) {
-      try {
-        this.client.deactivate();
-        this.isConnected = false;
-      } catch (error) {
-        console.error('Error disconnecting WebSocket:', error);
-      }
+    if (this.shouldBeConnected) {
+      this.scheduleReconnect();
     }
   }
 
-  public connect(): Promise<void> {
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
+
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('WebSocket: Max reconnection attempts reached');
+      return;
+    }
+
+    // Exponential backoff: 3s, 6s, 12s, 24s, max 30s
+    const delay = Math.min(
+      this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts),
+      30000
+    );
+
+    this.reconnectAttempts++;
+    console.log(`WebSocket: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})...`);
+
+    this.reconnectTimer = setTimeout(() => {
+      if (this.shouldBeConnected && !this.isConnected && !this.isConnecting) {
+        this.connect();
+      }
+    }, delay);
+  }
+
+  public async connect(): Promise<void> {
+    // Return existing connection promise if already connecting
+    if (this.connectionPromise) {
+      return this.connectionPromise;
+    }
+
+    // Return immediately if already connected
+    if (this.isConnected && this.client?.active) {
+      return Promise.resolve();
+    }
+
+    this.shouldBeConnected = true;
+    this.connectionPromise = this.attemptConnection();
+    
+    return this.connectionPromise;
+  }
+
+  private attemptConnection(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.isConnected) {
+      if (this.isConnecting) {
         resolve();
         return;
-      } 
+      }
+
+      this.isConnecting = true;
 
       const timeout = setTimeout(() => {
-        console.error(`WebSocket connection timeout after ${WEBSOCKET_CONFIG.CONNECTION_TIMEOUT / 1000} seconds`);
-        reject(new Error(`Connection timeout - Server may be unreachable or overloaded (${WEBSOCKET_CONFIG.CONNECTION_TIMEOUT / 1000}s)`));
+        this.isConnecting = false;
+        this.connectionPromise = null;
+        reject(new Error(`Connection timeout after ${WEBSOCKET_CONFIG.CONNECTION_TIMEOUT / 1000}s`));
       }, WEBSOCKET_CONFIG.CONNECTION_TIMEOUT);
 
+      // Create new client if needed
+      if (!this.client) {
+        this.client = this.createClient();
+      }
+
+      // Override handlers for this connection attempt
+      const originalOnConnect = this.client.onConnect;
+      const originalOnError = this.client.onStompError;
+      const originalOnWsError = this.client.onWebSocketError;
+
       this.client.onConnect = (frame) => {
+        originalOnConnect?.(frame);
         clearTimeout(timeout);
-        this.isConnected = true;
-        this.reconnectAttempts = 0;
+        this.connectionPromise = null;
         resolve();
       };
 
       this.client.onStompError = (frame) => {
+        originalOnError?.(frame);
         clearTimeout(timeout);
-        console.error('STOMP Error:', frame.headers['message'], frame.body);
-        this.isConnected = false;
+        this.isConnecting = false;
+        this.connectionPromise = null;
         reject(new Error(`STOMP Error: ${frame.headers['message'] || 'Unknown error'}`));
       };
 
       this.client.onWebSocketError = (error) => {
+        originalOnWsError?.(error);
         clearTimeout(timeout);
-        console.error('WebSocket Error:', error);
-        this.isConnected = false;
+        this.isConnecting = false;
+        this.connectionPromise = null;
         reject(new Error(`WebSocket Error: ${error.message || 'Connection failed'}`));
       };
 
       try {
-        this.client.activate();
+        if (!this.client.active) {
+          this.client.activate();
+        } else {
+          clearTimeout(timeout);
+          this.connectionPromise = null;
+          resolve();
+        }
       } catch (error) {
         clearTimeout(timeout);
-        console.error('Failed to activate WebSocket client:', error);
-        reject(new Error(`Failed to activate WebSocket: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        this.isConnecting = false;
+        this.connectionPromise = null;
+        reject(new Error(`Failed to activate: ${error instanceof Error ? error.message : 'Unknown error'}`));
       }
     });
   }
 
   public disconnect(): void {
+    this.shouldBeConnected = false;
+    
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
     this.subscriptions.forEach((subscription) => {
       try {
         subscription.unsubscribe();
       } catch (error) {
-        console.error('Error unsubscribing from WebSocket:', error);
+        // Ignore unsubscribe errors
       }
     });
     this.subscriptions.clear();
-    
-    this.client.deactivate();
-    this.isConnected = false;
     this.responseCallbacks.clear();
     this.metadataCallbacks.clear();
+
+    if (this.client?.active) {
+      try {
+        this.client.deactivate();
+      } catch (error) {
+        // Ignore deactivation errors
+      }
+    }
+
+    this.isConnected = false;
+    this.isConnecting = false;
+    this.connectionPromise = null;
   }
 
-  public unsubscribe(destination: string): void {
-    const subscription = this.subscriptions.get(destination);
-    if (subscription) {
-      try {
-        subscription.unsubscribe();
-        this.subscriptions.delete(destination);
-      } catch (error) {
-        console.error(`Error unsubscribing from ${destination}:`, error);
-      }
+  public async ensureConnected(): Promise<void> {
+    if (!this.isConnected || !this.client?.active) {
+      await this.connect();
     }
   }
 
@@ -197,24 +268,46 @@ export class WebSocketManager {
     onResponse: (response: WebSocketResponse) => void,
     callbackKey: string = 'default'
   ): void {
-    if (!this.isConnected) {
-      console.error('WebSocket not connected');
+    if (!this.client || !this.isConnected) {
+      console.warn('WebSocket: Not connected, subscription will be set up after connection');
+      // Store callback to set up after connection
+      this.responseCallbacks.set(callbackKey, onResponse);
+      this.ensureConnected().then(() => {
+        this.setupSubscription(destination, callbackKey);
+      });
       return;
     }
 
-    this.unsubscribe(destination);
     this.responseCallbacks.set(callbackKey, onResponse);
+    this.setupSubscription(destination, callbackKey);
+  }
+
+  private setupSubscription(destination: string, callbackKey: string): void {
+    if (!this.client || !this.isConnected) return;
+
+    // Unsubscribe existing subscription for this destination
+    const existing = this.subscriptions.get(destination);
+    if (existing) {
+      try {
+        existing.unsubscribe();
+      } catch (error) {
+        // Ignore errors
+      }
+    }
 
     const subscription = this.client.subscribe(destination, (message) => {
       try {
         const callback = this.responseCallbacks.get(callbackKey);
         if (callback) {
-          // Check if message body is empty or indicates completion
           const isComplete = !message.body || message.body.trim() === '' || message.body === '[DONE]';
-          callback({ type: 'response', content: message.body || '', isComplete });
+          callback({ 
+            type: 'response', 
+            content: message.body || '', 
+            isComplete 
+          });
         }
-      } catch (_error) {
-        console.error('Error parsing message:', _error);
+      } catch (error) {
+        console.error('WebSocket: Error handling message:', error);
       }
     });
 
@@ -225,14 +318,33 @@ export class WebSocketManager {
     onMetadata: (response: any) => void,
     callbackKey: string = 'default'
   ): void {
-    if (!this.isConnected) {
-      console.error('WebSocket not connected');
+    if (!this.client || !this.isConnected) {
+      console.warn('WebSocket: Not connected, metadata subscription will be set up after connection');
+      this.metadataCallbacks.set(callbackKey, onMetadata);
+      this.ensureConnected().then(() => {
+        this.setupMetadataSubscription(callbackKey);
+      });
       return;
     }
 
-    const destination = WEBSOCKET_CONFIG.RECEIVE_METADATA_DESTINATION;
-    this.unsubscribe(destination);
     this.metadataCallbacks.set(callbackKey, onMetadata);
+    this.setupMetadataSubscription(callbackKey);
+  }
+
+  private setupMetadataSubscription(callbackKey: string): void {
+    if (!this.client || !this.isConnected) return;
+
+    const destination = WEBSOCKET_CONFIG.RECEIVE_METADATA_DESTINATION;
+    
+    // Unsubscribe existing
+    const existing = this.subscriptions.get(destination);
+    if (existing) {
+      try {
+        existing.unsubscribe();
+      } catch (error) {
+        // Ignore errors
+      }
+    }
 
     const subscription = this.client.subscribe(destination, (message) => {
       try {
@@ -241,18 +353,22 @@ export class WebSocketManager {
         if (callback) {
           callback(metadata);
         }
-      } catch (_error) {
-        console.error('Error parsing metadata:', _error);
+      } catch (error) {
+        console.error('WebSocket: Error parsing metadata:', error);
       }
     });
 
     this.subscriptions.set(destination, subscription);
   }
 
-  public sendMessage(message: string, destination: string = WEBSOCKET_CONFIG.SEND_DESTINATION): void {
-    if (!this.isConnected) {
-      console.error('WebSocket not connected');
-      return;
+  public async sendMessage(
+    message: string, 
+    destination: string = WEBSOCKET_CONFIG.SEND_DESTINATION
+  ): Promise<void> {
+    await this.ensureConnected();
+
+    if (!this.client || !this.isConnected) {
+      throw new Error('WebSocket: Cannot send message, not connected');
     }
 
     this.client.publish({
@@ -261,7 +377,33 @@ export class WebSocketManager {
     });
   }
 
+  public unsubscribe(destination: string): void {
+    const subscription = this.subscriptions.get(destination);
+    if (subscription) {
+      try {
+        subscription.unsubscribe();
+        this.subscriptions.delete(destination);
+      } catch (error) {
+        // Ignore errors
+      }
+    }
+  }
+
+  public clearResponseHandler(callbackKey: string = 'default'): void {
+    this.responseCallbacks.delete(callbackKey);
+  }
+
   public isWebSocketConnected(): boolean {
-    return this.isConnected;
+    return this.isConnected && this.client?.active === true;
+  }
+
+  public destroy(): void {
+    this.disconnect();
+    
+    if (this.visibilityHandler && typeof window !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+    
+    WebSocketManager.instance = null;
   }
 }

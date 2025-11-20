@@ -167,8 +167,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
                 initialValues={{ username: '', password: '' }}
                 validationSchema={signInSchema}
                 onSubmit={handleSignIn}
+                validateOnBlur={false}
+                validateOnChange={false}
               >
-                {({ isSubmitting }) => (
+                {({ isSubmitting, submitCount, errors }) => (
                   <Form className="space-y-5">
                     <div>
                       <label htmlFor="username" className="block text-sm font-medium text-blue-200 mb-2">
@@ -185,7 +187,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
                         />
                         <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-300" />
                       </div>
-                      <ErrorMessage name="username" component="div" className="mt-1 text-sm text-red-400" />
+                      {submitCount > 0 && errors.username && (
+                        <div className="mt-1 text-sm text-red-400">{errors.username}</div>
+                      )}
                     </div>
                                                                                                          
                     <div>
@@ -213,7 +217,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
                           )}
                         </button>
                       </div>
-                      <ErrorMessage name="password" component="div" className="mt-1 text-sm text-red-400" />
+                      {submitCount > 0 && errors.password && (
+                        <div className="mt-1 text-sm text-red-400">{errors.password}</div>
+                      )}
                     </div>
 
                     <button
@@ -237,8 +243,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
                 initialValues={{ username: '', password: '' }}
                 validationSchema={signUpSchema}
                 onSubmit={handleSignUp}
+                validateOnBlur={false}
+                validateOnChange={false}
               >
-                {({ isSubmitting }) => (
+                {({ isSubmitting, submitCount, errors }) => (
                   <Form className="space-y-5">
                     <div>
                       <label htmlFor="signupUsername" className="block text-sm font-medium text-blue-200 mb-2">
@@ -254,7 +262,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
                         />
                         <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-300" />
                       </div>
-                      <ErrorMessage name="username" component="div" className="mt-1 text-sm text-red-400" />
+                      {submitCount > 0 && errors.username && (
+                        <div className="mt-1 text-sm text-red-400">{errors.username}</div>
+                      )}
                     </div>
 
                     <div>
@@ -282,7 +292,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
                           )}
                         </button>
                       </div>
-                      <ErrorMessage name="password" component="div" className="mt-1 text-sm text-red-400" />
+                      {submitCount > 0 && errors.password && (
+                        <div className="mt-1 text-sm text-red-400">{errors.password}</div>
+                      )}
                     </div>
 
                     

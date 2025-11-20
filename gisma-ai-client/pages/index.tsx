@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { refreshToken, getUser } from '@/store/slices/authSlice';
 import { fetchAllChats, fetchChatMessages, deleteChat, addChat } from '@/store/slices/chatMemorySlice';
@@ -41,13 +42,15 @@ const Home: React.FC<HomeProps> = ({
   serverSideApiKeyIsSet,
   defaultModelId,
 }) => {
+  const router = useRouter();
   const dispatch = useAppDispatch();
-  const { user, isAdmin } = useAppSelector((state) => state.auth);
+  const { user, isAdmin, loading: authLoading } = useAppSelector((state) => state.auth);
   const { rootFolder } = useAppSelector((state) => state.upload);
   const { chats, chatMessages, loading: chatMemoryLoading } = useAppSelector((state) => state.chatMemory);
 
   // STATE ----------------------------------------------
   const [appLoading, setAppLoading] = useState<boolean>(false);
+  const [authInitialized, setAuthInitialized] = useState<boolean>(false);
   const [lightMode, setLightMode] = useState<'dark' | 'light'>('dark');
   const [messageIsStreaming, setMessageIsStreaming] = useState<boolean>(false);
   const [modelError, setModelError] = useState<ErrorMessage | null>(null);
@@ -71,6 +74,7 @@ const Home: React.FC<HomeProps> = ({
     const initializeAuth = async () => {
       await dispatch(refreshToken());
       await dispatch(getUser());
+      setAuthInitialized(true);
     };
 
     initializeAuth();
@@ -105,7 +109,8 @@ const Home: React.FC<HomeProps> = ({
     window.addEventListener('websocket-disconnect', handleLogout);
 
     return () => {
-      chatService.current.disconnect();
+      // Don't disconnect on component unmount - connection should persist
+      // Only disconnect on explicit logout event
       window.removeEventListener('websocket-disconnect', handleLogout);
     };
   }, []);
@@ -263,7 +268,8 @@ const Home: React.FC<HomeProps> = ({
   // WEBSOCKET RESPONSE ----------------------------------------------
   const handleStop = () => {
     stopConversationRef.current = true;
-    chatService.current.abortCurrentStream();
+    // Pass chatId to abort only this specific chat's stream
+    chatService.current.abortCurrentStream(selectedConversation?.chatId);
     
     if (finalizeStreamRef.current) {
       finalizeStreamRef.current();
@@ -355,7 +361,7 @@ const Home: React.FC<HomeProps> = ({
           updatedConversation.responseFormat,
           (chunk: string) => {
             if (stopConversationRef.current) {
-              chatService.current.abortCurrentStream();
+              chatService.current.abortCurrentStream(updatedConversation.chatId);
               finalizeStream();
               return;
             }
@@ -456,7 +462,7 @@ const Home: React.FC<HomeProps> = ({
           updatedConversation.responseFormat,
           (chunk: string) => {
             if (stopConversationRef.current) {
-              chatService.current.abortCurrentStream();
+              chatService.current.abortCurrentStream(updatedConversation.chatId);
               finalizeStream();
               return;
             }
@@ -723,10 +729,7 @@ const Home: React.FC<HomeProps> = ({
         <link rel="shortcut icon" type="image/png" href="/sa-logo.png" />
         <link rel="apple-touch-icon" href="/sa-logo.png" />
       </Head>
-      {!user ? (
-        <HomePage />
-      ) : (
-        selectedConversation && (
+      {user && selectedConversation ? (
           <main
             className={`flex h-screen w-screen flex-col text-sm text-white dark:text-white ${lightMode}`}
           >
@@ -784,8 +787,7 @@ const Home: React.FC<HomeProps> = ({
               </div>
             </div>
           </main>
-        )
-      )}
+      ) : null}
     </>
   );
 };
