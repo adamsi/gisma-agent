@@ -14,7 +14,7 @@ interface AuthState {
 const initialState: AuthState = {
   user: null,
   isAdmin: false,
-  loading: false,
+  loading: true, // Start with true to prevent flash of unauthenticated content
   error: null,
 };
 
