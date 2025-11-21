@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { refreshToken, getUser } from '@/store/slices/authSlice';
+// Auth is now handled in _app.tsx
 import { deleteChat, addChat, setLastVisitedChatId } from '@/store/slices/chatMemorySlice';
 import { fetchRootFolder } from '@/store/slices/uploadSlice';
 import { Chat } from '@/components/Chat/Chat';
@@ -123,20 +123,7 @@ const Home: React.FC = () => {
     },
   });
 
-  // AUTHENTICATION
-  useEffect(() => {
-    const initializeAuth = async () => {
-      await dispatch(refreshToken());
-      await dispatch(getUser());
-    };
-    initializeAuth();
-
-    const refreshInterval = setInterval(() => {
-      dispatch(refreshToken());
-    }, 1000 * 60 * 10);
-
-    return () => clearInterval(refreshInterval);
-  }, [dispatch]);
+  // Auth is now handled in _app.tsx
 
   // UPDATE CHATSERVICE AUTHENTICATION STATE
   useEffect(() => {
