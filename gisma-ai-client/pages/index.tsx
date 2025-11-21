@@ -24,6 +24,7 @@ const Home: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user, isAdmin, loading: authLoading } = useAppSelector((state) => state.auth);
   const { rootFolder } = useAppSelector((state) => state.upload);
+  const { loading: chatsLoading } = useAppSelector((state) => state.chatMemory);
 
   // STATE
   const [appLoading, setAppLoading] = useState<boolean>(false);
@@ -309,54 +310,55 @@ const Home: React.FC = () => {
                 onDeleteConversation={handleDeleteConversation}
                 onUpdateConversation={handleUpdateConversation}
                 onClearConversations={handleClearConversations}
+                chatsLoading={chatsLoading}
               />
+                <button
+                  className={`fixed top-2.5 left-[270px] z-50 h-7 w-7 sm:top-0.5 sm:left-[270px] sm:h-8 sm:w-8 transition-colors ${
+                    lightMode === 'light'
+                      ? 'text-gray-700 hover:text-gray-900'
+                      : 'text-white hover:text-gray-300'
+                  }`}
+                  onClick={handleToggleChatbar}
+                >
+                  <IconArrowBarLeft />
+                </button>
+                <div
+                  onClick={handleToggleChatbar}
+                  className={`absolute top-0 left-0 z-10 h-full w-full sm:hidden ${
+                    lightMode === 'light' ? 'bg-gray-900/30' : 'bg-black/70'
+                  }`}
+                ></div>
+              </div>
+            ) : (
               <button
-                className={`fixed top-2.5 left-[270px] z-50 h-7 w-7 sm:top-0.5 sm:left-[270px] sm:h-8 sm:w-8 transition-colors ${
+                className={`fixed top-2.5 left-4 z-50 h-7 w-7 sm:top-0.5 sm:left-4 sm:h-8 sm:w-8 transition-colors ${
                   lightMode === 'light'
                     ? 'text-gray-700 hover:text-gray-900'
                     : 'text-white hover:text-gray-300'
                 }`}
                 onClick={handleToggleChatbar}
               >
-                <IconArrowBarLeft />
+                <IconArrowBarRight />
               </button>
-              <div
-                onClick={handleToggleChatbar}
-                className={`absolute top-0 left-0 z-10 h-full w-full sm:hidden ${
-                  lightMode === 'light' ? 'bg-gray-900/30' : 'bg-black/70'
-                }`}
-              ></div>
-            </div>
-          ) : (
-            <button
-              className={`fixed top-2.5 left-4 z-50 h-7 w-7 sm:top-0.5 sm:left-4 sm:h-8 sm:w-8 transition-colors ${
-                lightMode === 'light'
-                  ? 'text-gray-700 hover:text-gray-900'
-                  : 'text-white hover:text-gray-300'
-              }`}
-              onClick={handleToggleChatbar}
-            >
-              <IconArrowBarRight />
-            </button>
-          )}
+            )}
 
-          <div className="flex flex-1">
-            <Chat
-              conversation={selectedConversation}
-              messageIsStreaming={messageIsStreaming}
-              modelError={modelError}
-              loading={appLoading}
-              onSend={handleSend}
-              onUpdateConversation={handleUpdateConversation}
-              onEditMessage={handleEditMessage}
-              stopConversationRef={stopConversationRef}
-              onStop={handleStop}
-            />
-          </div>
-        </div>
-      </main>
-    </>
-  );
-};
+            <div className="flex flex-1">
+              <Chat
+                conversation={selectedConversation}
+                messageIsStreaming={messageIsStreaming}
+                modelError={modelError}
+                loading={appLoading}
+                onSend={handleSend}
+                onUpdateConversation={handleUpdateConversation}
+                onEditMessage={handleEditMessage}
+                stopConversationRef={stopConversationRef}
+                onStop={handleStop}
+               />
+             </div>
+           </div>
+       </main>
+     </>
+   );
+ };
 
 export default Home;
