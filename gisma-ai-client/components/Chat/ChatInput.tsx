@@ -1,6 +1,5 @@
 import { Conversation, Message } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
-import { OpenAIModel } from '@/types/openai';
 import {
   IconPlayerStop,
   IconSend,
@@ -18,7 +17,6 @@ import { AdvancedSettings } from '../Chatbar/AdvancedSettings';
 
 interface Props {
   messageIsStreaming: boolean;
-  model: OpenAIModel;
   conversationIsEmpty: boolean;
   conversation: Conversation;
   onUpdateConversation: (conversation: Conversation, data: KeyValuePair) => void;
@@ -31,7 +29,6 @@ interface Props {
 
 export const ChatInput: FC<Props> = ({
   messageIsStreaming,
-  model,
   conversationIsEmpty,
   conversation,
   onUpdateConversation,
@@ -47,7 +44,7 @@ export const ChatInput: FC<Props> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    const maxLength = model.maxLength;
+    const maxLength = 24000;
 
     if (value.length > maxLength) {
       alert(

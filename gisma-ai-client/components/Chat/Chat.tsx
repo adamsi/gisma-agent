@@ -1,9 +1,8 @@
 import { Conversation, Message } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
-import { OpenAIModel, OpenAIModelID } from '@/types/openai';
 import { throttle } from '@/utils';
-import { IconArrowDown, IconClearAll } from '@tabler/icons-react';
+import { IconArrowDown } from '@tabler/icons-react';
 import {
   FC,
   MutableRefObject,
@@ -13,7 +12,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Spinner } from '../Global/Spinner';
 import { ChatInput } from './ChatInput';
 import { ChatLoader } from './ChatLoader';
 import { ChatMessage } from './ChatMessage';
@@ -21,9 +19,6 @@ import { ErrorMessageDiv } from './ErrorMessageDiv';
 
 interface Props {
   conversation: Conversation;
-  models: OpenAIModel[];
-  serverSideApiKeyIsSet: boolean;
-  defaultModelId: OpenAIModelID;
   messageIsStreaming: boolean;
   modelError: ErrorMessage | null;
   loading: boolean;
@@ -43,9 +38,6 @@ interface Props {
 export const Chat: FC<Props> = memo(
   ({
     conversation,
-    models,
-    serverSideApiKeyIsSet,
-    defaultModelId,
     messageIsStreaming,
     modelError,
     loading,
@@ -94,12 +86,6 @@ export const Chat: FC<Props> = memo(
       });
     };
 
-    const onClearAll = () => {
-      if (confirm('Are you sure you want to clear all messages?')) {
-        onUpdateConversation(conversation, { key: 'messages', value: [] });
-      }
-    };
-
     const scrollDown = () => {
       if (autoScrollEnabled) {
         messagesEndRef.current?.scrollIntoView(true);
@@ -140,28 +126,7 @@ export const Chat: FC<Props> = memo(
 
     return (
       <div className="relative flex-1 overflow-hidden bg-transparent">
-        {!(serverSideApiKeyIsSet) ? (
-          <div className="mx-auto flex h-full w-[300px] flex-col justify-center space-y-6 sm:w-[600px]">
-            <div className="text-center text-4xl font-bold text-black dark:text-white">
-              Welcome to Gisma Agent
-            </div>
-            <div className="text-center text-lg text-black dark:text-white">
-              <div className="mb-8">{`Gisma Agent is an AI assistant with access to gisma knowledge base.`}</div>
-              <div className="mb-2 font-bold">
-                Important: Make sure your Gisma Agent backend is running.
-              </div>
-            </div>
-            <div className="text-center text-gray-500 dark:text-gray-400">
-              <div className="mb-2">
-                Gisma Agent connects to your local RAG backend to provide
-                accurate gisma information and assistance.
-              </div>
-              <div className="mb-2">
-                Please ensure your backend is running at the configured host.
-              </div>
-            </div>
-          </div>
-        ) : modelError ? (
+        {modelError ? (
           <ErrorMessageDiv error={modelError} />
         ) : (
           <>
@@ -174,11 +139,7 @@ export const Chat: FC<Props> = memo(
                 <>
                   <div className="mx-auto flex w-[350px] flex-col space-y-10 pt-12 sm:w-[600px]">
                     <div className="text-center text-3xl font-semibold text-gray-800 dark:text-gray-100">
-                      {models.length === 0 ? (
-                        <div>
-                          <Spinner size="16px" className="mx-auto" />
-                        </div>
-                      ) : conversation.chatId ? (
+                      {conversation.chatId ? (
                         // If we have a chatId but no messages, we're loading - show empty
                         ''
                       ) : (
@@ -190,13 +151,7 @@ export const Chat: FC<Props> = memo(
               ) : (
                 <>
                   <div className="flex justify-center border border-b-neutral-300 bg-neutral-100/50 py-2 text-sm text-neutral-500 dark:border-none dark:bg-[#444654]/50 dark:text-neutral-200">
-                    Model: {conversation.model.name}
-                    <button
-                      className="ml-2 cursor-pointer hover:opacity-50"
-                      onClick={onClearAll}
-                    >
-                      <IconClearAll size={18} />
-                    </button>
+                    Model: GPT-4.1
                   </div>
 
                   {conversation.messages.map((message, index) => (
@@ -231,7 +186,6 @@ export const Chat: FC<Props> = memo(
               textareaRef={textareaRef}
               messageIsStreaming={messageIsStreaming}
               conversationIsEmpty={conversation.messages.length === 0}
-              model={conversation.model}
               conversation={conversation}
               onUpdateConversation={onUpdateConversation}
               onSend={(message) => {

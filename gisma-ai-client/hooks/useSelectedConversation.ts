@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setLastVisitedChatId } from '@/store/slices/chatMemorySlice';
 import { Conversation } from '@/types/chat';
-import { OpenAIModelID, OpenAIModels, fallbackModelID } from '@/types/openai';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { ResponseFormat } from '@/types/responseFormat';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,29 +12,27 @@ import { useConversations } from './useConversations';
  * Custom hook to manage the currently selected conversation
  * Handles selection, creation, and restoration logic
  */
-export const useSelectedConversation = (defaultModelId: OpenAIModelID) => {
+export const useSelectedConversation = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { lastVisitedChatId } = useAppSelector((state) => state.chatMemory);
-  const { conversations, loadChatMessages } = useConversations(defaultModelId);
+  const { conversations, loadChatMessages } = useConversations();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | undefined>();
   const initializedRef = useRef(false);
 
   // Create new conversation
   const createNewConversation = useCallback((): Conversation => {
-    const lastConversation = conversations[conversations.length - 1];
     return {
       id: uuidv4(),
       name: 'New Conversation',
       messages: [],
-      model: lastConversation?.model || OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
       prompt: DEFAULT_SYSTEM_PROMPT,
       folderId: null,
       responseFormat: ResponseFormat.SIMPLE,
       textDirection: 'ltr',
     };
-  }, [conversations, defaultModelId]);
+  }, []);
 
   // Select conversation by chatId or conversation object
   const selectConversation = useCallback(

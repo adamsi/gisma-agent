@@ -13,7 +13,6 @@ interface Props {
     conversation: Conversation,
     data: KeyValuePair,
   ) => void;
-  lightMode?: 'light' | 'dark';
 }
 
 export const Conversations: FC<Props> = ({
@@ -23,7 +22,6 @@ export const Conversations: FC<Props> = ({
   onSelectConversation,
   onDeleteConversation,
   onUpdateConversation,
-  lightMode = 'dark',
 }) => {
   return (
     <div className="flex w-full flex-col gap-1">
@@ -39,7 +37,6 @@ export const Conversations: FC<Props> = ({
             onSelectConversation={onSelectConversation}
             onDeleteConversation={onDeleteConversation}
             onUpdateConversation={onUpdateConversation}
-            lightMode={lightMode}
           />
         ))}
     </div>

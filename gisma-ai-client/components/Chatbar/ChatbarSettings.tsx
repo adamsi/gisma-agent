@@ -30,12 +30,12 @@ export const ChatbarSettings: FC<Props> = ({
   const avatarUrl = (user as any)?.picture || (user as any)?.image;
 
   return (
-    <div className={`flex flex-col items-center space-y-2 border-t pt-4 text-sm ${
-      lightMode === 'light' ? 'border-gray-200' : 'border-white/10'
-    }`}>
-      {conversationsCount > 0 ? (
-        <ClearConversations onClearConversations={onClearConversations} lightMode={lightMode} />
-      ) : null}
+    <div className="flex flex-col items-center space-y-2 border-t border-white/10 pt-4 text-sm">
+      <div className="w-full min-h-[40px]">
+        {conversationsCount > 0 && (
+          <ClearConversations onClearConversations={onClearConversations} />
+        )}
+      </div>
 
       <SidebarButton
         text={lightMode === 'light' ? 'Dark mode' : 'Light mode'}
@@ -45,7 +45,6 @@ export const ChatbarSettings: FC<Props> = ({
         onClick={() =>
           onToggleLightMode(lightMode === 'light' ? 'dark' : 'light')
         }
-        lightMode={lightMode}
       />
 
       {/* Admin Upload Button - Only show for admin users */}
@@ -58,18 +57,13 @@ export const ChatbarSettings: FC<Props> = ({
             dispatch(setLastVisitedChatId(selectedConversation?.chatId || null));
             router.push('/admin/upload');
           }}
-          lightMode={lightMode}
         />
       )}
 
       {/* User Profile Button */}
-      <div className={`w-full pt-4 border-t mt-2 ${
-        lightMode === 'light' ? 'border-gray-200' : 'border-white/10'
-      }`}>
+      <div className="w-full pt-4 border-t border-white/10 mt-2">
         <button
-          className={`flex w-full items-center gap-3 rounded-xl py-2.5 px-3 transition-all duration-apple active:scale-[0.98] ${
-            lightMode === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/5'
-          }`}
+          className="flex w-full items-center gap-3 rounded-xl py-2.5 px-3 hover:bg-white/5 transition-all duration-apple active:scale-[0.98]"
           onClick={() => setShowProfile((v) => !v)}
         >
           {avatarUrl ? (
@@ -83,41 +77,25 @@ export const ChatbarSettings: FC<Props> = ({
             <IconUser size={18} />
           )}
           <div className="flex flex-col text-left">
-            <span className={`text-sm font-medium leading-4 ${
-              lightMode === 'light' ? 'text-gray-900' : 'text-white'
-            }`}>
+            <span className="text-white text-sm font-medium leading-4">
               {user?.username || 'User'}
             </span>
-            <span className={`text-xs leading-3 truncate max-w-[140px] ${
-              lightMode === 'light' ? 'text-gray-500' : 'text-white/50'
-            }`}>
+            <span className="text-white/50 text-xs leading-3 truncate max-w-[140px]">
               {user?.username || ''}
             </span>
           </div>
         </button>
 
         {showProfile && (
-          <div className={`mt-3 rounded-2xl border backdrop-blur-xl p-4 shadow-xl ${
-            lightMode === 'light'
-              ? 'border-gray-200 bg-white'
-              : 'border-white/10 bg-white/5'
-          }`}>
-            <div className={`mb-3 text-xs ${
-              lightMode === 'light' ? 'text-gray-600' : 'text-white/70'
-            }`}>
-              <div className={`font-semibold mb-1 ${
-                lightMode === 'light' ? 'text-gray-900' : 'text-white'
-              }`}>
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 shadow-xl">
+            <div className="mb-3 text-xs text-white/70">
+              <div className="font-semibold text-white mb-1">
                 {user?.username}
               </div>
-              <div className={lightMode === 'light' ? 'text-gray-500' : 'text-white/50'}>{user?.username}</div>
+              <div className="text-white/50 break-all">{user?.username}</div>
             </div>
             <button
-              className={`flex w-full items-center gap-3 rounded-xl border backdrop-blur-sm px-3 py-2.5 text-left text-sm font-medium transition-all duration-apple active:scale-[0.98] ${
-                lightMode === 'light'
-                  ? 'border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:border-gray-400'
-                  : 'border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20'
-              }`}
+              className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-2.5 text-left text-sm font-medium text-white transition-all duration-apple hover:bg-white/10 hover:border-white/20 active:scale-[0.98]"
               onClick={async () => {
                 setShowProfile(false);
                 await dispatch(logout());

@@ -2,8 +2,6 @@ import { useMemo, useCallback, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { fetchAllChats, fetchChatMessages } from '@/store/slices/chatMemorySlice';
 import { Conversation, Message, ChatMessage } from '@/types/chat';
-import { OpenAIModel, OpenAIModelID, OpenAIModels, fallbackModelID } from '@/types/openai';
-import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { ResponseFormat } from '@/types/responseFormat';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
  * Custom hook to manage conversations from Redux state
  * Converts backend chats to Conversation format for UI
  */
-export const useConversations = (defaultModelId: OpenAIModelID) => {
+export const useConversations = () => {
   const dispatch = useAppDispatch();
   const { chats, chatMessages } = useAppSelector((state) => state.chatMemory);
   const conversationIdsRef = useRef<Record<string, string>>({});
@@ -38,15 +36,13 @@ export const useConversations = (defaultModelId: OpenAIModelID) => {
           chatId: chat.chatId,
           name: chat.description,
           messages,
-          model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
-          prompt: DEFAULT_SYSTEM_PROMPT,
-          folderId: null,
+          prompt: '',
           responseFormat: ResponseFormat.SIMPLE,
           textDirection: 'ltr' as const,
         };
       })
       .reverse(); // Newest first
-  }, [chats, chatMessages, defaultModelId]);
+  }, [chats, chatMessages]);
 
   const loadChats = useCallback(() => {
     dispatch(fetchAllChats());

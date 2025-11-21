@@ -10,31 +10,16 @@ import { Conversation, Message } from '@/types/chat';
 import { ResponseFormat } from '@/types/responseFormat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
-import {
-  OpenAIModel,
-  OpenAIModelID,
-  OpenAIModels,
-  fallbackModelID,
-} from '@/types/openai';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { updateConversation } from '@/utils/app/conversation';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
-import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import ParticlesBackground from '@/components/Global/Particles';
 import { useConversations } from '@/hooks/useConversations';
 import { useChatStreaming } from '@/hooks/useChatStreaming';
 
-interface ChatPageProps {
-  serverSideApiKeyIsSet: boolean;
-  defaultModelId: OpenAIModelID;
-}
-
-const ChatPage: React.FC<ChatPageProps> = ({
-  serverSideApiKeyIsSet,
-  defaultModelId,
-}) => {
+const ChatPage: React.FC = () => {
   const router = useRouter();
   const { chatId } = router.query;
   const dispatch = useAppDispatch();
@@ -45,16 +30,13 @@ const ChatPage: React.FC<ChatPageProps> = ({
   const [appLoading, setAppLoading] = useState<boolean>(false);
   const [lightMode, setLightMode] = useState<'dark' | 'light'>('dark');
   const [modelError, setModelError] = useState<ErrorMessage | null>(null);
-  const [models, setModels] = useState<OpenAIModel[]>([
-    OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
-  ]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [currentMessage, setCurrentMessage] = useState<Message>();
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
 
   // HOOKS
-  const { conversations: backendConversations, loadChats, loadChatMessages: loadChatMessagesFromHook } = useConversations(defaultModelId);
+  const { conversations: backendConversations, loadChats, loadChatMessages: loadChatMessagesFromHook } = useConversations();
 
   // Update conversations when backend conversations change
   useEffect(() => {
@@ -210,7 +192,6 @@ const ChatPage: React.FC<ChatPageProps> = ({
         chatId: chat.chatId,
         name: chat.description,
         messages: [],
-        model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
         prompt: DEFAULT_SYSTEM_PROMPT,
         folderId: null,
         responseFormat: ResponseFormat.SIMPLE,
@@ -237,7 +218,6 @@ const ChatPage: React.FC<ChatPageProps> = ({
       chatId: chat.chatId,
       name: chat.description,
       messages: backendMessages,
-      model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
       prompt: DEFAULT_SYSTEM_PROMPT,
       folderId: null,
       responseFormat: ResponseFormat.SIMPLE,
@@ -249,7 +229,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
       setSelectedConversation(tempConversation);
       dispatch(setLastVisitedChatId(chatId));
     }
-  }, [chatId, chats, chatMessages, backendConversations, user, defaultModelId, router, dispatch, loadChatMessagesFromHook, selectedConversation]);
+  }, [chatId, chats, chatMessages, backendConversations, user, router, dispatch, loadChatMessagesFromHook, selectedConversation]);
 
   // Update selected conversation when messages are loaded (replace placeholder with actual messages)
   useEffect(() => {
@@ -440,7 +420,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
     if (showChatbar) {
       setShowSidebar(showChatbar === 'true');
     }
-  }, [serverSideApiKeyIsSet]);
+  }, []);
 
   if (!user) {
     return <HomePage />;
@@ -453,7 +433,6 @@ const ChatPage: React.FC<ChatPageProps> = ({
     chatId: chatId,
     name: '', // Empty name - title will be empty while loading
     messages: [], // Empty messages - chat area will be empty until loaded
-    model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
     prompt: DEFAULT_SYSTEM_PROMPT,
     folderId: null,
     responseFormat: ResponseFormat.SIMPLE,
@@ -535,10 +514,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
             <Chat
               conversation={displayConversation}
               messageIsStreaming={messageIsStreaming}
-              serverSideApiKeyIsSet={serverSideApiKeyIsSet}
-              defaultModelId={defaultModelId}
               modelError={modelError}
-              models={models}
               loading={appLoading}
               onSend={handleSend}
               onUpdateConversation={handleUpdateConversation}
@@ -554,20 +530,3 @@ const ChatPage: React.FC<ChatPageProps> = ({
 };
 
 export default ChatPage;
-
-export const getServerSideProps: GetServerSideProps = async () => {
-  const defaultModelId =
-    (process.env.DEFAULT_MODEL &&
-      Object.values(OpenAIModelID).includes(
-        process.env.DEFAULT_MODEL as OpenAIModelID
-      ) &&
-      (process.env.DEFAULT_MODEL as OpenAIModelID)) ||
-    fallbackModelID;
-
-  return {
-    props: {
-      serverSideApiKeyIsSet: true,
-      defaultModelId,
-    },
-  };
-};

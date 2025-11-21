@@ -10,15 +10,8 @@ import { Conversation, Message } from '@/types/chat';
 import { ResponseFormat } from '@/types/responseFormat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
-import {
-  OpenAIModel,
-  OpenAIModelID,
-  OpenAIModels,
-  fallbackModelID,
-} from '@/types/openai';
 import { updateConversation } from '@/utils/app/conversation';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
-import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import ParticlesBackground from '@/components/Global/Particles';
@@ -26,15 +19,7 @@ import { useConversations } from '@/hooks/useConversations';
 import { useSelectedConversation } from '@/hooks/useSelectedConversation';
 import { useChatStreaming } from '@/hooks/useChatStreaming';
 
-interface HomeProps {
-  serverSideApiKeyIsSet: boolean;
-  defaultModelId: OpenAIModelID;
-}
-
-const Home: React.FC<HomeProps> = ({
-  serverSideApiKeyIsSet,
-  defaultModelId,
-}) => {
+const Home: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user, isAdmin, loading: authLoading } = useAppSelector((state) => state.auth);
@@ -44,21 +29,18 @@ const Home: React.FC<HomeProps> = ({
   const [appLoading, setAppLoading] = useState<boolean>(false);
   const [lightMode, setLightMode] = useState<'dark' | 'light'>('dark');
   const [modelError, setModelError] = useState<ErrorMessage | null>(null);
-  const [models, setModels] = useState<OpenAIModel[]>([
-    OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
-  ]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentMessage, setCurrentMessage] = useState<Message>();
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
 
   // HOOKS
-  const { conversations: backendConversations, loadChats } = useConversations(defaultModelId);
+  const { conversations: backendConversations, loadChats } = useConversations();
   const {
     selectedConversation,
     setSelectedConversation,
     selectConversation,
     startNewConversation,
-  } = useSelectedConversation(defaultModelId);
+  } = useSelectedConversation();
 
   // Update conversations when backend conversations change
   useEffect(() => {
@@ -299,7 +281,7 @@ const Home: React.FC<HomeProps> = ({
     if (showChatbar) {
       setShowSidebar(showChatbar === 'true');
     }
-  }, [serverSideApiKeyIsSet]);
+  }, []);
 
   if (!user || !selectedConversation) {
     return null;
@@ -375,10 +357,7 @@ const Home: React.FC<HomeProps> = ({
             <Chat
               conversation={selectedConversation}
               messageIsStreaming={messageIsStreaming}
-              serverSideApiKeyIsSet={serverSideApiKeyIsSet}
-              defaultModelId={defaultModelId}
               modelError={modelError}
-              models={models}
               loading={appLoading}
               onSend={handleSend}
               onUpdateConversation={handleUpdateConversation}
@@ -394,20 +373,3 @@ const Home: React.FC<HomeProps> = ({
 };
 
 export default Home;
-
-export const getServerSideProps: GetServerSideProps = async () => {
-  const defaultModelId =
-    (process.env.DEFAULT_MODEL &&
-      Object.values(OpenAIModelID).includes(
-        process.env.DEFAULT_MODEL as OpenAIModelID,
-      ) &&
-      (process.env.DEFAULT_MODEL as OpenAIModelID)) ||
-    fallbackModelID;
-
-  return {
-    props: {
-      serverSideApiKeyIsSet: true,
-      defaultModelId,
-    },
-  };
-};
