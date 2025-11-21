@@ -4,9 +4,9 @@ import { SidebarButton } from '../Sidebar/SidebarButton';
 import { ClearConversations } from './ClearConversations';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
+import { setLastVisitedChatId } from '@/store/slices/chatMemorySlice';
 import { useRouter } from 'next/router';
 import { Conversation } from '@/types/chat';
-import { saveLastVisitedChat } from '@/utils/app/chatStorage';
 
 interface Props {
   lightMode: 'light' | 'dark';
@@ -30,38 +30,48 @@ export const ChatbarSettings: FC<Props> = ({
   const avatarUrl = (user as any)?.picture || (user as any)?.image;
 
   return (
-    <div className="flex flex-col items-center space-y-0.5 sm:space-y-1 border-t border-white/20 pt-0.5 sm:pt-1 text-xs sm:text-sm">
-      {conversationsCount > 0 ? (
-        <ClearConversations onClearConversations={onClearConversations} />
-      ) : null}
+    <div className={`flex flex-col items-center space-y-2 border-t pt-4 text-sm ${
+      lightMode === 'light' ? 'border-gray-200' : 'border-white/10'
+    }`}>
+      <div className="w-full min-h-[40px]">
+        {conversationsCount > 0 && (
+          <ClearConversations onClearConversations={onClearConversations} lightMode={lightMode} />
+        )}
+      </div>
 
       <SidebarButton
         text={lightMode === 'light' ? 'Dark mode' : 'Light mode'}
         icon={
-          lightMode === 'light' ? <IconMoon size={16} /> : <IconSun size={16} />
+          lightMode === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />
         }
         onClick={() =>
           onToggleLightMode(lightMode === 'light' ? 'dark' : 'light')
         }
+        lightMode={lightMode}
       />
 
       {/* Admin Upload Button - Only show for admin users */}
       {isAdmin && (
         <SidebarButton
           text="Upload Documents"
-          icon={<IconUpload size={16} />}
+          icon={<IconUpload size={18} />}
           onClick={() => {
             // Save the current chatId before navigating to upload
-            saveLastVisitedChat(selectedConversation?.chatId || null);
+            dispatch(setLastVisitedChatId(selectedConversation?.chatId || null));
             router.push('/admin/upload');
           }}
+          lightMode={lightMode}
         />
       )}
 
       {/* User Profile Button */}
-      <div className="w-full pt-1 sm:pt-2 border-t border-white/20 mt-0.5 sm:mt-1">
+      <div className={`w-full pt-4 border-t mt-2 ${
+        lightMode === 'light' ? 'border-gray-200' : 'border-white/10'
+      }`}>
         <button
-          className="flex w-full items-center gap-2 sm:gap-3 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 hover:bg-gray-500/10"
+          className={`flex w-full items-center gap-3 rounded-xl py-2.5 px-3 transition-all duration-apple active:scale-[0.98] ${
+            lightMode === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/5'
+          }`}
           onClick={() => setShowProfile((v) => !v)}
         >
           {avatarUrl ? (
@@ -72,34 +82,53 @@ export const ChatbarSettings: FC<Props> = ({
               className="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover"
             />
           ) : (
-            <IconUser size={16} />
+            <IconUser size={18} />
           )}
           <div className="flex flex-col text-left">
-            <span className="text-white text-[11px] sm:text-[12.5px] leading-3 sm:leading-4">
+            <span className={`text-sm font-medium leading-4 ${
+              lightMode === 'light' ? 'text-gray-900' : 'text-white'
+            }`}>
               {user?.username || 'User'}
             </span>
-            <span className="text-neutral-400 text-[10px] sm:text-[11px] leading-2 sm:leading-3 truncate max-w-[140px]">
+            <span className={`text-xs leading-3 truncate max-w-[140px] ${
+              lightMode === 'light' ? 'text-gray-600' : 'text-white/50'
+            }`}>
               {user?.username || ''}
             </span>
           </div>
         </button>
 
         {showProfile && (
-          <div className="mt-1.5 sm:mt-2 rounded-lg border border-white/20 bg-[#161718] p-2 sm:p-3">
-            <div className="mb-1.5 sm:mb-2 text-[10px] sm:text-xs text-neutral-300">
-              <div className="font-semibold text-white">
+          <div className={`mt-3 rounded-2xl border backdrop-blur-xl p-4 shadow-xl ${
+            lightMode === 'light'
+              ? 'border-gray-200 bg-white/90'
+              : 'border-white/10 bg-white/5'
+          }`}>
+            <div className={`mb-3 text-xs ${
+              lightMode === 'light' ? 'text-gray-700' : 'text-white/70'
+            }`}>
+              <div className={`font-semibold mb-1 ${
+                lightMode === 'light' ? 'text-gray-900' : 'text-white'
+              }`}>
                 {user?.username}
               </div>
-              <div className="text-neutral-400 break-all">{user?.username}</div>
+              <div className={`break-all ${
+                lightMode === 'light' ? 'text-gray-600' : 'text-white/50'
+              }`}>{user?.username}</div>
             </div>
             <button
-              className="flex w-full items-center gap-2 rounded-md border border-white/20 px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs sm:text-sm text-white hover:bg-gray-500/10"
-              onClick={() => {
+              className={`flex w-full items-center gap-3 rounded-xl border backdrop-blur-sm px-3 py-2.5 text-left text-sm font-medium transition-all duration-apple active:scale-[0.98] ${
+                lightMode === 'light'
+                  ? 'border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:border-gray-400'
+                  : 'border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20'
+              }`}
+              onClick={async () => {
                 setShowProfile(false);
-                dispatch(logout());
+                await dispatch(logout());
+                router.replace('/home');
               }}
             >
-              <IconLogout size={16} />
+              <IconLogout size={18} />
               <span>Log out</span>
             </button>
           </div>

@@ -2,8 +2,8 @@ package iaf.ofek.gisma.ai.agent.tools.mcp;
 
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.DirectToolExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.StepExecutor;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.PlannerStep;
 import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;

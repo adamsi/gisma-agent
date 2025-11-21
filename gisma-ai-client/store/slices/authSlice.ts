@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AxiosError } from 'axios';
 import { api, handleAxiosError } from '@/utils/api';
+import { AUTH_ENDPOINTS } from '@/utils/auth';
 import { LoginUserDto, RegisterUserDto, User } from '@/types/user';
 
 interface AuthState {
@@ -21,7 +22,7 @@ export const refreshToken = createAsyncThunk(
   'auth/refreshToken',
   async () => {
     try {
-      const response = await api.post('/auth/refresh-token', {}, {withCredentials: true});
+      const response = await api.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {}, {withCredentials: true});
       
       return response.data;
     } catch (error) {
@@ -34,7 +35,7 @@ export const login = createAsyncThunk(
   'auth/login',
   async (userData: LoginUserDto, { dispatch, rejectWithValue }) => {
     try {
-      await api.post('/auth/login', userData, { withCredentials: true });
+      await api.post(AUTH_ENDPOINTS.LOGIN, userData, { withCredentials: true });
       const user = await dispatch(getUser()).unwrap();
 
       return user;
@@ -48,7 +49,7 @@ export const getUser = createAsyncThunk(
   'auth/me',
   async (_, { rejectWithValue }) => {
     try {
-      const userResponse = await api.get('/auth/me', {withCredentials: true});
+      const userResponse = await api.get(AUTH_ENDPOINTS.ME, {withCredentials: true});
    
       return userResponse.data;
     } catch (error) {
@@ -61,7 +62,7 @@ export const register = createAsyncThunk(
   'auth/register',
   async (userData: RegisterUserDto, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/signup', userData, {withCredentials: true});
+      const response = await api.post(AUTH_ENDPOINTS.SIGNUP, userData, {withCredentials: true});
       return response.data;
     } catch (error) {
       return rejectWithValue(handleAxiosError(error));
@@ -73,7 +74,7 @@ export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/logout');
+      const response = await api.post(AUTH_ENDPOINTS.LOGOUT);
       
       // Disconnect WebSocket on logout
       if (typeof window !== 'undefined') {

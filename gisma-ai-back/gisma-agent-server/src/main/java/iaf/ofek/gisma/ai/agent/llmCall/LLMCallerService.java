@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static iaf.ofek.gisma.ai.constant.AdvisorOrder.LOGGER_ADVISOR_ORDER;
+
 @Service
 public class LLMCallerService {
 
@@ -38,7 +40,7 @@ public class LLMCallerService {
     }
 
     public LLMCallerService(ChatClient.Builder builder, Advisor... extraAdvisors) {
-        SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
+        SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(LOGGER_ADVISOR_ORDER).build();
         List<Advisor> advisors = new ArrayList<>(Arrays.stream(extraAdvisors).toList());
         advisors.add(loggerAdvisor);
         this.chatClient = builder
@@ -47,7 +49,7 @@ public class LLMCallerService {
     }
 
     public LLMCallerService(ChatClient.Builder builder, ToolCallbackProvider toolCallbackProvider, Advisor... extraAdvisors) {
-        SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(100).build();
+        SimpleLoggerAdvisor loggerAdvisor = SimpleLoggerAdvisor.builder().order(LOGGER_ADVISOR_ORDER).build();
         List<Advisor> advisors = new ArrayList<>(Arrays.stream(extraAdvisors).toList());
         advisors.add(loggerAdvisor);
         this.chatClient = builder

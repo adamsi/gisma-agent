@@ -1,11 +1,11 @@
-package iaf.ofek.gisma.ai.agent.orchestrator.router;
+package iaf.ofek.gisma.ai.agent.orchestrator.legacy.router;
 
 import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.gisma.ai.enums.ActionMode;
 import iaf.ofek.gisma.ai.enums.ToolManifest;
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.ActionModeExecutor;
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
-import iaf.ofek.gisma.ai.agent.orchestrator.planner.PlanOrchestrator;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.ActionModeExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.DirectToolExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.planner.PlanOrchestrator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;

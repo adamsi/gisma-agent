@@ -61,6 +61,7 @@ jobs:
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             if [ "${GITHUB_REF##*/}" = "main" ]; then
-              docker compose pull mcp-server agent
+              docker compose pull
+              docker compose down
               docker compose up -d
             fi

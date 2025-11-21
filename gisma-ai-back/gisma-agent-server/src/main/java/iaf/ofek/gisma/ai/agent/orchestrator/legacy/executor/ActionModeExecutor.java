@@ -1,4 +1,4 @@
-package iaf.ofek.gisma.ai.agent.orchestrator.executor;
+package iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor;
 
 import iaf.ofek.gisma.ai.dto.agent.PreflightClassifierResult;
 import iaf.ofek.gisma.ai.dto.agent.UserPrompt;

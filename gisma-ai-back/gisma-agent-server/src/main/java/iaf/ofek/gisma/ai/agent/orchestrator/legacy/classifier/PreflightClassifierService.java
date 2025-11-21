@@ -1,4 +1,4 @@
-package iaf.ofek.gisma.ai.agent.orchestrator.classifier;
+package iaf.ofek.gisma.ai.agent.orchestrator.legacy.classifier;
 
 import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;

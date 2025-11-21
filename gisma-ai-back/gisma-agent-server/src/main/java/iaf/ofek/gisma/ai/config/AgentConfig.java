@@ -1,9 +1,9 @@
 package iaf.ofek.gisma.ai.config;
 
-import iaf.ofek.gisma.ai.agent.orchestrator.reasoner.LLMReasoner;
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.StepExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.reasoner.LLMReasoner;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.StepExecutor;
 import iaf.ofek.gisma.ai.enums.ToolManifest;
-import iaf.ofek.gisma.ai.agent.orchestrator.executor.DirectToolExecutor;
+import iaf.ofek.gisma.ai.agent.orchestrator.legacy.executor.DirectToolExecutor;
 import iaf.ofek.gisma.ai.agent.tools.mcp.GismaMcpClient;
 import iaf.ofek.gisma.ai.agent.tools.rag.RagService;
 import org.springframework.context.annotation.Bean;

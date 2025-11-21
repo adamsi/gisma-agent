@@ -13,6 +13,8 @@ import reactor.core.publisher.Flux;
 import java.util.Arrays;
 import java.util.function.Function;
 
+import static iaf.ofek.gisma.ai.constant.AdvisorOrder.CHAT_MEMORY_ADVISOR_ORDER;
+
 @Service
 @Log4j2
 public class LLMCallerWithMemoryService {
@@ -25,7 +27,7 @@ public class LLMCallerWithMemoryService {
     public LLMCallerWithMemoryService(ChatClient.Builder builder, ChatMemoryAdvisorProvider memoryAdvisorProvider) {
         this.llmCallerService = new LLMCallerService(
                 builder, MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
-                        .order(90)
+                        .order(CHAT_MEMORY_ADVISOR_ORDER)
                         .build()
         );
         this.memoryAdvisorProvider = memoryAdvisorProvider;
@@ -35,7 +37,7 @@ public class LLMCallerWithMemoryService {
         this.llmCallerService = new LLMCallerService(
                 builder,
                 combineAdvisors(extraAdvisors, MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
-                        .order(90)
+                        .order(CHAT_MEMORY_ADVISOR_ORDER)
                         .build())
         );
         this.memoryAdvisorProvider = memoryAdvisorProvider;
@@ -46,7 +48,7 @@ public class LLMCallerWithMemoryService {
                 builder,
              toolCallbackProvider,
              MessageChatMemoryAdvisor.builder(memoryAdvisorProvider.getChatMemory())
-                        .order(90)
+                        .order(CHAT_MEMORY_ADVISOR_ORDER)
                         .build()
         );
         this.memoryAdvisorProvider = memoryAdvisorProvider;

@@ -1,76 +1,134 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { refreshToken, getUser } from '@/store/slices/authSlice';
-import { fetchAllChats, fetchChatMessages, deleteChat, addChat } from '@/store/slices/chatMemorySlice';
+import { deleteChat, addChat, setLastVisitedChatId } from '@/store/slices/chatMemorySlice';
+import { fetchRootFolder } from '@/store/slices/uploadSlice';
 import { Chat } from '@/components/Chat/Chat';
 import { Chatbar } from '@/components/Chatbar/Chatbar';
-import HomePage from '@/components/HomePage/HomePage';
-import { Conversation, Message, ChatMessage } from '@/types/chat';
+import { Conversation, Message } from '@/types/chat';
 import { ResponseFormat } from '@/types/responseFormat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
-import {
-  OpenAIModel,
-  OpenAIModelID,
-  OpenAIModels,
-  fallbackModelID,
-} from '@/types/openai';
-import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import {
-  saveConversation,
-  saveConversations,
-  updateConversation,
-} from '@/utils/app/conversation';
-import { saveChatMessages, saveLastVisitedChat } from '@/utils/app/chatStorage';
+import { updateConversation } from '@/utils/app/conversation';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
-import { GetServerSideProps } from 'next';
 import Head from 'next/head';
-import { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
-import { ChatService } from '@/utils/websocket/chatService';
-import { WEBSOCKET_CONFIG } from '@/utils/websocket/config';
+import ParticlesBackground from '@/components/Global/Particles';
+import { useConversations } from '@/hooks/useConversations';
+import { useSelectedConversation } from '@/hooks/useSelectedConversation';
+import { useChatStreaming } from '@/hooks/useChatStreaming';
 
-interface HomeProps {
-  serverSideApiKeyIsSet: boolean;
-  defaultModelId: OpenAIModelID;
-}
-
-const Home: React.FC<HomeProps> = ({
-  serverSideApiKeyIsSet,
-  defaultModelId,
-}) => {
+const Home: React.FC = () => {
+  const router = useRouter();
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
-  const { chats, chatMessages, loading: chatMemoryLoading } = useAppSelector((state) => state.chatMemory);
+  const { user, isAdmin, loading: authLoading } = useAppSelector((state) => state.auth);
+  const { rootFolder } = useAppSelector((state) => state.upload);
 
-  // STATE ----------------------------------------------
+  // STATE
   const [appLoading, setAppLoading] = useState<boolean>(false);
   const [lightMode, setLightMode] = useState<'dark' | 'light'>('dark');
-  const [messageIsStreaming, setMessageIsStreaming] = useState<boolean>(false);
   const [modelError, setModelError] = useState<ErrorMessage | null>(null);
-  const [models, setModels] = useState<OpenAIModel[]>([
-    OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
-  ]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [currentMessage, setCurrentMessage] = useState<Message>();
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
 
-  // REFS ----------------------------------------------
-  const stopConversationRef = useRef<boolean>(false);
-  const finalizeStreamRef = useRef<(() => void) | null>(null);
-  
-  // WEBSOCKET SERVICE ----------------------------------------------
-  const chatService = useRef<ChatService>(new ChatService(WEBSOCKET_CONFIG.SERVER_URL));
+  // HOOKS
+  const { conversations: backendConversations, loadChats } = useConversations();
+  const {
+    selectedConversation,
+    setSelectedConversation,
+    selectConversation,
+    startNewConversation,
+  } = useSelectedConversation();
 
-  // AUTHENTICATION EFFECT ----------------------------------------------
+  // Update conversations when backend conversations change
+  useEffect(() => {
+    setConversations(backendConversations);
+  }, [backendConversations]);
+
+  // Update selected conversation when it changes in backend (only if it has a chatId)
+  // Don't update if we're on home page and should have a new conversation
+  // Also preserve metadata descriptions
+  useEffect(() => {
+    if (selectedConversation?.chatId && router.pathname !== '/') {
+      const updated = backendConversations.find((c) => c.chatId === selectedConversation.chatId);
+      if (updated) {
+        // Preserve description from metadata if it exists, otherwise use backend description
+        const preservedName = metadataDescriptionsRef.current[selectedConversation.chatId] || updated.name;
+        setSelectedConversation({
+          ...updated,
+          name: preservedName,
+        });
+      }
+    }
+  }, [backendConversations, selectedConversation?.chatId, setSelectedConversation, router.pathname]);
+
+  // Track metadata descriptions to preserve them during stream updates
+  const metadataDescriptionsRef = useRef<Record<string, string>>({});
+
+  // Streaming hook
+  const { sendMessage, handleStop, messageIsStreaming, stopConversationRef, chatService } = useChatStreaming({
+    onStreamUpdate: (conversation) => {
+      // Preserve description from metadata if it exists
+      if (conversation.chatId && metadataDescriptionsRef.current[conversation.chatId]) {
+        conversation = {
+          ...conversation,
+          name: metadataDescriptionsRef.current[conversation.chatId],
+        };
+      }
+      setSelectedConversation(conversation);
+      setConversations((prev) =>
+        prev.map((c) => {
+          const isMatch = 
+            (c.chatId && conversation.chatId && c.chatId === conversation.chatId) ||
+            (!c.chatId && !conversation.chatId && c.id === conversation.id);
+          if (isMatch) {
+            // Preserve description from metadata if it exists
+            if (conversation.chatId && metadataDescriptionsRef.current[conversation.chatId]) {
+              return {
+                ...conversation,
+                name: metadataDescriptionsRef.current[conversation.chatId],
+              };
+            }
+            return conversation;
+          }
+          return c;
+        })
+      );
+    },
+    onMetadata: (metadata) => {
+      // Store the metadata description
+      metadataDescriptionsRef.current[metadata.chatId] = metadata.description;
+      
+      setSelectedConversation((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          chatId: metadata.chatId,
+          name: metadata.description,
+        };
+        setConversations((prevConvs) => {
+          // Remove any conversation with the same chatId or same id (if no chatId)
+          const filtered = prevConvs.filter((c) => 
+            !((c.chatId && c.chatId === metadata.chatId) ||
+              (!c.chatId && !prev!.chatId && c.id === prev!.id))
+          );
+          return [updated, ...filtered];
+        });
+        dispatch(addChat({ chatId: metadata.chatId, description: metadata.description }));
+        dispatch(setLastVisitedChatId(metadata.chatId));
+        return updated;
+      });
+    },
+  });
+
+  // AUTHENTICATION
   useEffect(() => {
     const initializeAuth = async () => {
       await dispatch(refreshToken());
       await dispatch(getUser());
     };
-
     initializeAuth();
 
     const refreshInterval = setInterval(() => {
@@ -80,440 +138,33 @@ const Home: React.FC<HomeProps> = ({
     return () => clearInterval(refreshInterval);
   }, [dispatch]);
 
-  // UPDATE CHATSERVICE AUTHENTICATION STATE ---------------------------
+  // UPDATE CHATSERVICE AUTHENTICATION STATE
   useEffect(() => {
-    chatService.current.setAuthenticated(!!user);
+    chatService.setAuthenticated(!!user);
     if (user) {
-      dispatch(fetchAllChats());
+      loadChats();
     }
-  }, [user, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-  // WEBSOCKET CLEANUP EFFECT ----------------------------------------------
+  useEffect(() => {
+    if (user && isAdmin && !rootFolder) {
+      dispatch(fetchRootFolder());
+    }
+  }, [dispatch, user, isAdmin, rootFolder]);
+
+  // WEBSOCKET CLEANUP
   useEffect(() => {
     const handleLogout = () => {
-      chatService.current.disconnect();
+      chatService.disconnect();
     };
-
     window.addEventListener('websocket-disconnect', handleLogout);
-
     return () => {
-      chatService.current.disconnect();
       window.removeEventListener('websocket-disconnect', handleLogout);
     };
-  }, []);
+  }, [chatService]);
 
-  // FETCH MESSAGES FOR ALL CHATS ON MOUNT ---------------------------
-  useEffect(() => {
-    if (chats && chats.length > 0 && user) {
-      chats.forEach(async (chat) => {
-        if (!chatMessages[chat.chatId]) {
-          await dispatch(fetchChatMessages(chat.chatId));
-        }
-      });
-    }
-  }, [chats, user, dispatch]);
-
-  // CONVERT CHATS TO CONVERSATIONS ---------------------------
-  useEffect(() => {
-    if (chats && chats.length > 0) {
-      setConversations((prevConversations) => {
-        const chatConversations: Conversation[] = chats.map((chat) => {
-          // Check if conversation already exists by chatId
-          const existing = prevConversations.find(c => c.chatId === chat.chatId);
-          if (existing) {
-            // Update existing conversation with latest messages and description
-            // Preserve existing messages if they have more content (streaming) or backend is empty
-            const backendMessages: Message[] = (chatMessages[chat.chatId] || []).map((msg: ChatMessage) => ({
-              role: msg.type === 'USER' ? 'user' : 'assistant',
-              content: msg.content,
-            }));
-            // Prefer existing messages if they have more content (streaming), otherwise use backend
-            // This preserves messages that were streamed in real-time, but loads from backend on mount
-            // If existing messages are empty, always use backend messages
-            const useExistingMessages = existing.messages.length > 0 && existing.messages.length > backendMessages.length;
-            return {
-              ...existing,
-              name: chat.description,
-              messages: useExistingMessages ? existing.messages : (backendMessages.length > 0 ? backendMessages : existing.messages),
-            };
-          }
-
-          // Create new conversation from chat (only if not already in list)
-          // Always use backend messages if available, they are the source of truth
-          const messages: Message[] = (chatMessages[chat.chatId] || []).map((msg: ChatMessage) => ({
-            role: msg.type === 'USER' ? 'user' : 'assistant',
-            content: msg.content,
-          }));
-
-          return {
-            id: chat.chatId, // Use chatId as id for backend chats
-            chatId: chat.chatId,
-            name: chat.description,
-            messages, // Use backend messages - they are fetched on mount
-            model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
-            prompt: DEFAULT_SYSTEM_PROMPT,
-            folderId: null,
-            responseFormat: ResponseFormat.SIMPLE,
-            textDirection: 'ltr',
-          };
-        });
-
-        // Keep conversations without chatId (new conversations that haven't received metadata yet)
-        // Ensure new conversations always have empty messages to prevent old messages from appearing
-        const conversationsWithoutChatId = prevConversations
-          .filter(c => !c.chatId)
-          .map(c => ({ ...c, messages: [] }));
-        
-        // Reverse chats so newest appears first, then merge
-        const reversedChats = [...chatConversations].reverse();
-        const existingChatIds = new Set(reversedChats.map(c => c.chatId));
-        const uniqueNewConversations = conversationsWithoutChatId.filter(c => 
-          !c.chatId || !existingChatIds.has(c.chatId)
-        );
-        
-        // New conversations first, then reversed chats (newest first)
-        return [...uniqueNewConversations, ...reversedChats];
-      });
-    }
-  }, [chats, chatMessages, defaultModelId]);
-
-  // RESTORE SELECTED CONVERSATION FROM LOCALSTORAGE ---------------------------
-  useEffect(() => {
-    if (!selectedConversation && user) {
-      const savedSelected = localStorage.getItem('selectedConversation');
-      if (savedSelected) {
-        try {
-          const parsed: Conversation = JSON.parse(savedSelected);
-          
-          // If it's a new conversation (no chatId), use it directly with empty messages
-          // This ensures new conversations always start empty, even if saved with messages
-          if (!parsed.chatId) {
-            const newConversation = { ...parsed, messages: [] };
-            setSelectedConversation(newConversation);
-            saveConversation(newConversation);
-            // Clear last visited chatId for new conversations
-            saveLastVisitedChat(null);
-            return;
-          }
-          
-          // For backend chats, try to find in conversations array
-          if (conversations.length > 0) {
-            const found = conversations.find(c => 
-              (parsed.id && c.id === parsed.id) || (parsed.chatId && c.chatId === parsed.chatId)
-            );
-            if (found) {
-              setSelectedConversation(found);
-              saveConversation(found);
-              // If it's a backend chat, ensure messages are loaded
-              if (found.chatId && !chatMessages[found.chatId]) {
-                dispatch(fetchChatMessages(found.chatId));
-              }
-              return;
-            }
-          }
-        } catch (e) {
-          console.error('Failed to parse selectedConversation from localStorage:', e);
-        }
-      }
-      
-      // If no saved conversation or not found, select first conversation
-      if (conversations.length > 0) {
-        const firstConv = conversations[0];
-        // If it's a new conversation (no chatId), ensure it has empty messages
-        const conversationToSelect = firstConv.chatId 
-          ? firstConv 
-          : { ...firstConv, messages: [] };
-        setSelectedConversation(conversationToSelect);
-        saveConversation(conversationToSelect);
-        // If it's a backend chat, ensure messages are loaded
-        if (firstConv.chatId && !chatMessages[firstConv.chatId]) {
-          dispatch(fetchChatMessages(firstConv.chatId));
-        }
-      }
-    }
-  }, [selectedConversation, user, conversations, chatMessages, dispatch]);
-
-  // INITIALIZE NEW CONVERSATION ON MOUNT (if no conversations exist) ---------------------------
-  useEffect(() => {
-    if (!selectedConversation && user && conversations.length === 0 && chats.length === 0) {
-      const newConversation: Conversation = {
-        id: '', // No ID until backend provides chatId
-        name: 'New Conversation',
-        messages: [],
-        model: OpenAIModels[defaultModelId] || OpenAIModels[fallbackModelID],
-        prompt: DEFAULT_SYSTEM_PROMPT,
-        folderId: null,
-        responseFormat: ResponseFormat.SIMPLE,
-        textDirection: 'ltr',
-      };
-      // Don't add to sidebar until description is generated
-      setSelectedConversation(newConversation);
-      saveConversation(newConversation);
-    }
-  }, [selectedConversation, user, conversations.length, chats.length, defaultModelId]);
-
-  // WEBSOCKET RESPONSE ----------------------------------------------
-  const handleStop = () => {
-    stopConversationRef.current = true;
-    chatService.current.abortCurrentStream();
-    
-    if (finalizeStreamRef.current) {
-      finalizeStreamRef.current();
-    } else {
-      setMessageIsStreaming(false);
-    }
-    
-    setTimeout(() => {
-      stopConversationRef.current = false;
-    }, 1000);
-  };
-
-  const handleSend = async (
-    message: Message,
-    deleteCount = 0,
-  ) => {
-    if (!user || !selectedConversation) {
-      return;
-    }
-
-    let updatedConversation: Conversation;
-
-    if (deleteCount) {
-      const updatedMessages = [...selectedConversation.messages];
-      for (let i = 0; i < deleteCount; i++) {
-        updatedMessages.pop();
-      }
-      updatedConversation = {
-        ...selectedConversation,
-        messages: [...updatedMessages, message],
-      };
-    } else {
-      updatedConversation = {
-        ...selectedConversation,
-        messages: [...selectedConversation.messages, message],
-      };
-    }
-
-    setSelectedConversation(updatedConversation);
-    setMessageIsStreaming(true);
-
-    let assistantMessage: Message = { role: 'assistant', content: '' };
-    let isFirstChunk = true;
-    let completionTimer: any = null;
-    let receivedChatId: string | undefined = updatedConversation.chatId;
-
-    const finalizeStream = () => {
-      if (completionTimer) {
-        clearTimeout(completionTimer);
-        completionTimer = null;
-      }
-      
-      // Stop streaming immediately
-      setMessageIsStreaming(false);
-      
-      setSelectedConversation((prev) => {
-        if (!prev || prev.id !== updatedConversation.id) return prev;
-        
-        const finalConversation = {
-          ...prev,
-          chatId: receivedChatId,
-        };
-        
-        setConversations((prevConvs) =>
-          prevConvs.map((conv) => (conv.id === finalConversation.id ? finalConversation : conv))
-        );
-        saveConversation(finalConversation);
-        
-        // Save to localStorage per chatId
-        if (receivedChatId) {
-          saveChatMessages(receivedChatId, finalConversation.messages);
-        }
-        
-        return finalConversation;
-      });
-      
-      setAppLoading(false);
-      finalizeStreamRef.current = null;
-    };
-    
-    finalizeStreamRef.current = finalizeStream;
-
-    try {
-      const isNewConversation = !updatedConversation.chatId && updatedConversation.messages.length === 1;
-
-      if (isNewConversation) {
-        await chatService.current.startNewChat(
-          message.content,
-          updatedConversation.responseFormat,
-          (chunk: string) => {
-            if (stopConversationRef.current) {
-              chatService.current.abortCurrentStream();
-              finalizeStream();
-              return;
-            }
-
-            if (completionTimer) clearTimeout(completionTimer);
-            // Use a shorter timeout as fallback, but onComplete will be called immediately if server signals completion
-            completionTimer = setTimeout(() => {
-              finalizeStream();
-            }, 300);
-
-            setSelectedConversation((prev) => {
-              if (!prev || prev.id !== updatedConversation.id) return prev;
-
-              let updated: Conversation;
-              if (isFirstChunk) {
-                isFirstChunk = false;
-                assistantMessage = { role: 'assistant', content: chunk };
-                updated = {
-                  ...prev,
-                  messages: [...prev.messages, assistantMessage],
-                };
-              } else {
-                assistantMessage.content += chunk;
-                updated = {
-                  ...prev,
-                  messages: prev.messages.map((msg, index) =>
-                    index === prev.messages.length - 1 ? assistantMessage : msg
-                  ),
-                };
-              }
-
-              // Update conversations list
-              setConversations((prevConvs) =>
-                prevConvs.map((conv) => (conv.id === updated.id ? updated : conv))
-              );
-
-              // Save to localStorage per chatId
-              if (updated.chatId) {
-                saveChatMessages(updated.chatId, updated.messages);
-              }
-
-              return updated;
-            });
-          },
-          () => {
-            finalizeStream();
-          },
-          (error: string) => {
-            console.error('WebSocket error:', error);
-            toast.error('Connection error. Please try again.');
-            setAppLoading(false);
-            setMessageIsStreaming(false);
-          },
-          (metadata) => {
-            receivedChatId = metadata.chatId;
-            
-            // Update conversation state with generated description and add to conversations list
-            setSelectedConversation((prev) => {
-              if (!prev || prev.id !== updatedConversation.id) return prev;
-              
-              const updatedConv = {
-                ...prev,
-                chatId: metadata.chatId,
-                name: metadata.description,
-              };
-              
-              // Add to conversations list so messages can update it
-              setConversations((prevConvs) => {
-                const filtered = prevConvs.filter(c => 
-                  c.id !== updatedConversation.id && c.chatId !== metadata.chatId
-                );
-                // Add at top - effect will handle final ordering
-                return [updatedConv, ...filtered];
-              });
-              
-              // Save last visited chatId when new conversation gets a chatId
-              saveLastVisitedChat(metadata.chatId);
-              
-              return updatedConv;
-            });
-            
-            // Dispatch to Redux - effect will handle final ordering
-            dispatch(addChat({ chatId: metadata.chatId, description: metadata.description }));
-          },
-          updatedConversation.schemaJson
-        );
-      } else {
-        if (!updatedConversation.chatId) {
-          toast.error('Chat ID is missing.');
-          setAppLoading(false);
-          setMessageIsStreaming(false);
-          return;
-        }
-
-        await chatService.current.sendMessage(
-          message.content,
-          updatedConversation.chatId,
-          updatedConversation.responseFormat,
-          (chunk: string) => {
-            if (stopConversationRef.current) {
-              chatService.current.abortCurrentStream();
-              finalizeStream();
-              return;
-            }
-
-            if (completionTimer) clearTimeout(completionTimer);
-            // Use a shorter timeout as fallback, but onComplete will be called immediately if server signals completion
-            completionTimer = setTimeout(() => {
-              finalizeStream();
-            }, 300);
-
-            setSelectedConversation((prev) => {
-              if (!prev || prev.id !== updatedConversation.id) return prev;
-
-              let updated: Conversation;
-              if (isFirstChunk) {
-                isFirstChunk = false;
-                assistantMessage = { role: 'assistant', content: chunk };
-                updated = {
-                  ...prev,
-                  messages: [...prev.messages, assistantMessage],
-                };
-              } else {
-                assistantMessage.content += chunk;
-                updated = {
-                  ...prev,
-                  messages: prev.messages.map((msg, index) =>
-                    index === prev.messages.length - 1 ? assistantMessage : msg
-                  ),
-                };
-              }
-
-              // Update conversations list
-              setConversations((prevConvs) =>
-                prevConvs.map((conv) => (conv.id === updated.id ? updated : conv))
-              );
-
-              // Save to localStorage per chatId
-              if (updated.chatId) {
-                saveChatMessages(updated.chatId, updated.messages);
-              }
-
-              return updated;
-            });
-          },
-          () => {
-            finalizeStream();
-          },
-          (error: string) => {
-            console.error('WebSocket error:', error);
-            toast.error('Connection error. Please try again.');
-            setAppLoading(false);
-            setMessageIsStreaming(false);
-          },
-          updatedConversation.schemaJson
-        );
-      }
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      toast.error('Failed to send message. Please try again.');
-      setAppLoading(false);
-      setMessageIsStreaming(false);
-    }
-  };
-
-  // BASIC HANDLERS --------------------------------------------
+  // HANDLERS
   const handleLightMode = (mode: 'dark' | 'light') => {
     setLightMode(mode);
     localStorage.setItem('theme', mode);
@@ -525,43 +176,15 @@ const Home: React.FC<HomeProps> = ({
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
-    setSelectedConversation(conversation);
-    saveConversation(conversation);
-    // Save last visited chatId
-    saveLastVisitedChat(conversation.chatId || null);
-    // If it's a backend chat, ensure messages are loaded
-    if (conversation.chatId && !chatMessages[conversation.chatId]) {
-      dispatch(fetchChatMessages(conversation.chatId));
+    selectConversation(conversation); 
+    // Navigate to chat page if it has a chatId, otherwise stay on home
+    if (conversation.chatId) {
+      router.replace(`/chat/${conversation.chatId}`);
     }
   };
 
-  // CONVERSATION OPERATIONS  --------------------------------------------
   const handleNewConversation = () => {
-    const lastConversation = conversations[conversations.length - 1];
-
-    const newConversation: Conversation = {
-      id: '', // No ID until backend provides chatId
-      name: 'New Conversation',
-      messages: [], // Always empty - no chatId means new conversation
-      model: lastConversation?.model || {
-        id: OpenAIModels[defaultModelId].id,
-        name: OpenAIModels[defaultModelId].name,
-        maxLength: OpenAIModels[defaultModelId].maxLength,
-        tokenLimit: OpenAIModels[defaultModelId].tokenLimit,
-      },
-      prompt: DEFAULT_SYSTEM_PROMPT,
-      folderId: null,
-      responseFormat: ResponseFormat.SIMPLE,
-      textDirection: 'ltr',
-    };
-
-    // Don't add to sidebar until description is generated
-    // Clear last visited chatId FIRST before setting new conversation
-    // This ensures it's cleared on the first click
-    saveLastVisitedChat(null);
-    // Set and save immediately to prevent restore effect from overwriting
-    setSelectedConversation(newConversation);
-    saveConversation(newConversation);
+    startNewConversation();
     setAppLoading(false);
   };
 
@@ -575,78 +198,41 @@ const Home: React.FC<HomeProps> = ({
         return;
       }
     }
-    
-    const updatedConversations = conversations.filter(
-      (c) => c.id !== conversation.id,
+
+    const updatedConversations = conversations.filter((c) => 
+      !((c.chatId && conversation.chatId && c.chatId === conversation.chatId) ||
+        (!c.chatId && !conversation.chatId && c.id === conversation.id))
     );
     setConversations(updatedConversations);
-    saveConversations(updatedConversations);
 
     if (updatedConversations.length > 0) {
       setSelectedConversation(updatedConversations[updatedConversations.length - 1]);
-      saveConversation(updatedConversations[updatedConversations.length - 1]);
+      dispatch(setLastVisitedChatId(updatedConversations[updatedConversations.length - 1].chatId || null));
     } else {
-      setSelectedConversation({
-        id: '', // No ID until backend provides chatId
-        name: 'New conversation',
-        messages: [],
-        model: OpenAIModels[defaultModelId],
-        prompt: DEFAULT_SYSTEM_PROMPT,
-        folderId: null,
-        responseFormat: ResponseFormat.SIMPLE,
-        textDirection: 'ltr',
-      });
-      localStorage.removeItem('selectedConversation');
+      startNewConversation();
     }
   };
 
-  const handleUpdateConversation = (
-    conversation: Conversation,
-    data: KeyValuePair,
-  ) => {
+  const handleUpdateConversation = (conversation: Conversation, data: KeyValuePair) => {
     const updatedConversation = {
       ...conversation,
       [data.key]: data.value,
     };
 
-    const { single, all } = updateConversation(
-      updatedConversation,
-      conversations,
-    );
-
+    const { single, all } = updateConversation(updatedConversation, conversations);
     setSelectedConversation(single);
     setConversations(all);
-
-    // Save messages to localStorage if updated
-    if (data.key === 'messages' && single.chatId) {
-      saveChatMessages(single.chatId, single.messages);
-    }
   };
 
   const handleClearConversations = () => {
     setConversations([]);
-    localStorage.removeItem('conversationHistory');
-    setSelectedConversation({
-      id: '', // No ID until backend provides chatId
-      name: 'New conversation',
-      messages: [],
-      model: OpenAIModels[defaultModelId],
-      prompt: DEFAULT_SYSTEM_PROMPT,
-      folderId: null,
-      responseFormat: ResponseFormat.SIMPLE,
-      textDirection: 'ltr',
-    });
-    localStorage.removeItem('selectedConversation');
+    startNewConversation();
   };
 
   const handleEditMessage = (message: Message, messageIndex: number) => {
     if (selectedConversation) {
       const updatedMessages = selectedConversation.messages
-        .map((m, i) => {
-          if (i < messageIndex) {
-            return m;
-          }
-        })
+        .map((m, i) => (i < messageIndex ? m : undefined))
         .filter((m) => m) as Message[];
 
       const updatedConversation = {
@@ -654,24 +240,19 @@ const Home: React.FC<HomeProps> = ({
         messages: updatedMessages,
       };
 
-      const { single, all } = updateConversation(
-        updatedConversation,
-        conversations,
-      );
-
+      const { single, all } = updateConversation(updatedConversation, conversations);
       setSelectedConversation(single);
       setConversations(all);
-
-      // Save to localStorage per chatId
-      if (single.chatId) {
-        saveChatMessages(single.chatId, single.messages);
-      }
-
       setCurrentMessage(message);
     }
   };
 
-  // EFFECTS  --------------------------------------------
+  const handleSend = async (message: Message, deleteCount = 0) => {
+    if (!user || !selectedConversation) return;
+    await sendMessage(selectedConversation, message, deleteCount);
+  };
+
+  // EFFECTS
   useEffect(() => {
     if (currentMessage) {
       handleSend(currentMessage);
@@ -685,7 +266,7 @@ const Home: React.FC<HomeProps> = ({
     }
   }, [selectedConversation]);
 
-  // ON LOAD --------------------------------------------
+  // ON LOAD
   useEffect(() => {
     const theme = localStorage.getItem('theme');
     if (theme) {
@@ -700,7 +281,11 @@ const Home: React.FC<HomeProps> = ({
     if (showChatbar) {
       setShowSidebar(showChatbar === 'true');
     }
-  }, [serverSideApiKeyIsSet]);
+  }, []);
+
+  if (!user || !selectedConversation) {
+    return null;
+  }
 
   return (
     <>
@@ -715,88 +300,76 @@ const Home: React.FC<HomeProps> = ({
         <link rel="shortcut icon" type="image/png" href="/sa-logo.png" />
         <link rel="apple-touch-icon" href="/sa-logo.png" />
       </Head>
-      {!user ? (
-        <HomePage />
-      ) : (
-        selectedConversation && (
-          <main
-            className={`flex h-screen w-screen flex-col text-sm text-white dark:text-white ${lightMode}`}
-          >
-            <div className="flex h-full w-full">
-              {showSidebar ? (
-                <div>
-                  <Chatbar
-                    loading={appLoading}
-                    conversations={conversations}
-                    lightMode={lightMode}
-                    selectedConversation={selectedConversation}
-                    onNewConversation={handleNewConversation}
-                    onToggleLightMode={handleLightMode}
-                    onSelectConversation={handleSelectConversation}
-                    onDeleteConversation={handleDeleteConversation}
-                    onUpdateConversation={handleUpdateConversation}
-                    onClearConversations={handleClearConversations}
-                  />
-
-                  <button
-                    className="fixed top-2.5 left-[270px] z-50 h-7 w-7 text-white hover:text-gray-400 dark:text-white dark:hover:text-gray-300 sm:top-0.5 sm:left-[270px] sm:h-8 sm:w-8 sm:text-neutral-700"
-                    onClick={handleToggleChatbar}
-                  >
-                    <IconArrowBarLeft />
-                  </button>
-                  <div
-                    onClick={handleToggleChatbar}
-                    className="absolute top-0 left-0 z-10 h-full w-full bg-black opacity-70 sm:hidden"
-                  ></div>
-                </div>
-              ) : (
-                <button
-                  className="fixed top-2.5 left-4 z-50 h-7 w-7 text-white hover:text-gray-400 dark:text-white dark:hover:text-gray-300 sm:top-0.5 sm:left-4 sm:h-8 sm:w-8 sm:text-neutral-700"
-                  onClick={handleToggleChatbar}
-                >
-                  <IconArrowBarRight />
-                </button>
-              )}
-
-              <div className="flex flex-1">
-                <Chat
-                  conversation={selectedConversation}
-                  messageIsStreaming={messageIsStreaming}
-                  serverSideApiKeyIsSet={serverSideApiKeyIsSet}
-                  defaultModelId={defaultModelId}
-                  modelError={modelError}
-                  models={models}
-                  loading={appLoading}
-                  onSend={handleSend}
-                  onUpdateConversation={handleUpdateConversation}
-                  onEditMessage={handleEditMessage}
-                  stopConversationRef={stopConversationRef}
-                  onStop={handleStop}
-                />
-              </div>
+      <main
+        className={`flex h-screen w-screen flex-col text-sm ${lightMode === 'light' ? 'text-gray-900 bg-gradient-to-br from-gray-50 via-white to-gray-100' : 'dark text-white bg-gradient-to-br from-gray-950 via-slate-950 to-black'} relative`}
+      >
+        {lightMode === 'dark' && (
+          <div className="absolute inset-0 z-0">
+            <ParticlesBackground />
+          </div>
+        )}
+        <div className="flex h-full w-full relative z-10">
+          {showSidebar ? (
+            <div>
+              <Chatbar
+                loading={appLoading}
+                conversations={conversations}
+                lightMode={lightMode}
+                selectedConversation={selectedConversation}
+                onNewConversation={handleNewConversation}
+                onToggleLightMode={handleLightMode}
+                onSelectConversation={handleSelectConversation}
+                onDeleteConversation={handleDeleteConversation}
+                onUpdateConversation={handleUpdateConversation}
+                onClearConversations={handleClearConversations}
+              />
+              <button
+                className={`fixed top-2.5 left-[270px] z-50 h-7 w-7 sm:top-0.5 sm:left-[270px] sm:h-8 sm:w-8 transition-colors ${
+                  lightMode === 'light'
+                    ? 'text-gray-700 hover:text-gray-900'
+                    : 'text-white hover:text-gray-300'
+                }`}
+                onClick={handleToggleChatbar}
+              >
+                <IconArrowBarLeft />
+              </button>
+              <div
+                onClick={handleToggleChatbar}
+                className={`absolute top-0 left-0 z-10 h-full w-full sm:hidden ${
+                  lightMode === 'light' ? 'bg-gray-900/30' : 'bg-black/70'
+                }`}
+              ></div>
             </div>
-          </main>
-        )
-      )}
+          ) : (
+            <button
+              className={`fixed top-2.5 left-4 z-50 h-7 w-7 sm:top-0.5 sm:left-4 sm:h-8 sm:w-8 transition-colors ${
+                lightMode === 'light'
+                  ? 'text-gray-700 hover:text-gray-900'
+                  : 'text-white hover:text-gray-300'
+              }`}
+              onClick={handleToggleChatbar}
+            >
+              <IconArrowBarRight />
+            </button>
+          )}
+
+          <div className="flex flex-1">
+            <Chat
+              conversation={selectedConversation}
+              messageIsStreaming={messageIsStreaming}
+              modelError={modelError}
+              loading={appLoading}
+              onSend={handleSend}
+              onUpdateConversation={handleUpdateConversation}
+              onEditMessage={handleEditMessage}
+              stopConversationRef={stopConversationRef}
+              onStop={handleStop}
+            />
+          </div>
+        </div>
+      </main>
     </>
   );
 };
 
 export default Home;
-
-export const getServerSideProps: GetServerSideProps = async () => {
-  const defaultModelId =
-    (process.env.DEFAULT_MODEL &&
-      Object.values(OpenAIModelID).includes(
-        process.env.DEFAULT_MODEL as OpenAIModelID,
-      ) &&
-      (process.env.DEFAULT_MODEL as OpenAIModelID)) ||
-    fallbackModelID;
-
-  return {
-    props: {
-      serverSideApiKeyIsSet: true,
-      defaultModelId,
-    },
-  };
-};

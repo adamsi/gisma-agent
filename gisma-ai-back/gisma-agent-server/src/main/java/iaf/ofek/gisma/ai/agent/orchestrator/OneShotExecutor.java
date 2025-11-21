@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import static iaf.ofek.gisma.ai.constant.AdvisorOrder.QA_ADVISOR_ORDER;
+
 @Service
 public class OneShotExecutor {
 
@@ -48,7 +50,7 @@ public class OneShotExecutor {
                            ChatMemoryAdvisorProvider memoryAdvisorProvider) {
         this.llmCallerService = new LLMCallerWithMemoryService(builder, tools, memoryAdvisorProvider);
         this.qaAdvisor = QuestionAnswerAdvisor.builder(documentVectorStore)
-                .order(3)
+                .order(QA_ADVISOR_ORDER)
                 .build();
     }
 
