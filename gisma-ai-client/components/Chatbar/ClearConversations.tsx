@@ -4,9 +4,10 @@ import { SidebarButton } from '../Sidebar/SidebarButton';
 
 interface Props {
   onClearConversations: () => void;
+  lightMode?: 'light' | 'dark';
 }
 
-export const ClearConversations: FC<Props> = ({ onClearConversations }) => {
+export const ClearConversations: FC<Props> = ({ onClearConversations, lightMode = 'dark' }) => {
   const [isConfirming, setIsConfirming] = useState<boolean>(false);
 
 
@@ -16,16 +17,26 @@ export const ClearConversations: FC<Props> = ({ onClearConversations }) => {
   };
 
   return isConfirming ? (
-    <div className="flex w-full cursor-pointer items-center gap-3 rounded-xl py-2.5 px-3 bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-apple">
+    <div className={`flex w-full cursor-pointer items-center gap-3 rounded-xl py-2.5 px-3 backdrop-blur-sm border transition-all duration-apple ${
+      lightMode === 'light'
+        ? 'bg-white/90 border-gray-300 hover:bg-white'
+        : 'bg-white/5 border-white/10 hover:bg-white/10'
+    }`}>
       <IconTrash size={18} />
 
-      <div className="flex-1 text-left text-sm font-medium text-white">
+      <div className={`flex-1 text-left text-sm font-medium ${
+        lightMode === 'light' ? 'text-gray-900' : 'text-white'
+      }`}>
         Are you sure?
       </div>
 
       <div className="flex gap-1">
         <button
-          className="min-w-[28px] h-7 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-apple active:scale-95"
+          className={`min-w-[28px] h-7 flex items-center justify-center rounded-lg transition-all duration-apple active:scale-95 ${
+            lightMode === 'light'
+              ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+              : 'text-white/60 hover:text-white hover:bg-white/10'
+          }`}
           onClick={(e) => {
             e.stopPropagation();
             handleClearConversations();
@@ -35,7 +46,11 @@ export const ClearConversations: FC<Props> = ({ onClearConversations }) => {
         </button>
 
         <button
-          className="min-w-[28px] h-7 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-apple active:scale-95"
+          className={`min-w-[28px] h-7 flex items-center justify-center rounded-lg transition-all duration-apple active:scale-95 ${
+            lightMode === 'light'
+              ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+              : 'text-white/60 hover:text-white hover:bg-white/10'
+          }`}
           onClick={(e) => {
             e.stopPropagation();
             setIsConfirming(false);
@@ -50,6 +65,7 @@ export const ClearConversations: FC<Props> = ({ onClearConversations }) => {
       text='Clear conversations'
       icon={<IconTrash size={18} />}
       onClick={() => setIsConfirming(true)}
+      lightMode={lightMode}
     />
   );
 };

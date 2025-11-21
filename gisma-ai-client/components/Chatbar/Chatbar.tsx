@@ -74,7 +74,11 @@ export const Chatbar: FC<Props> = ({
     >
       <div className="flex items-center">
         <button
-          className="flex w-full flex-shrink-0 cursor-pointer select-none items-center gap-3 rounded-xl border border-white/20 bg-white/5 backdrop-blur-sm px-4 py-3 text-sm font-medium leading-normal text-white transition-all duration-apple hover:bg-white/10 hover:border-white/30 active:scale-[0.98]"
+          className={`flex w-full flex-shrink-0 cursor-pointer select-none items-center gap-3 rounded-xl border backdrop-blur-sm px-4 py-3 text-sm font-medium leading-normal transition-all duration-apple active:scale-[0.98] ${
+            lightMode === 'light'
+              ? 'border-gray-300 bg-white/90 text-gray-900 hover:bg-white hover:border-gray-400'
+              : 'border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/30'
+          }`}
           onClick={() => {
             onNewConversation();
             setSearchTerm('');
@@ -90,6 +94,7 @@ export const Chatbar: FC<Props> = ({
           placeholder="Search conversations..."
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
+          lightMode={lightMode}
         />
       )}
 
@@ -103,10 +108,13 @@ export const Chatbar: FC<Props> = ({
               onSelectConversation={onSelectConversation}
               onDeleteConversation={handleDeleteConversation}
               onUpdateConversation={handleUpdateConversation}
+              lightMode={lightMode}
             />
           </div>
         ) : (
-          <div className="mt-8 flex flex-col items-center gap-3 text-sm leading-normal text-white/60">
+          <div className={`mt-8 flex flex-col items-center gap-3 text-sm leading-normal ${
+            lightMode === 'light' ? 'text-gray-600' : 'text-white/60'
+          }`}>
             <IconMessagesOff size={18} />
             No conversations.
           </div>
