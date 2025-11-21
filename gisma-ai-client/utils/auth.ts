@@ -3,6 +3,8 @@
  * Can be used in both client-side (Redux) and server-side (middleware) contexts
  */
 
+import { api } from './api';
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -24,18 +26,15 @@ export async function verifyAuth(cookieHeader: string | null): Promise<boolean> 
   if (!cookieHeader) return false;
 
   try {
-    const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.ME}`, {
-      method: 'GET',
+    const response = await api.get(AUTH_ENDPOINTS.ME, {
       headers: {
         Cookie: cookieHeader,
-        'Content-Type': 'application/json',
       },
-      credentials: 'include',
+      withCredentials: true,
     });
 
-    return response.ok;
+    return response.status === 200;
   } catch (error) {
-    console.error('Auth verification failed:', error);
     return false;
   }
 }
