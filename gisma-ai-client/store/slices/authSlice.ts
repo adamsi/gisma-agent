@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AxiosError } from 'axios';
-import { api, handleAxiosError } from '@/utils/api';
+import { api, authApi, handleAxiosError } from '@/utils/api';
 import { AUTH_ENDPOINTS } from '@/utils/auth';
 import { LoginUserDto, RegisterUserDto, User } from '@/types/user';
 
@@ -20,12 +20,14 @@ const initialState: AuthState = {
 
 export const refreshToken = createAsyncThunk(
   'auth/refreshToken',
-  async () => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await api.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {}, {withCredentials: true});
+      const response = await authApi.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {}, {withCredentials: true});
       
       return response.data;
     } catch (error) {
+      // Silently fail - user might not have a valid refresh token
+      return rejectWithValue(null);
     }
   }
 );
@@ -49,11 +51,12 @@ export const getUser = createAsyncThunk(
   'auth/me',
   async (_, { rejectWithValue }) => {
     try {
-      const userResponse = await api.get(AUTH_ENDPOINTS.ME, {withCredentials: true});
+      const userResponse = await authApi.get(AUTH_ENDPOINTS.ME, {withCredentials: true});
    
       return userResponse.data;
     } catch (error) {
-      return rejectWithValue(handleAxiosError(error));
+      // Return null instead of error message for faster handling
+      return rejectWithValue(null);
     }
   }
 );
@@ -121,7 +124,7 @@ const authSlice = createSlice({
       state.error = action.payload as string;
   })
   .addCase(logout.pending, (state) => {
-      state.loading = true;
+      state.loading = false; // Don't show loading during logout
       state.error = null;
   })
   .addCase(logout.fulfilled, (state) => {
@@ -153,10 +156,19 @@ const authSlice = createSlice({
       state.user = {...action.payload};
       state.isAdmin = state.user?.role === 'ADMIN';
   })
-  .addCase(getUser.rejected, (state, action) => {
+  .addCase(getUser.rejected, (state) => {
       state.loading = false;
       state.isAdmin = false;
-      state.error = action.payload as string;
+      state.user = null;
+      // Don't set error for failed auth check - it's expected when not authenticated
+  })
+  .addCase(refreshToken.fulfilled, (state) => {
+      // Refresh token succeeded, but don't change loading state here
+      // Loading state is controlled by getUser
+  })
+  .addCase(refreshToken.rejected, (state) => {
+      // Refresh token failed, but don't change loading state here
+      // Loading state is controlled by getUser
   });
   },
 });

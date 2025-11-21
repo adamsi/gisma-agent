@@ -10,6 +10,16 @@ export const api = axios.create({
   timeout: 10000, // 10 second timeout
 });
 
+// Create a separate axios instance for auth endpoints with shorter timeout
+export const authApi = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 3000, // 3 second timeout for faster auth checks
+});
+
 // Request interceptor for adding auth headers if needed
 api.interceptors.request.use(
   (config) => {

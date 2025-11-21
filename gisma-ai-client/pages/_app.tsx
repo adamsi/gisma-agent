@@ -55,8 +55,11 @@ function AppContent({ Component, pageProps, router }: AppProps<{}>) {
   // Initialize authentication on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      await dispatch(refreshToken());
-      await dispatch(getUser());
+      // Run auth checks in parallel for faster loading
+      await Promise.allSettled([
+        dispatch(refreshToken()),
+        dispatch(getUser()),
+      ]);
       setIsInitialMount(false);
     };
     initializeAuth();
@@ -77,16 +80,16 @@ function AppContent({ Component, pageProps, router }: AppProps<{}>) {
     const isPublicPage = pathname === '/home' || pathname === '/login-success' || pathname === '/auth';
     const isProtectedRoute = !isPublicPage;
 
-    // If user is not authenticated and tries to access protected route, redirect to /auth
-    // But don't redirect if we're already on /home (smooth logout transition)
-    if (!user && isProtectedRoute && pathname !== '/home') {
-      nextRouter.replace('/auth');
-      return;
+    // If user is not authenticated, redirect to /home (smooth logout) or /auth for protected routes
+    if (!user) {
+      if (isProtectedRoute && pathname !== '/home') {
+        nextRouter.replace('/home');
+      }
     }
   }, [user, authLoading, pathname, nextRouter]);
 
-  // Show loading spinner only on first mount
-  if (authLoading && isInitialMount) {
+  // Show loading spinner only on first mount, not during logout
+  if (authLoading && isInitialMount && user !== null) {
     return (
       <ThemeProvider theme={darkTheme}>
         <CssBaseline />
