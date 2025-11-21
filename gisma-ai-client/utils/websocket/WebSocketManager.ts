@@ -94,8 +94,13 @@ export class WebSocketManager {
     };
 
     client.onWebSocketError = (error) => {
-      console.error('WebSocket Error:', error);
-      this.handleDisconnection();
+      // Only handle as disconnection if we were already connected
+      // During initial connection, SockJS transport negotiation errors are expected
+      if (this.isConnected) {
+        console.error('WebSocket Error:', error);
+        this.handleDisconnection();
+      }
+      // During connection attempt, ignore - SockJS will try other transports
     };
 
     client.onDisconnect = () => {
@@ -155,9 +160,40 @@ export class WebSocketManager {
     }
 
     this.shouldBeConnected = true;
-    this.connectionPromise = this.attemptConnection();
+    this.connectionPromise = this.attemptConnectionWithRetry();
     
     return this.connectionPromise;
+  }
+
+  private async attemptConnectionWithRetry(): Promise<void> {
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        await this.attemptConnection();
+        return; // Success!
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        // Only retry on timeout or connection errors, not on STOMP protocol errors
+        if (lastError.message.includes('STOMP Error')) {
+          throw lastError; // Don't retry STOMP errors
+        }
+        
+        if (attempt < maxRetries - 1) {
+          // Wait a bit before retrying (exponential backoff)
+          const delay = Math.min(1000 * Math.pow(2, attempt), 3000);
+          console.log(`WebSocket: Connection attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          // Reset connection state for retry
+          this.isConnecting = false;
+          this.connectionPromise = null;
+        }
+      }
+    }
+
+    // If all retries failed, throw the last error
+    throw lastError || new Error('Connection failed after retries');
   }
 
   private attemptConnection(): Promise<void> {
@@ -200,12 +236,19 @@ export class WebSocketManager {
         reject(new Error(`STOMP Error: ${frame.headers['message'] || 'Unknown error'}`));
       };
 
+      // During SockJS transport negotiation, WebSocket errors are expected
+      // as it tries different transports. Don't reject - let SockJS continue
+      // and only fail on actual STOMP errors or timeout.
       this.client.onWebSocketError = (error) => {
+        // Don't call originalOnWsError during connection attempt as it would
+        // trigger handleDisconnection unnecessarily
+        // Only log for debugging - SockJS will continue trying other transports
+        if (!this.isConnected) {
+          // Silently ignore during connection - this is normal SockJS behavior
+          return;
+        }
+        // If already connected, treat as real error
         originalOnWsError?.(error);
-        clearTimeout(timeout);
-        this.isConnecting = false;
-        this.connectionPromise = null;
-        reject(new Error(`WebSocket Error: ${error.message || 'Connection failed'}`));
       };
 
       try {
