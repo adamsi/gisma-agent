@@ -4,7 +4,7 @@ import { SidebarButton } from '../Sidebar/SidebarButton';
 import { ClearConversations } from './ClearConversations';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
-import { setLastVisitedChatId } from '@/store/slices/chatMemorySlice';
+import { clearAllChats, setLastVisitedChatId } from '@/store/slices/chatMemorySlice';
 import { useRouter } from 'next/router';
 import { Conversation } from '@/types/chat';
 
@@ -122,10 +122,11 @@ export const ChatbarSettings: FC<Props> = ({
                   ? 'border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:border-gray-400'
                   : 'border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20'
               }`}
-              onClick={async () => {
+              onClick={() => {
                 setShowProfile(false);
-                await dispatch(logout());
                 router.replace('/home');
+                dispatch(clearAllChats());
+                dispatch(logout());
               }}
             >
               <IconLogout size={18} />

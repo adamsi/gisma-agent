@@ -82,6 +82,11 @@ const chatMemorySlice = createSlice({
     setLastVisitedChatId: (state, action: PayloadAction<string | null>) => {
       state.lastVisitedChatId = action.payload;
     },
+    clearAllChats: (state) => {
+      state.chats = [];
+      state.chatMessages = {};
+      state.lastVisitedChatId = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -107,6 +112,6 @@ const chatMemorySlice = createSlice({
   },
 });
 
-export const { addChat, updateChatDescription, addMessageToChat, clearChatMessages, setLastVisitedChatId } = chatMemorySlice.actions;
+export const { addChat, updateChatDescription, addMessageToChat, clearChatMessages, setLastVisitedChatId, clearAllChats } = chatMemorySlice.actions;
 export default chatMemorySlice.reducer;
 

@@ -6,10 +6,11 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { refreshToken, getUser } from '@/store/slices/authSlice';
+import LoadingSpinner from '@/components/Global/LoadingSpinner';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -49,12 +50,14 @@ function AppContent({ Component, pageProps, router }: AppProps<{}>) {
   const { user, loading: authLoading } = useAppSelector((state) => state.auth);
   const nextRouter = useRouter();
   const pathname = nextRouter.pathname;
+  const [isInitialMount, setIsInitialMount] = useState(true);
 
   // Initialize authentication on mount
   useEffect(() => {
     const initializeAuth = async () => {
       await dispatch(refreshToken());
       await dispatch(getUser());
+      setIsInitialMount(false);
     };
     initializeAuth();
 
@@ -75,11 +78,26 @@ function AppContent({ Component, pageProps, router }: AppProps<{}>) {
     const isProtectedRoute = !isPublicPage;
 
     // If user is not authenticated and tries to access protected route, redirect to /auth
-    if (!user && isProtectedRoute) {
+    // But don't redirect if we're already on /home (smooth logout transition)
+    if (!user && isProtectedRoute && pathname !== '/home') {
       nextRouter.replace('/auth');
       return;
     }
   }, [user, authLoading, pathname, nextRouter]);
+
+  // Show loading spinner only on first mount
+  if (authLoading && isInitialMount) {
+    return (
+      <ThemeProvider theme={darkTheme}>
+        <CssBaseline />
+        <div className={inter.className}>
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 via-slate-950 to-black">
+            <LoadingSpinner size="lg" text="Loading..." />
+          </div>
+        </div>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={darkTheme}>

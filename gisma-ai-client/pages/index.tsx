@@ -18,6 +18,7 @@ import ParticlesBackground from '@/components/Global/Particles';
 import { useConversations } from '@/hooks/useConversations';
 import { useSelectedConversation } from '@/hooks/useSelectedConversation';
 import { useChatStreaming } from '@/hooks/useChatStreaming';
+import LoadingSpinner from '@/components/Global/LoadingSpinner';
 
 const Home: React.FC = () => {
   const router = useRouter();
@@ -271,8 +272,18 @@ const Home: React.FC = () => {
     }
   }, []);
 
+  // Show loading spinner while user or selectedConversation is not ready
   if (!user || !selectedConversation) {
-    return null;
+    return (
+      <main className="flex h-screen w-screen items-center justify-center text-sm dark text-white bg-gradient-to-br from-gray-950 via-slate-950 to-black relative">
+        <div className="absolute inset-0 z-0">
+          <ParticlesBackground />
+        </div>
+        <div className="relative z-10">
+          <LoadingSpinner size="lg" text="Loading..." />
+        </div>
+      </main>
+    );
   }
 
   return (
