@@ -19,10 +19,7 @@ public class AgentOrchestrator {
     }
 
     public String handleQueryBlocking(UserPrompt prompt, String chatId) {
-        return StringUtils.joinLines(
-                Objects.requireNonNull(oneShotExecutor.execute(prompt, chatId).collectList()
-                        .block())
-        );
+        return oneShotExecutor.executeMono(prompt, chatId).block();
     }
 
 

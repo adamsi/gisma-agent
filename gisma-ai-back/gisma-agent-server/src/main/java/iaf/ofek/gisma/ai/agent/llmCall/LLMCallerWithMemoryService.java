@@ -9,6 +9,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.function.Function;
@@ -62,6 +63,10 @@ public class LLMCallerWithMemoryService {
     // response to user call
     public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId) {
         return llmCallerService.callLLM(callback, chatId, memoryAdvisorProvider::shortTermMemoryAdvisorConsumer);
+    }
+
+    public Mono<String> callLLMMono(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId) {
+        return llmCallerService.callLLMMono(callback, chatId, memoryAdvisorProvider::shortTermMemoryAdvisorConsumer);
     }
 
     protected static Advisor[] combineAdvisors(Advisor[] extra, Advisor additional) {

@@ -90,6 +90,19 @@ public class LLMCallerService {
         );
     }
 
+    public Mono<String> callLLMMono(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
+        return RetryUtils.callWithRetriesMono(
+                () -> ReactiveUtils.runBlockingAsync(()-> callback.apply(chatClient)
+                        .advisors(consumer.apply(chatId))
+                        .call()
+                        .content()),
+                MAX_LLM_RETRY_CALLS,
+                Duration.ofSeconds(LLM_RETRY_DELAY_SECONDS),
+                ex -> false,
+                "callLLM"
+        );
+    }
+
     public Mono<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback) {
         return RetryUtils.callWithRetriesMono(
                 () -> ReactiveUtils.runBlockingAsync(() ->

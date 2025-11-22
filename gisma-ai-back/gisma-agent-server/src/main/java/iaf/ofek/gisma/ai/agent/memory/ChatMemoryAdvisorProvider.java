@@ -1,6 +1,7 @@
 package iaf.ofek.gisma.ai.agent.memory;
 
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
@@ -15,6 +16,8 @@ import java.util.function.Consumer;
 @Service
 public class ChatMemoryAdvisorProvider {
 
+    private static final String DEFAULT_CHAT_ID = "default";
+
     @Getter
     private final ChatMemory chatMemory;
 
@@ -27,7 +30,9 @@ public class ChatMemoryAdvisorProvider {
     }
 
     public Consumer<ChatClient.AdvisorSpec> shortTermMemoryAdvisorConsumer(String chatId) {
-        return a -> a.param(ChatMemory.CONVERSATION_ID, chatId);
+        String finalChatId = StringUtils.defaultIfBlank(chatId, DEFAULT_CHAT_ID);
+
+        return a -> a.param(ChatMemory.CONVERSATION_ID, finalChatId);
     }
 
 }
