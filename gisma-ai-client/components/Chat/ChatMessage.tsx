@@ -1,11 +1,6 @@
 import { Conversation, Message } from '@/types/chat';
-import { IconCheck, IconCopy, IconEdit, IconUser, IconRobot, IconRepeat } from '@tabler/icons-react';
-import { FC, memo, useEffect, useRef, useState } from 'react';
-import rehypeMathjax from 'rehype-mathjax';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import { CodeBlock } from '../Markdown/CodeBlock';
-import { MemoizedReactMarkdown } from '../Markdown/MemoizedReactMarkdown';
+import { IconCheck, IconCopy, IconUser, IconRobot, IconRepeat } from '@tabler/icons-react';
+import { FC, memo, useState } from 'react';
 
 interface Props {
   message: Message;
@@ -18,40 +13,7 @@ interface Props {
 
 export const ChatMessage: FC<Props> = memo(
   ({ message, messageIndex, conversation, onEditMessage, isLastMessage, onRegenerate }) => {
-    const [isEditing, setIsEditing] = useState<boolean>(false);
-    const [isTyping, setIsTyping] = useState<boolean>(false);
-    const [messageContent, setMessageContent] = useState(message.content);
     const [messagedCopied, setMessageCopied] = useState(false);
-
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    const toggleEditing = () => {
-      setIsEditing(!isEditing);
-    };
-
-    const handleInputChange = (
-      event: React.ChangeEvent<HTMLTextAreaElement>,
-    ) => {
-      setMessageContent(event.target.value);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'inherit';
-        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-      }
-    };
-
-    const handleEditMessage = () => {
-      if (message.content != messageContent) {
-        onEditMessage({ ...message, content: messageContent }, messageIndex);
-      }
-      setIsEditing(false);
-    };
-
-    const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !isTyping && !e.shiftKey) {
-        e.preventDefault();
-        handleEditMessage();
-      }
-    };
 
     const copyOnClick = () => {
       if (!navigator.clipboard) return;
@@ -63,13 +25,6 @@ export const ChatMessage: FC<Props> = memo(
         }, 2000);
       });
     };
-
-    useEffect(() => {
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'inherit';
-        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-      }
-    }, [isEditing]);
 
     const textDirection = conversation.textDirection || 'ltr';
 
@@ -90,68 +45,12 @@ export const ChatMessage: FC<Props> = memo(
           <div className="prose mt-[-2px] w-full dark:prose-invert">
             {message.role === 'user' ? (
               <div className="flex w-full">
-                {isEditing ? (
-                  <div className="flex w-full flex-col">
-                    <textarea
-                      ref={textareaRef}
-                      className="w-full resize-none whitespace-pre-wrap border-none dark:bg-[#343541]/50"
-                      value={messageContent}
-                      onChange={handleInputChange}
-                      onKeyDown={handlePressEnter}
-                      onCompositionStart={() => setIsTyping(true)}
-                      onCompositionEnd={() => setIsTyping(false)}
-                      style={{
-                        fontFamily: 'inherit',
-                        fontSize: 'inherit',
-                        lineHeight: 'inherit',
-                        padding: '0',
-                        margin: '0',
-                        overflow: 'hidden',
-                        direction: textDirection,
-                      }}
-                    />
-
-                    <div className="mt-10 flex justify-center space-x-4">
-                      <button
-                        className="h-[40px] rounded-md bg-blue-500 px-4 py-1 text-sm font-medium text-white enabled:hover:bg-blue-600 disabled:opacity-50"
-                        onClick={handleEditMessage}
-                        disabled={messageContent.trim().length <= 0}
-                      >
-                        Save & Submit
-                      </button>
-                      <button
-                        className="h-[40px] rounded-md border border-neutral-300 px-4 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                        onClick={() => {
-                          setMessageContent(message.content);
-                          setIsEditing(false);
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    className="prose whitespace-pre-wrap dark:prose-invert"
-                    style={{ direction: textDirection }}
-                  >
-                    {message.content}
-                  </div>
-                )}
-
-                {(window.innerWidth < 640 || !isEditing) && (
-                  <button
-                    className={`absolute translate-x-[1000px] text-gray-500 hover:text-gray-700 focus:translate-x-0 group-hover:translate-x-0 dark:text-gray-400 dark:hover:text-gray-300 ${
-                      window.innerWidth < 640
-                        ? 'right-3 bottom-1'
-                        : 'right-0 top-[26px]'
-                    }
-                    `}
-                    onClick={toggleEditing}
-                  >
-                    <IconEdit size={20} />
-                  </button>
-                )}
+                <div 
+                  className="prose whitespace-pre-wrap dark:prose-invert"
+                  style={{ direction: textDirection }}
+                >
+                  {message.content}
+                </div>
               </div>
             ) : (
               <>
