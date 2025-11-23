@@ -1,7 +1,6 @@
 package iaf.ofek.gisma.ai.agent.llmCall;
 
 import iaf.ofek.gisma.ai.exception.SchemaValidationException;
-import iaf.ofek.gisma.ai.util.JsonUtils;
 import iaf.ofek.gisma.ai.util.ReactiveUtils;
 import iaf.ofek.gisma.ai.util.RetryUtils;
 import org.springframework.ai.chat.client.ChatClient;
@@ -22,6 +21,7 @@ import java.util.function.Function;
 
 import static iaf.ofek.gisma.ai.constant.AdvisorOrder.LOGGER_ADVISOR_ORDER;
 import static iaf.ofek.gisma.ai.util.JsonUtils.parseJson;
+import static iaf.ofek.gisma.ai.util.RetryUtils.callWithRetries;
 
 @Service
 public class LLMCallerService {
@@ -59,9 +59,8 @@ public class LLMCallerService {
                 .build();
     }
 
-    // intermediate agent phases
     public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
-        return RetryUtils.callWithRetries(
+        return callWithRetries(
                 () -> {
                     String rawResponse = callback.apply(chatClient)
                             .advisors(consumer.apply(chatId))
@@ -80,23 +79,23 @@ public class LLMCallerService {
     // response to user call
     public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
         return callback.apply(chatClient)
-                        .advisors(consumer.apply(chatId))
-                        .stream()
-                        .content();
+                .advisors(consumer.apply(chatId))
+                .stream()
+                .content();
     }
 
     public String callLLMBlocking(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
         return callback.apply(chatClient)
-                        .advisors(consumer.apply(chatId))
-                        .call()
-                        .content();
+                .advisors(consumer.apply(chatId))
+                .call()
+                .content();
     }
 
     public Mono<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback) {
-        return ReactiveUtils.runAsync(() ->
-                        callback.apply(chatClient)
-                                .call()
-                                .content());
+        return ReactiveUtils.runBlockingCallableAsync(() ->
+                callback.apply(chatClient)
+                        .call()
+                        .content());
     }
 
 }

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -87,12 +88,21 @@ public class DocumentService {
 
 
     private void validateFile(MultipartFile file) {
+        Set<String> allowedTypes = Set.of(
+                "application/pdf",
+                "text/plain",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "application/vnd.oasis.opendocument.text"
+        );
+
         if (file.isEmpty() || file.getContentType() == null) {
             throw new IllegalArgumentException("Uploaded file is empty");
         }
 
-        if (!List.of("application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                .contains(file.getContentType())) {
+        if (!allowedTypes.contains(file.getContentType())) {
             throw new IllegalArgumentException("Uploaded file contentType is not supported");
         }
 

@@ -17,8 +17,6 @@ import java.util.stream.IntStream;
 @Log4j2
 public class DocumentProcessor {
 
-    private final AuthService authService;
-
     private final DocumentService documentService;
 
     public List<S3Document> saveNewDocuments(List<MultipartFile> files, List<UUID> parentFolderIds, String userId) {
@@ -38,7 +36,7 @@ public class DocumentProcessor {
     }
 
     public void deleteDocuments(List<UUID> ids) {
-         documentService.deleteDocuments(ids);
+        documentService.deleteDocuments(ids);
     }
 
 }

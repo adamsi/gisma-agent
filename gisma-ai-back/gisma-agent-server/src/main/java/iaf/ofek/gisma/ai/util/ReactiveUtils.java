@@ -9,7 +9,7 @@ import java.util.concurrent.Callable;
 @Log4j2
 public class ReactiveUtils {
 
-    public static <T> Mono<T> runAsync(Callable<T> callable) {
+    public static <T> Mono<T> runBlockingCallableAsync(Callable<T> callable) {
         return Mono.fromCallable(callable)
                 .subscribeOn(Schedulers.boundedElastic()) // moves blocking call off main thread
                 .onErrorResume(ex -> {
