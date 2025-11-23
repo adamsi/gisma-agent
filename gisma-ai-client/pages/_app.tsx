@@ -6,11 +6,9 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useEffect } from 'react';
+import { useAppDispatch } from '@/store/hooks';
 import { refreshToken, getUser } from '@/store/slices/authSlice';
-import LoadingSpinner from '@/components/Global/LoadingSpinner';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -47,10 +45,6 @@ const darkTheme = createTheme({
 // Inner component that uses hooks
 function AppContent({ Component, pageProps, router }: AppProps<{}>) {
   const dispatch = useAppDispatch();
-  const { user, loading: authLoading } = useAppSelector((state) => state.auth);
-  const nextRouter = useRouter();
-  const pathname = nextRouter.pathname;
-  const [isInitialMount, setIsInitialMount] = useState(true);
 
   // Initialize authentication on mount
   useEffect(() => {
@@ -60,7 +54,6 @@ function AppContent({ Component, pageProps, router }: AppProps<{}>) {
         dispatch(refreshToken()),
         dispatch(getUser()),
       ]);
-      setIsInitialMount(false);
     };
     initializeAuth();
 
@@ -71,36 +64,6 @@ function AppContent({ Component, pageProps, router }: AppProps<{}>) {
 
     return () => clearInterval(refreshInterval);
   }, [dispatch]);
-
-  // Handle route protection and redirects
-  useEffect(() => {
-    // Don't redirect while auth is still loading
-    if (authLoading) return;
-
-    const isPublicPage = pathname === '/home' || pathname === '/login-success' || pathname === '/auth';
-    const isProtectedRoute = !isPublicPage;
-
-    // If user is not authenticated, redirect to /home (smooth logout) or /auth for protected routes
-    if (!user) {
-      if (isProtectedRoute && pathname !== '/home') {
-        nextRouter.replace('/home');
-      }
-    }
-  }, [user, authLoading, pathname, nextRouter]);
-
-  // Show loading spinner only on first mount, not during logout
-  if (authLoading && isInitialMount && user !== null) {
-    return (
-      <ThemeProvider theme={darkTheme}>
-        <CssBaseline />
-        <div className={inter.className}>
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 via-slate-950 to-black">
-            <LoadingSpinner size="lg" text="Loading..." />
-          </div>
-        </div>
-      </ThemeProvider>
-    );
-  }
 
   return (
     <ThemeProvider theme={darkTheme}>

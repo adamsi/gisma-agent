@@ -64,39 +64,40 @@ export const ChatbarSettings: FC<Props> = ({
         />
       )}
 
-      {/* User Profile Button */}
-      <div className={`w-full pt-4 border-t mt-2 ${
-        lightMode === 'light' ? 'border-gray-200' : 'border-white/10'
-      }`}>
-        <button
-          className={`flex w-full items-center gap-3 rounded-xl py-2.5 px-3 transition-all duration-apple active:scale-[0.98] ${
-            lightMode === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/5'
-          }`}
-          onClick={() => setShowProfile((v) => !v)}
-        >
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt="User avatar"
-              className="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover"
-            />
-          ) : (
-            <IconUser size={18} />
-          )}
-          <div className="flex flex-col text-left">
-            <span className={`text-sm font-medium leading-4 ${
-              lightMode === 'light' ? 'text-gray-900' : 'text-white'
-            }`}>
-              {user?.username || 'User'}
-            </span>
-            <span className={`text-xs leading-3 truncate max-w-[140px] ${
-              lightMode === 'light' ? 'text-gray-600' : 'text-white/50'
-            }`}>
-              {user?.username || ''}
-            </span>
-          </div>
-        </button>
+      {/* User Profile Button - Only show when user is loaded */}
+      {user && (
+        <div className={`w-full pt-4 border-t mt-2 ${
+          lightMode === 'light' ? 'border-gray-200' : 'border-white/10'
+        }`}>
+          <button
+            className={`flex w-full items-center gap-3 rounded-xl py-2.5 px-3 transition-all duration-apple active:scale-[0.98] ${
+              lightMode === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/5'
+            }`}
+            onClick={() => setShowProfile((v) => !v)}
+          >
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt="User avatar"
+                className="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover"
+              />
+            ) : (
+              <IconUser size={18} />
+            )}
+            <div className="flex flex-col text-left">
+              <span className={`text-sm font-medium leading-4 ${
+                lightMode === 'light' ? 'text-gray-900' : 'text-white'
+              }`}>
+                {user?.username || 'User'}
+              </span>
+              <span className={`text-xs leading-3 truncate max-w-[140px] ${
+                lightMode === 'light' ? 'text-gray-600' : 'text-white/50'
+              }`}>
+                {user?.username || ''}
+              </span>
+            </div>
+          </button>
 
         {showProfile && (
           <div className={`mt-3 rounded-2xl border backdrop-blur-xl p-4 shadow-xl ${
@@ -123,8 +124,9 @@ export const ChatbarSettings: FC<Props> = ({
                   : 'border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20'
               }`}
               onClick={() => {
-                setShowProfile(false);
                 router.replace('/home');
+                setShowProfile(false);
+
                 dispatch(clearAllChats());
                 dispatch(logout());
               }}
@@ -134,7 +136,8 @@ export const ChatbarSettings: FC<Props> = ({
             </button>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

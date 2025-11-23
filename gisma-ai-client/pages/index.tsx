@@ -11,6 +11,7 @@ import { ResponseFormat } from '@/types/responseFormat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
 import { updateConversation } from '@/utils/app/conversation';
+import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
@@ -18,7 +19,6 @@ import ParticlesBackground from '@/components/Global/Particles';
 import { useConversations } from '@/hooks/useConversations';
 import { useSelectedConversation } from '@/hooks/useSelectedConversation';
 import { useChatStreaming } from '@/hooks/useChatStreaming';
-import LoadingSpinner from '@/components/Global/LoadingSpinner';
 
 const Home: React.FC = () => {
   const router = useRouter();
@@ -165,8 +165,6 @@ const Home: React.FC = () => {
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
-    selectConversation(conversation); 
-    // Navigate to chat page if it has a chatId, otherwise stay on home
     if (conversation.chatId) {
       router.replace(`/chat/${conversation.chatId}`);
     }
@@ -272,19 +270,16 @@ const Home: React.FC = () => {
     }
   }, []);
 
-  // Show loading spinner while user or selectedConversation is not ready
-  if (!user || !selectedConversation) {
-    return (
-      <main className="flex h-screen w-screen items-center justify-center text-sm dark text-white bg-gradient-to-br from-gray-950 via-slate-950 to-black relative">
-        <div className="absolute inset-0 z-0">
-          <ParticlesBackground />
-        </div>
-        <div className="relative z-10">
-          <LoadingSpinner size="lg" text="Loading..." />
-        </div>
-      </main>
-    );
-  }
+  // Create fallback conversation for rendering while useSelectedConversation initializes
+  const displayConversation = selectedConversation || {
+    id: 'new',
+    name: 'New Conversation',
+    messages: [],
+    prompt: DEFAULT_SYSTEM_PROMPT,
+    folderId: null,
+    responseFormat: ResponseFormat.SIMPLE,
+    textDirection: 'ltr' as const,
+  } as Conversation;
 
   return (
     <>
@@ -314,7 +309,7 @@ const Home: React.FC = () => {
                 loading={appLoading}
                 conversations={conversations}
                 lightMode={lightMode}
-                selectedConversation={selectedConversation}
+                selectedConversation={displayConversation}
                 onNewConversation={handleNewConversation}
                 onToggleLightMode={handleLightMode}
                 onSelectConversation={handleSelectConversation}
@@ -355,7 +350,8 @@ const Home: React.FC = () => {
 
             <div className="flex flex-1">
               <Chat
-                conversation={selectedConversation}
+                title="Gisma Agent"
+                conversation={displayConversation}
                 messageIsStreaming={messageIsStreaming}
                 modelError={modelError}
                 loading={appLoading}

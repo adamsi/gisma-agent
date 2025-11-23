@@ -340,8 +340,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
       </div>
 
       {/* Right: Video (desktop) */}
-      <div className="relative hidden md:block md:h-screen">
-        <video className="absolute inset-0 h-full w-full object-cover" autoPlay loop muted playsInline>
+      <div className="relative hidden md:block md:h-screen overflow-hidden">
+        <video 
+          className="absolute inset-0 h-full w-full object-cover" 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          preload="auto"
+        >
           <source src="/auth.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-tr from-black/70 via-black/40 to-black/70" />
@@ -349,8 +356,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
 
       {/* Video (mobile, stacked below) */}
       <div className="md:hidden">
-        <div className="relative h-56 mt-10">
-          <video className="absolute inset-0 h-full w-full object-cover" autoPlay loop muted playsInline>
+        <div className="relative h-56 mt-10 overflow-hidden">
+          <video 
+            className="absolute inset-0 h-full w-full object-cover" 
+            autoPlay 
+            loop 
+            muted 
+            playsInline
+            preload="auto"
+          >
             <source src="/auth.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-black/50" />

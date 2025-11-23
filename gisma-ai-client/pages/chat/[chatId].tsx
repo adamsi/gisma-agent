@@ -5,7 +5,6 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { deleteChat, setLastVisitedChatId, fetchChatMessages, addChat } from '@/store/slices/chatMemorySlice';
 import { Chat } from '@/components/Chat/Chat';
 import { Chatbar } from '@/components/Chatbar/Chatbar';
-import HomePage from '@/components/HomePage/HomePage';
 import { Conversation, Message } from '@/types/chat';
 import { ResponseFormat } from '@/types/responseFormat';
 import { KeyValuePair } from '@/types/data';
@@ -18,7 +17,6 @@ import toast from 'react-hot-toast';
 import ParticlesBackground from '@/components/Global/Particles';
 import { useConversations } from '@/hooks/useConversations';
 import { useChatStreaming } from '@/hooks/useChatStreaming';
-import LoadingSpinner from '@/components/Global/LoadingSpinner';
 
 const ChatPage: React.FC = () => {
   const router = useRouter();
@@ -410,10 +408,6 @@ const ChatPage: React.FC = () => {
     }
   }, []);
 
-  if (!user) {
-    return <HomePage />;
-  }
-
   // Create a placeholder conversation if we have a chatId but no conversation yet
   // This allows sidebar to show while messages are loading
   const displayConversation = selectedConversation || (chatId && typeof chatId === 'string' ? {
@@ -425,21 +419,15 @@ const ChatPage: React.FC = () => {
     folderId: null,
     responseFormat: ResponseFormat.SIMPLE,
     textDirection: 'ltr' as const,
-  } : undefined);
-
-  // Show loading spinner if we don't have a conversation yet
-  if (!displayConversation) {
-    return (
-      <main className="flex h-screen w-screen items-center justify-center text-sm dark text-white bg-gradient-to-br from-gray-950 via-slate-950 to-black relative">
-        <div className="absolute inset-0 z-0">
-          <ParticlesBackground />
-        </div>
-        <div className="relative z-10">
-          <LoadingSpinner size="lg" text="Loading..." />
-        </div>
-      </main>
-    );
-  }
+  } : {
+    id: 'new',
+    name: 'New Conversation',
+    messages: [],
+    prompt: DEFAULT_SYSTEM_PROMPT,
+    folderId: null,
+    responseFormat: ResponseFormat.SIMPLE,
+    textDirection: 'ltr' as const,
+  });
 
   return (
     <>
@@ -509,6 +497,7 @@ const ChatPage: React.FC = () => {
 
           <div className="flex flex-1">
             <Chat
+              title=''
               conversation={displayConversation}
               messageIsStreaming={messageIsStreaming}
               modelError={modelError}

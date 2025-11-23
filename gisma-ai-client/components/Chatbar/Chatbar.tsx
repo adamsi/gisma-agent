@@ -113,13 +113,6 @@ export const Chatbar: FC<Props> = ({
               lightMode={lightMode}
             />
           </div>
-        ) : !chatsLoading ? (
-          <div className={`mt-8 flex flex-col items-center gap-3 text-sm leading-normal ${
-            lightMode === 'light' ? 'text-gray-600' : 'text-white/60'
-          }`}>
-            <IconMessagesOff size={18} />
-            No conversations.
-          </div>
         ) : null}
       </div>
 

@@ -21,6 +21,7 @@ interface Props {
   conversation: Conversation;
   messageIsStreaming: boolean;
   modelError: ErrorMessage | null;
+  title: string | null;
   loading: boolean;
   onSend: (
     message: Message,
@@ -38,6 +39,7 @@ interface Props {
 export const Chat: FC<Props> = memo(
   ({
     conversation,
+    title,
     messageIsStreaming,
     modelError,
     loading,
@@ -143,7 +145,7 @@ export const Chat: FC<Props> = memo(
                         // If we have a chatId but no messages, we're loading - show empty
                         ''
                       ) : (
-                        'Gisma Agent'
+                        title
                       )}
                     </div>
                   </div>
