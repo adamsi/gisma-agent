@@ -87,7 +87,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'signin' }) => {
     const result = await dispatch(login(values));
     if (login.fulfilled.match(result)) {
       dispatch(showToast({message: 'Login success', type: 'success'}));
-      router.push('/');
+      // Use window.location for full page reload to ensure cookies are available for middleware
+      window.location.href = '/';
     } else {
       dispatch(showToast({message: 'Login failed', type: 'error'}));
     }

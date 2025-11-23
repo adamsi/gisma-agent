@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 // Auth is now handled in _app.tsx
 import { deleteChat, setLastVisitedChatId, fetchChatMessages, addChat } from '@/store/slices/chatMemorySlice';
+import { fetchRootFolder } from '@/store/slices/uploadSlice';
 import { Chat } from '@/components/Chat/Chat';
 import { Chatbar } from '@/components/Chatbar/Chatbar';
 import { Conversation, Message } from '@/types/chat';
@@ -22,8 +23,9 @@ const ChatPage: React.FC = () => {
   const router = useRouter();
   const { chatId } = router.query;
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, isAdmin } = useAppSelector((state) => state.auth);
   const { chats, chatMessages, lastVisitedChatId } = useAppSelector((state) => state.chatMemory);
+  const { rootFolder } = useAppSelector((state) => state.upload);
 
   // STATE
   const [appLoading, setAppLoading] = useState<boolean>(false);
@@ -48,6 +50,13 @@ const ChatPage: React.FC = () => {
       loadChats();
     }
   }, [user, loadChats]);
+
+  // Fetch uploaded files if user is admin and rootFolder is not loaded
+  useEffect(() => {
+    if (user && isAdmin && !rootFolder) {
+      dispatch(fetchRootFolder());
+    }
+  }, [dispatch, user, isAdmin, rootFolder]);
 
   // Track metadata descriptions to preserve them during stream updates
   const metadataDescriptionsRef = useRef<Record<string, string>>({});

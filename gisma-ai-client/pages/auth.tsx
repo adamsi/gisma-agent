@@ -7,6 +7,12 @@ const AuthRoute: React.FC = () => {
     <>
       <Head>
         <title>Sign In · Gisma Agent</title>
+        <link 
+          rel="preload" 
+          href="/auth.mp4" 
+          as="fetch" 
+          type="video/mp4"
+        />
       </Head>
       <AuthPage mode="signin" />
     </>

@@ -15,29 +15,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check authentication
-  const cookies = request.headers.get('cookie') || '';
+  const token = request.cookies.get('access_token');
   
-  try {
-    const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINT}`, {
-      headers: {
-        Cookie: cookies,
-      },
-      credentials: 'include',
-    });
-
-    // If authenticated, allow access
-    if (response.ok) {
-      console.log('[Middleware] Auth successful - status:', response.status);
+  if (token) {
+      console.log('[Middleware] Auth successful');
       return NextResponse.next();
-    }
-    
-    console.log('[Middleware] Auth failed - status:', response.status);
-  } catch (error) {
-    // If auth check fails, redirect to home
-    console.error('[Middleware] Auth check error:', error);
   }
 
   // Redirect unauthenticated users to home
+  console.log('[Middleware] Auth failed');
   return NextResponse.redirect(new URL('/home', request.url));
 }
 
