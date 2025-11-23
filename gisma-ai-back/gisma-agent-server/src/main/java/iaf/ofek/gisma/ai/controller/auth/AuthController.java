@@ -2,10 +2,11 @@ package iaf.ofek.gisma.ai.controller.auth;
 
 import iaf.ofek.gisma.ai.dto.auth.LoginUserDto;
 import iaf.ofek.gisma.ai.dto.auth.RegisterUserDto;
-import iaf.ofek.gisma.ai.dto.auth.UserInfoDto;
 import iaf.ofek.gisma.ai.entity.auth.User;
-import iaf.ofek.gisma.ai.mapper.UserMapper;
-import iaf.ofek.gisma.ai.service.auth.*;
+import iaf.ofek.gisma.ai.service.auth.AuthService;
+import iaf.ofek.gisma.ai.service.auth.CookieUtil;
+import iaf.ofek.gisma.ai.service.auth.Token;
+import iaf.ofek.gisma.ai.service.auth.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,7 +15,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @RestController
