@@ -22,8 +22,8 @@ public class GismaServicesTools {
     }
 
     @Tool(description = "Get fruit by name")
-    public List<JsonNode> getFruitByName(String name) {
-        return gismaServicesClient.getAllFruits();
+    public JsonNode getFruitByName(String name) {
+        return gismaServicesClient.getFruitByName(name);
     }
 
 }
