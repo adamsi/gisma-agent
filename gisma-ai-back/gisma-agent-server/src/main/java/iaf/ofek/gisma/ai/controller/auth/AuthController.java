@@ -29,8 +29,6 @@ public class AuthController {
 
     private final UserService userService;
 
-    private final UserMapper userMapper;
-
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginUserDto loginUserDto, HttpServletResponse response) {
         UUID userId = authService.authenticate(loginUserDto);
@@ -42,13 +40,13 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<User> registerUser(@RequestBody @Valid RegisterUserDto user) {
-//        if (true) {
-//            throw new RuntimeException("Currently unavailable feature");
-//        }
+        if (true) {
+            throw new RuntimeException("Currently unavailable feature");
+        }
 
-       User createdUser = userService.createUser(user);
+        User createdUser = userService.createUser(user);
 
-       return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 
     @PostMapping("/refresh-token")

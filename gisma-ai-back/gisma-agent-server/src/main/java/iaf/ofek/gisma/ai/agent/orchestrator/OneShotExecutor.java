@@ -11,7 +11,6 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import static iaf.ofek.gisma.ai.constant.AdvisorOrder.QA_ADVISOR_ORDER;
 
@@ -66,12 +65,12 @@ public class OneShotExecutor {
                 .advisors(qaAdvisor), chatId);
     }
 
-    public Mono<String> executeMono(UserPrompt userPrompt, String chatId) {
+    public String executeBlocking(UserPrompt userPrompt, String chatId) {
         String userMessage = USER_PROMPT_TEMPLATE
                 .replace(PromptFormat.QUERY, userPrompt.query())
                 .replace(PromptFormat.RESPONSE_FORMAT, userPrompt.responseFormat().getFormat(userPrompt.schemaJson()));
 
-        return llmCallerService.callLLMMono(chatClient -> chatClient.prompt()
+        return llmCallerService.callLLMBlocking(chatClient -> chatClient.prompt()
                 .system(SYSTEM_MESSAGE)
                 .user(userMessage)
                 .advisors(qaAdvisor), chatId);

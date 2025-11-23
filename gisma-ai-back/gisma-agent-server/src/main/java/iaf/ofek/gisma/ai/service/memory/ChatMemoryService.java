@@ -50,7 +50,7 @@ public class ChatMemoryService {
     public Mono<ChatStartResponse> createChat(ChatStartRequest chatStartRequest, UUID userId) {
         return chatDescriptionGenerator.generateDescription(chatStartRequest.query())
                 .flatMap(description ->
-                        ReactiveUtils.runBlockingAsync(() ->
+                        runAsync(() ->
                                         chatMemoryRepository.generateChatId(
                                                 userId,
                                                 description

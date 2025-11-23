@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static iaf.ofek.gisma.ai.constant.AdvisorOrder.LOGGER_ADVISOR_ORDER;
+import static iaf.ofek.gisma.ai.util.JsonUtils.parseJson;
 
 @Service
 public class LLMCallerService {
@@ -60,14 +61,14 @@ public class LLMCallerService {
 
     // intermediate agent phases
     public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
-        return RetryUtils.callWithRetriesBlocking(
+        return RetryUtils.callWithRetries(
                 () -> {
                     String rawResponse = callback.apply(chatClient)
                             .advisors(consumer.apply(chatId))
                             .call()
                             .content();
 
-                    return JsonUtils.parseJson(rawResponse, responseType);
+                    return parseJson(rawResponse, responseType);
                 },
                 MAX_LLM_RETRY_CALLS,
                 Duration.ofSeconds(LLM_RETRY_DELAY_SECONDS),
@@ -78,42 +79,24 @@ public class LLMCallerService {
 
     // response to user call
     public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
-        return RetryUtils.callWithRetries(
-                () -> callback.apply(chatClient)
+        return callback.apply(chatClient)
                         .advisors(consumer.apply(chatId))
                         .stream()
-                        .content(),
-                MAX_LLM_RETRY_CALLS,
-                Duration.ofSeconds(LLM_RETRY_DELAY_SECONDS),
-                ex -> false,
-                "callLLM"
-        );
+                        .content();
     }
 
-    public Mono<String> callLLMMono(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
-        return RetryUtils.callWithRetriesMono(
-                () -> ReactiveUtils.runBlockingAsync(()-> callback.apply(chatClient)
+    public String callLLMBlocking(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId, Function<String, Consumer<ChatClient.AdvisorSpec>> consumer) {
+        return callback.apply(chatClient)
                         .advisors(consumer.apply(chatId))
                         .call()
-                        .content()),
-                MAX_LLM_RETRY_CALLS,
-                Duration.ofSeconds(LLM_RETRY_DELAY_SECONDS),
-                ex -> false,
-                "callLLM"
-        );
+                        .content();
     }
 
     public Mono<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback) {
-        return RetryUtils.callWithRetriesMono(
-                () -> ReactiveUtils.runBlockingAsync(() ->
+        return ReactiveUtils.runAsync(() ->
                         callback.apply(chatClient)
                                 .call()
-                                .content()),
-                MAX_LLM_RETRY_CALLS,
-                Duration.ofSeconds(LLM_RETRY_DELAY_SECONDS),
-                ex -> false,
-                "callLLM"
-        );
+                                .content());
     }
 
 }

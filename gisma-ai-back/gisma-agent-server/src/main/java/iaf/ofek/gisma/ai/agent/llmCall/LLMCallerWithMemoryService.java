@@ -55,18 +55,12 @@ public class LLMCallerWithMemoryService {
         this.memoryAdvisorProvider = memoryAdvisorProvider;
     }
 
-    // intermediate agent phases
-    public <T> T callLLMWithSchemaValidation(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, Class<T> responseType, String chatId) {
-        return llmCallerService.callLLMWithSchemaValidation(callback, responseType, chatId, memoryAdvisorProvider::shortTermMemoryAdvisorConsumer);
-    }
-
-    // response to user call
     public Flux<String> callLLM(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId) {
         return llmCallerService.callLLM(callback, chatId, memoryAdvisorProvider::shortTermMemoryAdvisorConsumer);
     }
 
-    public Mono<String> callLLMMono(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId) {
-        return llmCallerService.callLLMMono(callback, chatId, memoryAdvisorProvider::shortTermMemoryAdvisorConsumer);
+    public String callLLMBlocking(Function<ChatClient, ChatClient.ChatClientRequestSpec> callback, String chatId) {
+        return llmCallerService.callLLMBlocking(callback, chatId, memoryAdvisorProvider::shortTermMemoryAdvisorConsumer);
     }
 
     protected static Advisor[] combineAdvisors(Advisor[] extra, Advisor additional) {

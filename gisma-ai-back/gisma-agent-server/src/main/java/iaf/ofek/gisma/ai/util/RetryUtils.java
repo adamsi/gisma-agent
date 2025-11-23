@@ -1,9 +1,6 @@
 package iaf.ofek.gisma.ai.util;
 
 import lombok.extern.log4j.Log4j2;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.function.Predicate;
@@ -12,53 +9,7 @@ import java.util.function.Supplier;
 @Log4j2
 public class RetryUtils {
 
-    public static <T> Flux<T> callWithRetries(
-            Supplier<Flux<T>> operation,
-            int maxAttempts,
-            Duration baseDelay,
-            Predicate<Throwable> retryCondition,
-            String operationName
-    ) {
-        return Flux.defer(operation)
-                .retryWhen(
-                        Retry.backoff(maxAttempts, baseDelay)
-                                .maxBackoff(Duration.ofSeconds(10))
-                                .jitter(0.3)
-                                .filter(retryCondition)
-                                .doBeforeRetry(retrySignal -> logRetry(operationName, (int) retrySignal.totalRetries() + 1, maxAttempts, retrySignal.failure().toString()))
-                )
-                .doOnError(ex -> logFailedMaxAttempts(operationName, maxAttempts, ex.getMessage()));
-    }
-
-    public static <T> Mono<T> callWithRetriesMono(
-            Supplier<Mono<T>> operation,
-            int maxAttempts,
-            Duration baseDelay,
-            Predicate<Throwable> retryCondition,
-            String operationName
-    ) {
-        return Mono.defer(operation)
-                .retryWhen(
-                        Retry.backoff(maxAttempts, baseDelay)
-                                .maxBackoff(Duration.ofSeconds(10))
-                                .jitter(0.3)
-                                .filter(retryCondition)
-                                .doBeforeRetry(retrySignal ->
-                                        logRetry(
-                                                operationName,
-                                                (int) retrySignal.totalRetries() + 1,
-                                                maxAttempts,
-                                                retrySignal.failure().toString()
-                                        )
-                                )
-                )
-                .doOnError(ex ->
-                        logFailedMaxAttempts(operationName, maxAttempts, ex.getMessage())
-                );
-    }
-
-
-    public static <T> T callWithRetriesBlocking(
+    public static <T> T callWithRetries(
             Supplier<T> operation,
             int maxAttempts,
             Duration delay,
