@@ -17,13 +17,17 @@ public class CookieUtil {
 
     private final Map<String, Integer> cookies;
 
+    private final String allowedDomain;
+
     public CookieUtil(JwtUtil jwtUtil,
+                      @Value("${sa.allowed.domain}") String allowedDomain,
                       @Value("${sa.jwt.access-expiration-ms}") Integer accessTokenExpirationMs,
                       @Value("${sa.jwt.refresh-expiration-ms}") Integer refreshTokenExpirationMs) {
         this.jwtUtil = jwtUtil;
         cookies = Map.of(
                 Token.ACCESS_TOKEN, accessTokenExpirationMs,
                 Token.REFRESH_TOKEN, refreshTokenExpirationMs);
+        this.allowedDomain = allowedDomain;
     }
 
     public void addCookies(final HttpServletResponse httpServletResponse, UUID userId) {
@@ -43,6 +47,7 @@ public class CookieUtil {
         ResponseCookie cookie = ResponseCookie.from(cookieName, jwt)
                 .httpOnly(true)
                 .path("/")
+                .domain(allowedDomain)
                 .secure(true)
                 .sameSite("None")
                 .build();
@@ -53,6 +58,7 @@ public class CookieUtil {
         ResponseCookie cookie = ResponseCookie.from(cookieName, "")
                 .httpOnly(true)
                 .path("/")
+                .domain(allowedDomain)
                 .secure(true)
                 .sameSite("None")
                 .maxAge(0)
