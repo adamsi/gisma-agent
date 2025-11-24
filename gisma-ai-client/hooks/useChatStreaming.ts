@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 interface UseChatStreamingOptions {
   onStreamUpdate: (conversation: Conversation) => void;
   onMetadata?: (metadata: { chatId: string; description: string }) => void;
+  onStreamComplete?: () => void;
 }
 
 /**
@@ -14,7 +15,7 @@ interface UseChatStreamingOptions {
  * Manages streaming state and WebSocket communication
  */
 export const useChatStreaming = (options: UseChatStreamingOptions) => {
-  const { onStreamUpdate, onMetadata } = options;
+  const { onStreamUpdate, onMetadata, onStreamComplete } = options;
   const [messageIsStreaming, setMessageIsStreaming] = useState(false);
   const stopConversationRef = useRef<boolean>(false);
   const finalizeStreamRef = useRef<(() => void) | null>(null);
@@ -77,6 +78,11 @@ export const useChatStreaming = (options: UseChatStreamingOptions) => {
           onStreamUpdate(finalConversation);
         }
 
+        // Call onStreamComplete callback if provided
+        if (onStreamComplete) {
+          onStreamComplete();
+        }
+
         finalizeStreamRef.current = null;
       };
 
@@ -92,10 +98,13 @@ export const useChatStreaming = (options: UseChatStreamingOptions) => {
             return;
           }
 
+          // Clear any existing completion timer - we're still receiving chunks
           if (completionTimer) clearTimeout(completionTimer);
+          // Set a timeout as fallback for dead connections (500ms)
+          // The actual completion will come immediately from WebSocket onComplete callback when isComplete is true
           completionTimer = setTimeout(() => {
             finalizeStream();
-          }, 300);
+          }, 500);
 
           let updated: Conversation;
           if (isFirstChunk) {
@@ -116,6 +125,7 @@ export const useChatStreaming = (options: UseChatStreamingOptions) => {
           }
 
           currentConversationRef.current = updated;
+          // Update immediately for smooth streaming
           onStreamUpdate(updated);
         };
 
@@ -124,7 +134,15 @@ export const useChatStreaming = (options: UseChatStreamingOptions) => {
             message.content,
             updatedConversation.responseFormat,
             streamHandler,
-            () => finalizeStream(),
+            () => {
+              // Clear completion timer since stream is complete
+              if (completionTimer) {
+                clearTimeout(completionTimer);
+                completionTimer = null;
+              }
+              // Immediately finalize when WebSocket signals completion
+              finalizeStream();
+            },
             (error: string) => {
               console.error('WebSocket error:', error);
               toast.error('Connection error. Please try again.');
@@ -150,7 +168,15 @@ export const useChatStreaming = (options: UseChatStreamingOptions) => {
             updatedConversation.chatId,
             updatedConversation.responseFormat,
             streamHandler,
-            () => finalizeStream(),
+            () => {
+              // Clear completion timer since stream is complete
+              if (completionTimer) {
+                clearTimeout(completionTimer);
+                completionTimer = null;
+              }
+              // Immediately finalize when WebSocket signals completion
+              finalizeStream();
+            },
             (error: string) => {
               console.error('WebSocket error:', error);
               toast.error('Connection error. Please try again.');

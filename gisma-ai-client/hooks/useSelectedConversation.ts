@@ -23,6 +23,7 @@ export const useSelectedConversation = () => {
   // Create new conversation
   const createNewConversation = useCallback((): Conversation => {
     return {
+      id: 'new', // Temporary id for new conversations
       name: 'New Conversation',
       messages: [],
       prompt: DEFAULT_SYSTEM_PROMPT,
@@ -86,14 +87,14 @@ export const useSelectedConversation = () => {
     if (!chatId) {
       // Only create new conversation if:
       // 1. No conversation selected, OR
-      // 2. Current conversation has chatId AND no messages (not an active conversation)
-      // Don't reset if conversation has messages (it's being actively used)
+      // 2. Current conversation has chatId but no messages (user navigated away and back)
+      // Don't replace if conversation has messages (user is actively chatting)
       if (!selectedConversation) {
         const newConv = createNewConversation();
         setSelectedConversation(newConv);
         dispatch(setLastVisitedChatId(null));
       } else if (selectedConversation.chatId && selectedConversation.messages.length === 0) {
-        // Only reset if it's an empty conversation with chatId (stale state)
+        // Only replace if it's an empty conversation with chatId (likely from navigation)
         const newConv = createNewConversation();
         setSelectedConversation(newConv);
         dispatch(setLastVisitedChatId(null));

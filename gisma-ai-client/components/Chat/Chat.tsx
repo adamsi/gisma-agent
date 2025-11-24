@@ -88,19 +88,31 @@ export const Chat: FC<Props> = memo(
       });
     };
 
-    const scrollDown = () => {
-      if (autoScrollEnabled) {
-        messagesEndRef.current?.scrollIntoView(true);
+    const scrollDown = useCallback(() => {
+      if (autoScrollEnabled && messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
-    };
-    const throttledScrollDown = throttle(scrollDown, 250);
+    }, [autoScrollEnabled]);
+
+    // Use requestAnimationFrame for smooth scrolling during streaming
+    useEffect(() => {
+      if (messageIsStreaming) {
+        // Smooth scroll during streaming
+        const rafId = requestAnimationFrame(() => {
+          scrollDown();
+        });
+        return () => cancelAnimationFrame(rafId);
+      } else {
+        // Regular scroll when not streaming
+        scrollDown();
+      }
+    }, [conversation.messages, messageIsStreaming, scrollDown]);
 
     useEffect(() => {
-      throttledScrollDown();
       setCurrentMessage(
         conversation.messages[conversation.messages.length - 2],
       );
-    }, [conversation.messages, throttledScrollDown]);
+    }, [conversation.messages]);
 
     useEffect(() => {
       const observer = new IntersectionObserver(
@@ -156,23 +168,46 @@ export const Chat: FC<Props> = memo(
                     Model: GPT-4.1
                   </div>
 
-                  {conversation.messages.map((message, index) => (
-                    <ChatMessage
-                      key={index}
-                      message={message}
-                      messageIndex={index}
-                      conversation={conversation}
-                      onEditMessage={onEditMessage}
-                      isLastMessage={index === conversation.messages.length - 1}
-                      onRegenerate={() => {
-                        if (currentMessage) {
-                          onSend(currentMessage, 2);
-                        }
-                      }}
-                    />
-                  ))}
+                  {conversation.messages.map((message, index) => {
+                    const isLastMessage = index === conversation.messages.length - 1;
+                    // Don't render empty assistant message if streaming (will show loader instead)
+                    if (isLastMessage && messageIsStreaming && message.role === 'assistant' && message.content === '') {
+                      return null;
+                    }
+                    return (
+                      <ChatMessage
+                        key={index}
+                        message={message}
+                        messageIndex={index}
+                        conversation={conversation}
+                        onEditMessage={onEditMessage}
+                        isLastMessage={isLastMessage && !messageIsStreaming}
+                        onRegenerate={() => {
+                          if (currentMessage) {
+                            onSend(currentMessage, 2);
+                          }
+                        }}
+                      />
+                    );
+                  })}
 
-                  {messageIsStreaming && conversation.messages.length > 0 && conversation.messages[conversation.messages.length - 1].role !== 'assistant' && <ChatLoader /> }
+                  {/* Show loading indicator when streaming assistant response */}
+                  {/* Show loader if streaming and:
+                      - No messages yet, OR
+                      - Last message is user (waiting for assistant response), OR  
+                      - Last message is assistant but empty (before first chunk arrives) */}
+                  {messageIsStreaming && (() => {
+                    if (conversation.messages.length === 0) {
+                      return <ChatLoader />;
+                    }
+                    const lastMessage = conversation.messages[conversation.messages.length - 1];
+                    // Show loader if last message is user (waiting for assistant) or empty assistant message
+                    if (lastMessage.role === 'user' || (lastMessage.role === 'assistant' && lastMessage.content === '')) {
+                      return <ChatLoader />;
+                    }
+                    // Don't show loader if assistant message has content (it's streaming)
+                    return null;
+                  })()}
 
                   <div
                     className="h-[120px] sm:h-[162px] bg-transparent"

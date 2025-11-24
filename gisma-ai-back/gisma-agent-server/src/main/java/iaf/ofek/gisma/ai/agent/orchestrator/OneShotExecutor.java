@@ -29,7 +29,8 @@ public class OneShotExecutor {
             3. Combine both if needed — never invent information.
             4. Respect chat memory and prior context.
             5. Be concise, factual, and structured.
-            6. The response must perfectly match the RESPONSE FORMAT.
+            6. Do NOT use Markdown headers, code blocks, or function calls in your responses.
+            7. The response must perfectly match the RESPONSE FORMAT.
             """;
 
     private static final String USER_PROMPT_TEMPLATE = """

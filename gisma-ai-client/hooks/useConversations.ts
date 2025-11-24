@@ -28,6 +28,7 @@ export const useConversations = () => {
         );
 
         return {
+          id: chat.chatId, // Use chatId as id for stable reference
           chatId: chat.chatId,
           name: chat.description,
           messages,

@@ -62,6 +62,9 @@ const Home: React.FC = () => {
 
   // Track metadata descriptions to preserve them during stream updates
   const metadataDescriptionsRef = useRef<Record<string, string>>({});
+  // Throttle Redux updates during streaming for better performance
+  const reduxUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingReduxUpdateRef = useRef<{ chatId: string; messages: ChatMessage[] } | null>(null);
 
   // Streaming hook
   const { sendMessage, handleStop, messageIsStreaming, stopConversationRef, chatService } = useChatStreaming({
@@ -73,35 +76,56 @@ const Home: React.FC = () => {
           name: metadataDescriptionsRef.current[conversation.chatId],
         };
       }
+      // Update UI immediately for smooth streaming
       setSelectedConversation(conversation);
-      // Update Redux with current messages
+      
+      // Throttle Redux updates to every 500ms to avoid excessive dispatches
       if (conversation.chatId) {
         const chatMessages: ChatMessage[] = conversation.messages.map(msg => ({
           content: msg.content,
           type: (msg.role === 'user' ? 'USER' : 'ASSISTANT') as 'USER' | 'ASSISTANT',
         }));
-        dispatch(setChatMessages({ chatId: conversation.chatId, messages: chatMessages }));
+        
+        pendingReduxUpdateRef.current = { chatId: conversation.chatId, messages: chatMessages };
+        
+        if (!reduxUpdateTimerRef.current) {
+          reduxUpdateTimerRef.current = setTimeout(() => {
+            if (pendingReduxUpdateRef.current) {
+              dispatch(setChatMessages(pendingReduxUpdateRef.current));
+              pendingReduxUpdateRef.current = null;
+            }
+            reduxUpdateTimerRef.current = null;
+          }, 500);
+        }
+      }
+    },
+    onStreamComplete: () => {
+      // Flush pending Redux update when streaming completes
+      if (pendingReduxUpdateRef.current) {
+        dispatch(setChatMessages(pendingReduxUpdateRef.current));
+        pendingReduxUpdateRef.current = null;
+      }
+      if (reduxUpdateTimerRef.current) {
+        clearTimeout(reduxUpdateTimerRef.current);
+        reduxUpdateTimerRef.current = null;
       }
     },
     onMetadata: (metadata) => {
       // Store the metadata description
       metadataDescriptionsRef.current[metadata.chatId] = metadata.description;
       
-      // Update selected conversation with chatId and name, preserving current messages
       setSelectedConversation((prev) => {
         if (!prev) return prev;
-        // Only update if chatId is being added (new conversation) or name changed
-        if (!prev.chatId || prev.name !== metadata.description) {
-          const updated = {
-            ...prev,
-            chatId: metadata.chatId,
-            name: metadata.description,
-          };
-          dispatch(addChat({ chatId: metadata.chatId, description: metadata.description }));
-          dispatch(setLastVisitedChatId(metadata.chatId));
-          return updated;
-        }
-        return prev;
+        const updated = {
+          ...prev,
+          id: metadata.chatId, // Use chatId as id for stable reference
+          chatId: metadata.chatId,
+          name: metadata.description,
+        };
+        // Update Redux - don't navigate, stay on home page to avoid flush
+        dispatch(addChat({ chatId: metadata.chatId, description: metadata.description }));
+        dispatch(setLastVisitedChatId(metadata.chatId));
+        return updated;
       });
     },
   });
@@ -131,6 +155,10 @@ const Home: React.FC = () => {
     window.addEventListener('websocket-disconnect', handleLogout);
     return () => {
       window.removeEventListener('websocket-disconnect', handleLogout);
+      // Cleanup Redux update timer
+      if (reduxUpdateTimerRef.current) {
+        clearTimeout(reduxUpdateTimerRef.current);
+      }
     };
   }, [chatService]);
 
@@ -252,6 +280,7 @@ const Home: React.FC = () => {
 
   // Create fallback conversation for rendering while useSelectedConversation initializes
   const displayConversation = selectedConversation || {
+    id: 'new',
     name: 'New Conversation',
     messages: [],
     prompt: DEFAULT_SYSTEM_PROMPT,
