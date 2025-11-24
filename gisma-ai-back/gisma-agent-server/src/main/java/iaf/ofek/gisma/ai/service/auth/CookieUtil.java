@@ -42,7 +42,6 @@ public class CookieUtil {
         String jwt = jwtUtil.generateToken(userId, expirationMs);
         ResponseCookie cookie = ResponseCookie.from(cookieName, jwt)
                 .httpOnly(true)
-                .domain(".duckdns.org")
                 .path("/")
                 .secure(true)
                 .sameSite("None")
@@ -53,7 +52,6 @@ public class CookieUtil {
     private void clearAuthCookie(HttpServletResponse response, final UUID userId, final String cookieName, final Integer expirationMs) {
         ResponseCookie cookie = ResponseCookie.from(cookieName, "")
                 .httpOnly(true)
-                .domain(".duckdns.org")
                 .path("/")
                 .secure(true)
                 .sameSite("None")

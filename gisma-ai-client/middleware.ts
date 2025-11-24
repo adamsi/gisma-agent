@@ -14,6 +14,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  console.log('Request is ')
+
+  console.log(request)
   // Check authentication
   const token = request.cookies.get('access_token');
   
