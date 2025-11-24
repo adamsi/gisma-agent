@@ -7,8 +7,9 @@ import { store } from '@/store';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { useEffect } from 'react';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { refreshToken, getUser } from '@/store/slices/authSlice';
+import ParticlesBackground from '@/components/Global/Particles';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -45,6 +46,10 @@ const darkTheme = createTheme({
 // Inner component that uses hooks
 function AppContent({ Component, pageProps, router }: AppProps<{}>) {
   const dispatch = useAppDispatch();
+  const { loading: authLoading } = useAppSelector((state) => state.auth);
+  
+  // Show loading spinner on / and /home during auth check, but not on /auth
+  const showLoading = authLoading && (router.pathname === '/' || router.pathname === '/home');
 
   // Initialize authentication on mount
   useEffect(() => {
@@ -119,11 +124,26 @@ function AppContent({ Component, pageProps, router }: AppProps<{}>) {
               },
             }}
           />
-          <div className="min-h-screen flex flex-col">
-            <div className="flex-1">
-              <Component {...pageProps} />
+          {showLoading ? (
+            <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-950 via-slate-950 to-black relative">
+              {/* Particles Background */}
+              <div className="absolute inset-0 z-0">
+                <ParticlesBackground />
+              </div>
+              {/* Loading Spinner */}
+              <div className="flex-1 flex items-center justify-center relative z-10">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="animate-spin rounded-full border-4 border-blue-500/30 border-t-blue-500 h-16 w-16"></div>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="min-h-screen flex flex-col">
+              <div className="flex-1">
+                <Component {...pageProps} />
+              </div>
+            </div>
+          )}
         </div>
       </ThemeProvider>
   );

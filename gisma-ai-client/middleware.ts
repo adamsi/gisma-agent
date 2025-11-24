@@ -14,20 +14,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  console.log('Request is ')
+  // Check authentication by calling /me endpoint
+  try {
+    const cookieHeader = request.headers.get('cookie');
+    
+    if (!cookieHeader) {
+      console.log('[Middleware] No cookies found');
+      return NextResponse.redirect(new URL('/home', request.url));
+    }
 
-  console.log(request)
-  // Check authentication
-  const token = request.cookies.get('access_token');
-  
-  if (token) {
+    const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINT}`, {
+      method: 'GET',
+      headers: {
+        'Cookie': cookieHeader,
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (response.ok) {
       console.log('[Middleware] Auth successful');
       return NextResponse.next();
+    } else {
+      console.log('[Middleware] Auth failed - status:', response.status);
+      return NextResponse.redirect(new URL('/home', request.url));
+    }
+  } catch (error) {
+    console.log('[Middleware] Auth check error:', error);
+    return NextResponse.redirect(new URL('/home', request.url));
   }
-
-  // Redirect unauthenticated users to home
-  console.log('[Middleware] Auth failed');
-  return NextResponse.redirect(new URL('/home', request.url));
 }
 
 export const config = {
