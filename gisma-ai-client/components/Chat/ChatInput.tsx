@@ -126,7 +126,7 @@ export const ChatInput: FC<Props> = ({
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [conversation.id, messageIsStreaming]);
+  }, [conversation.chatId, messageIsStreaming]);
 
   return (
     <div className={`absolute left-0 w-full bottom-20 sm:bottom-0 border-transparent bg-gradient-to-b from-transparent via-white/50 to-white/50 pt-2 pb-safe dark:border-white/20 dark:via-[#343541]/50 dark:to-[#343541]/50 sm:pt-6 md:pt-2 md:pb-0`}>

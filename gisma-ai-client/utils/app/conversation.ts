@@ -9,11 +9,8 @@ export const updateConversation = (
   allConversations: Conversation[],
 ) => {
   const updatedConversations = allConversations.map((c) => {
-    // Use chatId for matching when available (backend-generated), otherwise fall back to id (client-generated)
-    if (
-      (c.chatId && updatedConversation.chatId && c.chatId === updatedConversation.chatId) ||
-      (!c.chatId && !updatedConversation.chatId && c.id === updatedConversation.id)
-    ) {
+    // Use chatId for matching (stable, from backend)
+    if (c.chatId && updatedConversation.chatId && c.chatId === updatedConversation.chatId) {
       return updatedConversation;
     }
     return c;

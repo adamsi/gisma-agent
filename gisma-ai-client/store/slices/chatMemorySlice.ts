@@ -76,6 +76,9 @@ const chatMemorySlice = createSlice({
       }
       state.chatMessages[action.payload.chatId].push(action.payload.message);
     },
+    setChatMessages: (state, action: PayloadAction<{ chatId: string; messages: ChatMessage[] }>) => {
+      state.chatMessages[action.payload.chatId] = action.payload.messages;
+    },
     clearChatMessages: (state, action: PayloadAction<string>) => {
       delete state.chatMessages[action.payload];
     },
@@ -112,6 +115,6 @@ const chatMemorySlice = createSlice({
   },
 });
 
-export const { addChat, updateChatDescription, addMessageToChat, clearChatMessages, setLastVisitedChatId, clearAllChats } = chatMemorySlice.actions;
+export const { addChat, updateChatDescription, addMessageToChat, setChatMessages, clearChatMessages, setLastVisitedChatId, clearAllChats } = chatMemorySlice.actions;
 export default chatMemorySlice.reducer;
 

@@ -44,12 +44,10 @@ export const ConversationComponent: FC<Props> = ({
     }
   };
 
-  // Use chatId for matching when available (backend-generated), otherwise fall back to id (client-generated)
+  // Use chatId for matching (stable, from backend)
   const isSelected = 
-    (selectedConversation.chatId && conversation.chatId && 
-     selectedConversation.chatId === conversation.chatId) ||
-    (!selectedConversation.chatId && !conversation.chatId && 
-     selectedConversation.id === conversation.id);
+    selectedConversation.chatId && conversation.chatId && 
+    selectedConversation.chatId === conversation.chatId;
 
   return (
     <div className="relative flex items-center">

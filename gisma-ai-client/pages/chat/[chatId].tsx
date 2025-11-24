@@ -2,16 +2,15 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 // Auth is now handled in _app.tsx
-import { deleteChat, setLastVisitedChatId, fetchChatMessages, addChat } from '@/store/slices/chatMemorySlice';
+import { deleteChat, setLastVisitedChatId, fetchChatMessages, addChat, setChatMessages } from '@/store/slices/chatMemorySlice';
 import { fetchRootFolder } from '@/store/slices/uploadSlice';
 import { Chat } from '@/components/Chat/Chat';
 import { Chatbar } from '@/components/Chatbar/Chatbar';
-import { Conversation, Message } from '@/types/chat';
+import { Conversation, Message, ChatMessage } from '@/types/chat';
 import { ResponseFormat } from '@/types/responseFormat';
 import { KeyValuePair } from '@/types/data';
 import { ErrorMessage } from '@/types/error';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import { updateConversation } from '@/utils/app/conversation';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
@@ -31,18 +30,13 @@ const ChatPage: React.FC = () => {
   const [appLoading, setAppLoading] = useState<boolean>(false);
   const [lightMode, setLightMode] = useState<'dark' | 'light'>('dark');
   const [modelError, setModelError] = useState<ErrorMessage | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [currentMessage, setCurrentMessage] = useState<Message>();
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
 
   // HOOKS
-  const { conversations: backendConversations, loadChats, loadChatMessages: loadChatMessagesFromHook } = useConversations();
-
-  // Update conversations when backend conversations change
-  useEffect(() => {
-    setConversations(backendConversations);
-  }, [backendConversations]);
+  // Single source of truth: conversations derived from Redux
+  const { conversations, loadChats, loadChatMessages: loadChatMessagesFromHook } = useConversations();
 
   // Load chats on mount if user is authenticated
   useEffect(() => {
@@ -74,41 +68,34 @@ const ChatPage: React.FC = () => {
         };
       }
       setSelectedConversation(conversation);
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.chatId === conversation.chatId) {
-            // Preserve description from metadata if it exists
-            if (conversation.chatId && metadataDescriptionsRef.current[conversation.chatId]) {
-              return {
-                ...conversation,
-                name: metadataDescriptionsRef.current[conversation.chatId],
-              };
-            }
-            return conversation;
-          }
-          return c;
-        })
-      );
+      // Update Redux with current messages
+      if (conversation.chatId) {
+        const chatMessages: ChatMessage[] = conversation.messages.map(msg => ({
+          content: msg.content,
+          type: (msg.role === 'user' ? 'USER' : 'ASSISTANT') as 'USER' | 'ASSISTANT',
+        }));
+        dispatch(setChatMessages({ chatId: conversation.chatId, messages: chatMessages }));
+      }
     },
     onMetadata: (metadata) => {
       // Store the metadata description
       metadataDescriptionsRef.current[metadata.chatId] = metadata.description;
       
+      // Update selected conversation with chatId and name, preserving current messages
       setSelectedConversation((prev) => {
         if (!prev) return prev;
-        const updated = {
-          ...prev,
-          chatId: metadata.chatId,
-          name: metadata.description,
-        };
-        setConversations((prevConvs) =>
-          prevConvs.map((c) => 
-            c.chatId === metadata.chatId ? updated : c
-          )
-        );
-        dispatch(addChat({ chatId: metadata.chatId, description: metadata.description }));
-        dispatch(setLastVisitedChatId(metadata.chatId));
-        return updated;
+        // Only update if chatId is being added (new conversation) or name changed
+        if (!prev.chatId || prev.name !== metadata.description) {
+          const updated = {
+            ...prev,
+            chatId: metadata.chatId,
+            name: metadata.description,
+          };
+          dispatch(addChat({ chatId: metadata.chatId, description: metadata.description }));
+          dispatch(setLastVisitedChatId(metadata.chatId));
+          return updated;
+        }
+        return prev;
       });
     },
   });
@@ -140,8 +127,8 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     if (!chatId || typeof chatId !== 'string' || !user) return;
 
-    // Try to find conversation in backend conversations first (has stable id)
-    const conversation = backendConversations.find((c) => c.chatId === chatId);
+    // Try to find conversation in conversations (derived from Redux)
+    const conversation = conversations.find((c) => c.chatId === chatId);
     if (conversation) {
       // Ensure messages are loaded
       if (!chatMessages[chatId]) {
@@ -165,7 +152,7 @@ const ChatPage: React.FC = () => {
       return;
     }
 
-    // If not in backend conversations, check if chat exists in Redux
+    // If not in conversations, check if chat exists in Redux
     const chat = chats.find((c) => c.chatId === chatId);
     if (!chat) {
       // Wait a bit for chats to load, then redirect if still not found
@@ -177,13 +164,12 @@ const ChatPage: React.FC = () => {
       return () => clearTimeout(timeout);
     }
 
-    // Chat exists but conversation not in backendConversations yet
-    // Load messages and create conversation with chatId as id (temporary until backendConversations updates)
+    // Chat exists but conversation not in conversations yet
+    // Load messages and create conversation (temporary until conversations updates)
     if (!chatMessages[chatId]) {
       loadChatMessagesFromHook(chatId);
       // Create placeholder conversation with empty messages to show sidebar while loading
       const placeholderConversation: Conversation = {
-        id: chatId,
         chatId: chat.chatId,
         name: chat.description,
         messages: [],
@@ -207,9 +193,8 @@ const ChatPage: React.FC = () => {
       })
     );
 
-    // Use chatId as id temporarily - this will be replaced when backendConversations updates
+    // Create conversation from chat and messages
     const tempConversation: Conversation = {
-      id: chatId, // Use chatId as id to maintain consistency
       chatId: chat.chatId,
       name: chat.description,
       messages: backendMessages,
@@ -224,7 +209,7 @@ const ChatPage: React.FC = () => {
       setSelectedConversation(tempConversation);
       dispatch(setLastVisitedChatId(chatId));
     }
-  }, [chatId, chats, chatMessages, backendConversations, user, router, dispatch, loadChatMessagesFromHook, selectedConversation]);
+  }, [chatId, chats, chatMessages, conversations, user, router, dispatch, loadChatMessagesFromHook, selectedConversation]);
 
   // Update selected conversation when messages are loaded (replace placeholder with actual messages)
   useEffect(() => {
@@ -232,19 +217,19 @@ const ChatPage: React.FC = () => {
     
     // If we have a placeholder conversation (empty messages) and messages are now loaded, update it
     if (selectedConversation.chatId === chatId && selectedConversation.messages.length === 0 && chatMessages[chatId].length > 0) {
-      // Try to find in backend conversations first
-      const backendConversation = backendConversations.find((c) => c.chatId === chatId);
-      if (backendConversation) {
-        // Use backend conversation which already has messages from useConversations hook
-        const preservedName = metadataDescriptionsRef.current[chatId] || backendConversation.name;
+      // Try to find in conversations first
+      const conversation = conversations.find((c) => c.chatId === chatId);
+      if (conversation) {
+        // Use conversation which already has messages from useConversations hook
+        const preservedName = metadataDescriptionsRef.current[chatId] || conversation.name;
         setSelectedConversation({
-          ...backendConversation,
+          ...conversation,
           name: preservedName,
         });
         return;
       }
       
-      // If not in backend conversations, create from chat and messages
+      // If not in conversations, create from chat and messages
       const chat = chats.find((c) => c.chatId === chatId);
       if (chat) {
         const backendMessages: Message[] = chatMessages[chatId].map(
@@ -262,20 +247,19 @@ const ChatPage: React.FC = () => {
         setSelectedConversation(updatedConversation);
       }
     }
-  }, [chatId, chatMessages, selectedConversation, backendConversations, chats]);
+  }, [chatId, chatMessages, selectedConversation, conversations, chats]);
 
-  // Update selected conversation when backend conversations update (to get stable id)
+  // Update selected conversation when conversations update
   // Also preserve metadata descriptions
   useEffect(() => {
     if (selectedConversation?.chatId) {
-      const updatedConversation = backendConversations.find((c) => c.chatId === selectedConversation.chatId);
+      const updatedConversation = conversations.find((c) => c.chatId === selectedConversation.chatId);
       if (updatedConversation) {
         // Only update if messages are different or if we need to update the name
         const preservedName = metadataDescriptionsRef.current[selectedConversation.chatId] || updatedConversation.name;
         const needsUpdate = 
           updatedConversation.messages.length !== selectedConversation.messages.length ||
-          updatedConversation.name !== preservedName ||
-          updatedConversation.id !== selectedConversation.id;
+          updatedConversation.name !== preservedName;
         
         if (needsUpdate) {
           setSelectedConversation({
@@ -285,7 +269,7 @@ const ChatPage: React.FC = () => {
         }
       }
     }
-  }, [backendConversations, selectedConversation?.chatId]);
+  }, [conversations, selectedConversation?.chatId]);
 
   // HANDLERS
   const handleLightMode = (mode: 'dark' | 'light') => {
@@ -353,13 +337,16 @@ const ChatPage: React.FC = () => {
       [data.key]: data.value,
     };
 
-    const { single, all } = updateConversation(updatedConversation, conversations);
-    setSelectedConversation(single);
-    setConversations(all);
+    // Update selected conversation
+    setSelectedConversation(updatedConversation);
+    // Conversations are managed by Redux, but we can update the selected one locally
+    // The Redux state will update when backend syncs
   };
 
   const handleClearConversations = () => {
-    setConversations([]);
+    // Conversations are managed by Redux
+    // This would need to be handled by clearing Redux state if needed
+    // For now, just navigate to home
     router.replace('/');
   };
 
@@ -374,9 +361,7 @@ const ChatPage: React.FC = () => {
         messages: updatedMessages,
       };
 
-      const { single, all } = updateConversation(updatedConversation, conversations);
-      setSelectedConversation(single);
-      setConversations(all);
+      setSelectedConversation(updatedConversation);
       setCurrentMessage(message);
     }
   };
@@ -420,7 +405,6 @@ const ChatPage: React.FC = () => {
   // Create a placeholder conversation if we have a chatId but no conversation yet
   // This allows sidebar to show while messages are loading
   const displayConversation = selectedConversation || (chatId && typeof chatId === 'string' ? {
-    id: chatId,
     chatId: chatId,
     name: '', // Empty name - title will be empty while loading
     messages: [], // Empty messages - chat area will be empty until loaded
@@ -429,7 +413,6 @@ const ChatPage: React.FC = () => {
     responseFormat: ResponseFormat.SIMPLE,
     textDirection: 'ltr' as const,
   } : {
-    id: 'new',
     name: 'New Conversation',
     messages: [],
     prompt: DEFAULT_SYSTEM_PROMPT,

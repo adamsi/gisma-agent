@@ -3,27 +3,23 @@ import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { fetchAllChats, fetchChatMessages } from '@/store/slices/chatMemorySlice';
 import { Conversation, Message, ChatMessage } from '@/types/chat';
 import { ResponseFormat } from '@/types/responseFormat';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Custom hook to manage conversations from Redux state
  * Converts backend chats to Conversation format for UI
+ * Uses chatId as the stable identifier (no UUID generation)
  */
 export const useConversations = () => {
   const dispatch = useAppDispatch();
   const { chats, chatMessages } = useAppSelector((state) => state.chatMemory);
-  const conversationIdsRef = useRef<Record<string, string>>({});
 
+  // Derived from Redux: chats + chatMessages
+  // Conversations persist across navigation because Redux state persists
   const conversations = useMemo<Conversation[]>(() => {
     if (!chats || chats.length === 0) return [];
 
     return chats
       .map((chat) => {
-        // Use stable ID - reuse existing ID if conversation already exists
-        if (!conversationIdsRef.current[chat.chatId]) {
-          conversationIdsRef.current[chat.chatId] = uuidv4();
-        }
-
         const messages: Message[] = (chatMessages[chat.chatId] || []).map(
           (msg: ChatMessage) => ({
             role: msg.type === 'USER' ? 'user' : 'assistant',
@@ -32,7 +28,6 @@ export const useConversations = () => {
         );
 
         return {
-          id: conversationIdsRef.current[chat.chatId],
           chatId: chat.chatId,
           name: chat.description,
           messages,

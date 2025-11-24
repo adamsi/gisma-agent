@@ -14,7 +14,7 @@ export interface ChatBody {
 }
 
 export interface Conversation {
-  id: string;
+  id?: string; // Optional, only for new conversations not yet saved
   name: string;
   messages: Message[];
   prompt: string;
@@ -22,7 +22,7 @@ export interface Conversation {
   responseFormat: ResponseFormat;
   schemaJson?: string;
   textDirection?: 'ltr' | 'rtl';
-  chatId?: string;
+  chatId?: string; // Primary identifier for backend conversations
 }
 
 // Backend types

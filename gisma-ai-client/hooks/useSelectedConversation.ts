@@ -5,7 +5,6 @@ import { setLastVisitedChatId } from '@/store/slices/chatMemorySlice';
 import { Conversation } from '@/types/chat';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { ResponseFormat } from '@/types/responseFormat';
-import { v4 as uuidv4 } from 'uuid';
 import { useConversations } from './useConversations';
 
 /**
@@ -24,7 +23,6 @@ export const useSelectedConversation = () => {
   // Create new conversation
   const createNewConversation = useCallback((): Conversation => {
     return {
-      id: uuidv4(),
       name: 'New Conversation',
       messages: [],
       prompt: DEFAULT_SYSTEM_PROMPT,
@@ -86,13 +84,16 @@ export const useSelectedConversation = () => {
 
     // If we're on home page (/), ensure we have a new conversation (no chatId)
     if (!chatId) {
-      // Always create new conversation on home page if current has a chatId
-      if (selectedConversation?.chatId) {
+      // Only create new conversation if:
+      // 1. No conversation selected, OR
+      // 2. Current conversation has chatId AND no messages (not an active conversation)
+      // Don't reset if conversation has messages (it's being actively used)
+      if (!selectedConversation) {
         const newConv = createNewConversation();
         setSelectedConversation(newConv);
         dispatch(setLastVisitedChatId(null));
-      } else if (!selectedConversation) {
-        // Create new if no conversation selected
+      } else if (selectedConversation.chatId && selectedConversation.messages.length === 0) {
+        // Only reset if it's an empty conversation with chatId (stale state)
         const newConv = createNewConversation();
         setSelectedConversation(newConv);
         dispatch(setLastVisitedChatId(null));
