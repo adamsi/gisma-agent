@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-const AUTH_ENDPOINT = '/auth/me';
-
 const publicRoutes = ['/home', '/auth', '/login-success'];
 
 export async function middleware(request: NextRequest) {
