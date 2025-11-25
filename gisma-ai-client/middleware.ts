@@ -14,36 +14,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check authentication by calling /me endpoint
-  try {
-    const cookieHeader = request.headers.get('cookie');
+    const cookie = request.cookies.get('access_token');
     
-    if (!cookieHeader) {
+    if (!cookie) {
       console.log('[Middleware] No cookies found');
       return NextResponse.redirect(new URL('/home', request.url));
     }
 
-    const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINT}`, {
-      method: 'GET',
-      headers: {
-        'Cookie': cookieHeader,
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    if (response.ok) {
-      console.log('[Middleware] Auth successful');
       return NextResponse.next();
-    } else {
-      console.log('[Middleware] Auth failed - status:', response.status);
-      return NextResponse.redirect(new URL('/home', request.url));
-    }
-  } catch (error) {
-    console.log('[Middleware] Auth check error:', error);
-    return NextResponse.redirect(new URL('/home', request.url));
   }
-}
+
+
 
 export const config = {
   matcher: [
