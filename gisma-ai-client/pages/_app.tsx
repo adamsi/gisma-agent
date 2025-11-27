@@ -46,9 +46,7 @@ const darkTheme = createTheme({
 // Inner component that uses hooks
 function AppContent({ Component, pageProps, router }: AppProps<{}>) {
   const dispatch = useAppDispatch();
-  const { loading: authLoading } = useAppSelector((state) => state.auth);
   
-
   // Initialize authentication on mount
   useEffect(() => {
     const initializeAuth = async () => {
