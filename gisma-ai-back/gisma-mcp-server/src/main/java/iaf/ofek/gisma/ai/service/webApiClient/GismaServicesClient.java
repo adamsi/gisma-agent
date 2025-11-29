@@ -1,6 +1,8 @@
 package iaf.ofek.gisma.ai.service.webApiClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializable;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -18,6 +20,7 @@ public class GismaServicesClient {
                 .retrieve()
                 .bodyToFlux(JsonNode.class)
                 .collectList()
+                .onErrorReturn(List.of())
                 .block();
     }
 
@@ -26,6 +29,7 @@ public class GismaServicesClient {
                 .uri("/{name}", name)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .onErrorReturn(JsonNodeFactory.instance.objectNode())
                 .block();
     }
 

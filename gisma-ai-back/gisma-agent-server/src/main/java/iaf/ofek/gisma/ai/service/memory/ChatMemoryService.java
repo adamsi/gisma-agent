@@ -6,6 +6,7 @@ import iaf.ofek.gisma.ai.dto.agent.memory.ChatMetadata;
 import iaf.ofek.gisma.ai.dto.agent.memory.ChatStartRequest;
 import iaf.ofek.gisma.ai.dto.agent.memory.ChatStartResponse;
 import iaf.ofek.gisma.ai.repository.ChatMemoryRepository;
+import iaf.ofek.gisma.ai.util.StringUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -51,15 +52,12 @@ public class ChatMemoryService {
     public Mono<ChatStartResponse> createChat(ChatStartRequest chatStartRequest, UUID userId) {
         return chatDescriptionGenerator.generateDescription(chatStartRequest.query())
                 .flatMap(description ->
-                        runBlockingCallableAsync(() ->
-                                        chatMemoryRepository.generateChatId(
-                                                userId,
-                                                description
-                                        )
-                                )
-                                .map(chatId ->
-                                        new ChatStartResponse(chatId, description)
-                                )
+                        runBlockingCallableAsync(() -> {
+                            String finalDescription = StringUtils.stripWrappers(description);
+                            String chatId = chatMemoryRepository.generateChatId(userId, finalDescription);
+
+                            return new ChatStartResponse(chatId, finalDescription);
+                        })
                 );
     }
 

@@ -1,17 +1,14 @@
 package iaf.ofek.gisma.ai.controller.agent;
 
 import iaf.ofek.gisma.ai.agent.orchestrator.AgentOrchestrator;
-import iaf.ofek.gisma.ai.dto.agent.memory.ChatStartRequest;
 import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
-import iaf.ofek.gisma.ai.dto.agent.memory.ChatStartResponse;
+import iaf.ofek.gisma.ai.dto.agent.memory.ChatStartRequest;
 import iaf.ofek.gisma.ai.service.memory.ChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -55,6 +52,7 @@ public class ChatController {
 
         return chatMemoryService.createChat(chatStart, UUID.fromString(userId))
                 .flatMapMany(chatStartResponse -> {
+                    log.info("chatStartResponse: {}.", chatStartResponse);
                     String chatId = chatStartResponse.chatId();
                     Mono<Void> metadata = Mono.fromRunnable(() ->
                             messagingTemplate.convertAndSendToUser(userId, "/queue/metadata", chatStartResponse)

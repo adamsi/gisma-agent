@@ -25,13 +25,18 @@ public class OneShotExecutor {
             
             Rules:
             1. Use RAG for API or documentation questions.
-            2. Use MCP tools for real-time or user-specific data.
+            2. Use MCP tools for real-time or api data.
             3. Combine both if needed — never invent information.
             4. Respect chat memory and prior context.
             5. Be concise, factual, and structured.
             6. Do NOT use Markdown headers, code blocks, or function calls in your responses.
-            7. The response must perfectly match the RESPONSE FORMAT.
+            7. If the user query is Hebrew:
+               - Translate it to English before calling any MCP tool.
+               - Never call tools with Hebrew text.
+               - Return the final answer in Hebrew.
+            8. The response must perfectly match the RESPONSE FORMAT.
             """;
+
 
     private static final String USER_PROMPT_TEMPLATE = """
             ### USER QUERY:

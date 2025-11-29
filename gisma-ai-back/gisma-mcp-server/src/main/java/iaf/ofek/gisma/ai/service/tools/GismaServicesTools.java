@@ -23,6 +23,7 @@ public class GismaServicesTools {
 
     @Tool(description = "Get fruit by name")
     public JsonNode getFruitByName(String name) {
+        log.info("getFruitByName started. name: {}.", name);
         return gismaServicesClient.getFruitByName(name);
     }
 
