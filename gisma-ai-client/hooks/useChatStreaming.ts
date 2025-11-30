@@ -19,7 +19,7 @@ export const useChatStreaming = (options: UseChatStreamingOptions) => {
   const [messageIsStreaming, setMessageIsStreaming] = useState(false);
   const stopConversationRef = useRef<boolean>(false);
   const finalizeStreamRef = useRef<(() => void) | null>(null);
-  const chatService = useRef<ChatService>(new ChatService(WEBSOCKET_CONFIG.SERVER_URL));
+  const chatService = useRef<ChatService>(ChatService.getInstance(WEBSOCKET_CONFIG.SERVER_URL));
   const currentConversationRef = useRef<Conversation | null>(null);
 
   const handleStop = useCallback(() => {

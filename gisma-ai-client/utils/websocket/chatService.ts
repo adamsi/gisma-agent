@@ -3,21 +3,15 @@ import { WebSocketResponse, ChatStartResponse } from '../../types/websocket';
 import { WEBSOCKET_CONFIG } from './config';
 
 /**
- * Simplified Chat Service with automatic connection management
- * 
- * Features:
- * - Automatic connection on first use
- * - Simple message sending API
- * - Automatic subscription management
- * - No manual connection/disconnection needed
+ * Simple Chat Service - Singleton, always connected
  */
 export class ChatService {
+  private static instance: ChatService | null = null;
   private wsManager: WebSocketManager;
-  private serverUrl: string;
   private isAuthenticated: boolean = false;
+  private currentChatId: string | null = null;
 
-  constructor(serverUrl: string = WEBSOCKET_CONFIG.SERVER_URL) {
-    this.serverUrl = serverUrl;
+  private constructor(serverUrl: string = WEBSOCKET_CONFIG.SERVER_URL) {
     this.wsManager = WebSocketManager.getInstance({
       serverUrl,
       reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
@@ -25,25 +19,26 @@ export class ChatService {
     });
   }
 
+  public static getInstance(serverUrl?: string): ChatService {
+    if (!ChatService.instance) {
+      ChatService.instance = new ChatService(serverUrl);
+    }
+    return ChatService.instance;
+  }
+
   public setAuthenticated(authenticated: boolean): void {
     this.isAuthenticated = authenticated;
-    
     if (!authenticated) {
-      // Disconnect when user logs out
       this.wsManager.disconnect();
     }
   }
 
-  private async ensureReady(): Promise<void> {
-    if (!this.isAuthenticated) {
-      throw new Error('User not authenticated');
+  public async connect(): Promise<void> {
+    if (this.isAuthenticated) {
+      await this.wsManager.connect();
     }
-    await this.wsManager.ensureConnected();
   }
 
-  /**
-   * Start a new chat conversation
-   */
   public async startNewChat(
     message: string,
     responseFormat: string,
@@ -53,20 +48,23 @@ export class ChatService {
     onMetadata: (metadata: ChatStartResponse) => void,
     schemaJson?: string
   ): Promise<void> {
-    await this.ensureReady();
+    if (!this.isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
+
+    this.cleanup();
 
     // Subscribe to metadata first
     this.wsManager.subscribeToMetadata((metadata: ChatStartResponse) => {
       onMetadata(metadata);
+      this.currentChatId = metadata.chatId;
       
-      // Once we have chatId, subscribe to chat-specific queue
+      // Subscribe to chat queue
       const replyDestination = `/user/queue/chat.${metadata.chatId}`;
       this.wsManager.subscribeToReply(replyDestination, (response: WebSocketResponse) => {
         if (response.error) {
           onError(response.error);
-          return;
-        }
-        if (response.content) {
+        } else if (response.content) {
           onChunk(response.content);
         }
         if (response.isComplete) {
@@ -75,22 +73,13 @@ export class ChatService {
       }, metadata.chatId);
     }, 'start-chat');
 
-    // Send start chat message
-    const payload = {
-      query: message,
-      responseFormat: responseFormat,
-      schemaJson: schemaJson || null
-    };
-
+    // Send message
     await this.wsManager.sendMessage(
-      JSON.stringify(payload), 
+      JSON.stringify({ query: message, responseFormat, schemaJson: schemaJson || null }),
       WEBSOCKET_CONFIG.SEND_START_DESTINATION
     );
   }
 
-  /**
-   * Send a message to an existing chat
-   */
   public async sendMessage(
     message: string,
     chatId: string,
@@ -100,17 +89,22 @@ export class ChatService {
     onError: (error: string) => void,
     schemaJson?: string
   ): Promise<void> {
-    await this.ensureReady();
+    if (!this.isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
 
+    // Cleanup if switching chats
+    if (this.currentChatId && this.currentChatId !== chatId) {
+      this.cleanup();
+    }
+    
+    this.currentChatId = chatId;
     const replyDestination = `/user/queue/chat.${chatId}`;
     
-    // Subscribe to chat-specific reply queue
     this.wsManager.subscribeToReply(replyDestination, (response: WebSocketResponse) => {
       if (response.error) {
         onError(response.error);
-        return;
-      }
-      if (response.content) {
+      } else if (response.content) {
         onChunk(response.content);
       }
       if (response.isComplete) {
@@ -118,45 +112,38 @@ export class ChatService {
       }
     }, chatId);
 
-    // Send message
-    const payload = {
-      query: message,
-      responseFormat: responseFormat,
-      schemaJson: schemaJson || null,
-      chatId: chatId
-    };
-
     await this.wsManager.sendMessage(
-      JSON.stringify(payload), 
+      JSON.stringify({ query: message, responseFormat, schemaJson: schemaJson || null, chatId }),
       WEBSOCKET_CONFIG.SEND_DESTINATION
     );
   }
 
-  /**
-   * Abort current stream (unsubscribe from current chat)
-   */
-  public abortCurrentStream(chatId?: string): void {
-    if (chatId) {
-      const replyDestination = `/user/queue/chat.${chatId}`;
-      this.wsManager.unsubscribe(replyDestination);
-      this.wsManager.clearResponseHandler(chatId);
+  private cleanup(): void {
+    if (this.currentChatId) {
+      this.wsManager.unsubscribe(`/user/queue/chat.${this.currentChatId}`);
+      this.wsManager.clearResponseHandler(this.currentChatId);
     }
-    
-    // Also clear metadata subscription
     this.wsManager.unsubscribe(WEBSOCKET_CONFIG.RECEIVE_METADATA_DESTINATION);
     this.wsManager.clearResponseHandler('start-chat');
   }
 
-  /**
-   * Disconnect websocket (usually on logout)
-   */
+  public abortCurrentStream(chatId?: string): void {
+    if (chatId) {
+      this.wsManager.unsubscribe(`/user/queue/chat.${chatId}`);
+      this.wsManager.clearResponseHandler(chatId);
+      if (this.currentChatId === chatId) {
+        this.currentChatId = null;
+      }
+    }
+    this.cleanup();
+  }
+
   public disconnect(): void {
+    this.cleanup();
+    this.currentChatId = null;
     this.wsManager.disconnect();
   }
 
-  /**
-   * Check if websocket is connected
-   */
   public isConnected(): boolean {
     return this.wsManager.isWebSocketConnected();
   }

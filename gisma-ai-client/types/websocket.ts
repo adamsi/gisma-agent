@@ -15,7 +15,6 @@ export interface WebSocketConfig {
   serverUrl: string;
   reconnectAttempts?: number;
   reconnectDelay?: number;
-  token?: string;
 }
 
 export interface ChatStartResponse {

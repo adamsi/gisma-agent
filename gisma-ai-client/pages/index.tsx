@@ -132,11 +132,14 @@ const Home: React.FC = () => {
 
   // Auth is now handled in _app.tsx
 
-  // UPDATE CHATSERVICE AUTHENTICATION STATE
+  // CONNECT WEBSOCKET ON MOUNT (if authenticated)
   useEffect(() => {
-    chatService.setAuthenticated(!!user);
     if (user) {
+      chatService.setAuthenticated(true);
+      chatService.connect();
       loadChats();
+    } else {
+      chatService.setAuthenticated(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);

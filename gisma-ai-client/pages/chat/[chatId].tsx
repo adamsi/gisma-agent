@@ -126,9 +126,14 @@ const ChatPage: React.FC = () => {
 
   // Auth is now handled in _app.tsx
 
-  // UPDATE CHATSERVICE AUTHENTICATION STATE
+  // CONNECT WEBSOCKET ON MOUNT (if authenticated)
   useEffect(() => {
-    chatService.setAuthenticated(!!user);
+    if (user) {
+      chatService.setAuthenticated(true);
+      chatService.connect();
+    } else {
+      chatService.setAuthenticated(false);
+    }
   }, [user, chatService]);
 
   // WEBSOCKET CLEANUP
