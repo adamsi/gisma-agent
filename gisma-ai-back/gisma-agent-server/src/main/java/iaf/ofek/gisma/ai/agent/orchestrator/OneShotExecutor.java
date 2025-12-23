@@ -4,6 +4,7 @@ import iaf.ofek.gisma.ai.agent.llmCall.LLMCallerWithMemoryService;
 import iaf.ofek.gisma.ai.agent.memory.ChatMemoryAdvisorProvider;
 import iaf.ofek.gisma.ai.agent.prompt.PromptFormat;
 import iaf.ofek.gisma.ai.dto.agent.UserPrompt;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -15,6 +16,7 @@ import reactor.core.publisher.Flux;
 import static iaf.ofek.gisma.ai.constant.AdvisorOrder.QA_ADVISOR_ORDER;
 
 @Service
+@Log4j2
 public class OneShotExecutor {
 
     private static final String SYSTEM_MESSAGE = """
@@ -68,7 +70,11 @@ public class OneShotExecutor {
         return llmCallerService.callLLM(chatClient -> chatClient.prompt()
                 .system(SYSTEM_MESSAGE)
                 .user(userMessage)
-                .advisors(qaAdvisor), chatId);
+                .advisors(qaAdvisor), chatId)
+                .onErrorResume(ex -> {
+                    log.error("LLM pipeline failed", ex);
+                    return Flux.just("Something went wrong. try again...");
+                });
     }
 
     public String executeBlocking(UserPrompt userPrompt, String chatId) {
