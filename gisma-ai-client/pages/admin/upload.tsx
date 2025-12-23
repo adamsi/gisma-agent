@@ -25,12 +25,10 @@ import {
   IconX,
   IconTrash,
   IconPlus,
-  IconCheck,
-  IconDeviceFloppy,
-  IconEye
+  IconCheck
 } from '@tabler/icons-react';
 import { FolderEntity, DocumentEntity } from '@/types/ingestion';
-import { FileUpload } from '@/components/Upload';
+import { FileUpload, DocumentViewer } from '@/components/Upload';
 
 interface BreadcrumbItem {
   id: string;
@@ -64,10 +62,6 @@ const AdminUpload: React.FC = () => {
     itemType: 'file'
   });
   const [viewerDocument, setViewerDocument] = useState<DocumentEntity | null>(null);
-  const [documentContent, setDocumentContent] = useState<string>('');
-  const [originalContent, setOriginalContent] = useState<string>('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   useEffect(() => {
@@ -224,12 +218,6 @@ const AdminUpload: React.FC = () => {
     return <IconFile className="w-6 h-6 text-blue-300" />;
   };
 
-  const formatFileSize = (url: string): string => {
-    // Mock file sizes for demonstration
-    const sizes = ['2.3 MB', '1.8 MB', '4.1 MB', '856 KB', '2.1 MB', '3.4 MB', '1.2 MB', '512 KB'];
-    return sizes[Math.floor(Math.random() * sizes.length)];
-  };
-
   const handleItemSelect = (itemId: string) => {
     setSelectedItems(prev => {
       const newSelection = prev.includes(itemId) 
@@ -301,35 +289,14 @@ const AdminUpload: React.FC = () => {
     }
   };
 
-  const handleViewDocument = async (document: DocumentEntity) => {
+  const handleViewDocument = (document: DocumentEntity) => {
     setViewerDocument(document);
     setIsViewerOpen(true);
-    setIsEditing(true); // Start in edit mode
-    setIsSaving(false);
-    
-    try {
-      // Fetch document content directly from S3
-      const response = await fetch(document.url);
-      
-      if (response.ok) {
-        const content = await response.text();
-        setDocumentContent(content);
-        setOriginalContent(content); // Track original content
-      } else {
-        setDocumentContent(''); // Start with empty content
-        setOriginalContent(''); // Track original content
-      }
-    } catch (error) {
-      console.error('Failed to load document content:', error);
-      setDocumentContent(''); // Start with empty content
-      setOriginalContent(''); // Track original content
-    }
   };
 
-  const handleSaveDocument = async () => {
+  const handleSaveDocument = async (content: string) => {
     if (!viewerDocument) return;
     
-    setIsSaving(true);
     dispatch(clearSuccess());
     
     // Save the current folder ID before fetching
@@ -337,7 +304,7 @@ const AdminUpload: React.FC = () => {
     
     try {
       // Create a new File object from the edited content
-      const blob = new Blob([documentContent], { type: viewerDocument.contentType || 'text/plain' });
+      const blob = new Blob([content], { type: viewerDocument.contentType || 'text/plain' });
       const file = new File([blob], viewerDocument.name, { type: viewerDocument.contentType || 'text/plain' });
       
       // Use editDocument action to update existing document
@@ -345,13 +312,6 @@ const AdminUpload: React.FC = () => {
         file, 
         documentId: viewerDocument.id 
       })).unwrap();
-      
-      // Update original content to reflect the saved content
-      setOriginalContent(documentContent);
-      
-      setIsSaving(false);
-      setIsEditing(false);
-      setIsViewerOpen(false);
       
       // Refresh folder structure
       const result = await dispatch(fetchRootFolder()).unwrap();
@@ -365,7 +325,7 @@ const AdminUpload: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to save document:', error);
-      setIsSaving(false);
+      throw error; // Re-throw so DocumentViewer can handle it
     }
   };
 
@@ -656,9 +616,6 @@ const AdminUpload: React.FC = () => {
                       <h3 className="text-sm font-medium text-white truncate group-hover:text-blue-200 transition-colors duration-200">
                         {document.name}
                       </h3>
-                      <p className="text-xs text-blue-200/60 mt-1">
-                        {formatFileSize(document.url)}
-                      </p>
                     </div>
                   </div>
                   
@@ -865,65 +822,12 @@ const AdminUpload: React.FC = () => {
         )}
 
         {/* Document Viewer Modal */}
-        {isViewerOpen && viewerDocument && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsViewerOpen(false)} />
-            <div className="relative bg-black/90 backdrop-blur-2xl rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6 w-full sm:w-[50vw] h-[85vh] sm:h-[80vh] flex flex-col max-w-full">
-              {/* Header */}
-              <div className="flex items-start sm:items-center justify-between mb-3 sm:mb-4 flex-shrink-0 gap-2">
-                <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/20 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <IconEye className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-base sm:text-xl font-bold text-white truncate">{viewerDocument.name}</h2>
-                    <p className="text-xs sm:text-sm text-blue-200/70 truncate">{viewerDocument.contentType || 'Unknown type'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleSaveDocument}
-                    disabled={documentContent === originalContent || isSaving}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
-                      documentContent === originalContent || isSaving
-                        ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-500 hover:to-emerald-500 shadow-lg hover:shadow-xl'
-                    }`}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <IconDeviceFloppy className="w-4 h-4" />
-                        <span>Save</span>
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setIsViewerOpen(false)}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-500/20 rounded-xl transition-all duration-200"
-                  >
-                    <IconX className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 bg-black/30 rounded-lg sm:rounded-xl p-3 sm:p-4 min-h-0">
-                <textarea
-                  value={documentContent}
-                  onChange={(e) => setDocumentContent(e.target.value)}
-                  className="w-full h-full p-3 sm:p-6 bg-black/50 border border-white/20 rounded-lg sm:rounded-xl text-white font-mono text-xs sm:text-base resize-none focus:outline-none focus:border-blue-500/50"
-                  spellCheck={false}
-                  placeholder="Document content will be loaded here..."
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        <DocumentViewer
+          document={viewerDocument}
+          isOpen={isViewerOpen}
+          onClose={() => setIsViewerOpen(false)}
+          onSave={handleSaveDocument}
+        />
     </>
   );
 };

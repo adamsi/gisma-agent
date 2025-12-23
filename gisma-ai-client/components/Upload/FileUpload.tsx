@@ -150,9 +150,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ className = '', parentFolderId 
                     <p className="text-sm font-medium text-white truncate">
                       {file.name}
                     </p>
-                    <p className="text-xs text-blue-200/70">
-                      {formatFileSize(file.size)}
-                    </p>
                   </div>
                 </div>
                 <button
@@ -187,7 +184,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ className = '', parentFolderId 
             {uploading ? (
               <>
                 <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
-                <span>Uploading... {uploadProgress}%</span>
+                <span>Uploading...</span>
               </>
             ) : (
               <>
