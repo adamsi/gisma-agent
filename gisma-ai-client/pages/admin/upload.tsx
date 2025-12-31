@@ -786,7 +786,7 @@ const AdminUpload: React.FC = () => {
 
         {/* Error/Success Messages */}
         {(error || success) && (
-          <div className="fixed bottom-4 right-4 z-50 max-w-md">
+          <div className="fixed bottom-4 right-4 z-[60] max-w-md">
             {error && (
               <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start space-x-3 backdrop-blur-sm">
                 <IconX className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />

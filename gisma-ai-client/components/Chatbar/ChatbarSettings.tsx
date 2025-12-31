@@ -91,11 +91,7 @@ export const ChatbarSettings: FC<Props> = ({
               }`}>
                 {user?.username || 'User'}
               </span>
-              <span className={`text-xs leading-3 truncate max-w-[140px] ${
-                lightMode === 'light' ? 'text-gray-600' : 'text-white/50'
-              }`}>
-                {user?.username || ''}
-              </span>
+           
             </div>
           </button>
 

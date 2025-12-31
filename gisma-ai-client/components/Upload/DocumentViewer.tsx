@@ -88,14 +88,30 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
     // Reset state when opening a new document
     setDocumentContent('');
     setOriginalContent('');
-    setIsLoading(false);
     setIsSaving(false);
 
     // Only fetch content for text files
     if (fileType === FileType.TEXT) {
+      setIsLoading(true);
       loadTextContent();
+    } else {
+      setIsLoading(false);
     }
   }, [isOpen, document?.id, fileType, loadTextContent]);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   const handleSave = async () => {
     if (!onSave || !hasChanges) return;
@@ -116,27 +132,19 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
   }
 
   const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="w-full h-full flex items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      );
-    }
-
     switch (fileType) {
       case FileType.PDF:
         return (
           <iframe
             src={document.url}
-            className="w-full h-full border-0 rounded-lg bg-white"
+            className="w-full h-full border-0 bg-white"
             title={document.name}
           />
         );
 
       case FileType.IMAGE:
         return (
-          <div className="w-full h-full flex items-center justify-center bg-black/50 rounded-lg overflow-hidden">
+          <div className="w-full h-full flex items-center justify-center bg-gray-800/20 overflow-hidden">
             <img
               src={document.url}
               alt={document.name}
@@ -147,28 +155,41 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
       case FileType.TEXT:
         return (
-          <textarea
-            value={documentContent}
-            onChange={(e) => setDocumentContent(e.target.value)}
-            className="w-full h-full p-3 sm:p-6 bg-black/50 border border-white/20 rounded-lg text-white font-mono text-xs sm:text-base resize-none focus:outline-none focus:border-blue-500/50"
-            spellCheck={false}
-            placeholder="Document content will be loaded here..."
-          />
+          <>
+            {isLoading && (
+              <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800/50 via-gray-700/40 to-gray-800/50 z-10 transition-opacity duration-300">
+                <LoadingSpinner />
+              </div>
+            )}
+            <textarea
+              value={documentContent}
+              onChange={(e) => setDocumentContent(e.target.value)}
+              className={`w-full h-full px-8 sm:px-12 py-6 sm:py-8 bg-transparent text-gray-100 font-mono text-lg sm:text-xl leading-relaxed resize-none focus:outline-none selection:bg-blue-500/40 selection:text-white transition-opacity duration-300 ${
+                isLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              spellCheck={false}
+              placeholder="Document content will be loaded here..."
+              style={{ 
+                tabSize: 2,
+                lineHeight: '1.8'
+              }}
+            />
+          </>
         );
 
       default:
         return (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-black/50 rounded-lg p-6">
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-800/20 p-6">
             <IconFile className="w-16 h-16 text-gray-400 mb-4" />
-            <p className="text-white text-lg font-medium mb-2">Preview not available</p>
-            <p className="text-blue-200/70 text-sm mb-4 text-center">
+            <p className="text-white text-xl font-medium mb-2">Preview not available</p>
+            <p className="text-blue-200/70 text-base mb-4 text-center">
               This file type ({document.contentType || 'unknown'}) cannot be previewed
             </p>
             <a
               href={document.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-200"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 text-base"
             >
               Open in new tab
             </a>
@@ -178,36 +199,30 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-black/90 backdrop-blur-2xl rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6 w-full sm:w-[50vw] h-[85vh] sm:h-[80vh] flex flex-col max-w-full">
-        {/* Header */}
-        <div className="flex items-start sm:items-center justify-between mb-3 sm:mb-4 flex-shrink-0 gap-2">
-          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/20 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-              <IconEye className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-            </div>
+      <div className="relative bg-gray-950/95 backdrop-blur-xl w-full h-full sm:w-[90vw] sm:h-[90vh] sm:max-w-[1400px] flex flex-col max-w-full shadow-2xl border border-white/10">
+        {/* Minimal Header */}
+        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
+          <div className="flex items-center space-x-4 min-w-0 flex-1">
             <div className="min-w-0 flex-1">
-              <h2 className="text-base sm:text-xl font-bold text-white truncate">
+              <h2 className="text-lg sm:text-xl font-semibold text-white truncate">
                 {document.name}
               </h2>
-              <p className="text-xs sm:text-sm text-blue-200/70 truncate">
-                {document.contentType || 'Unknown type'}
-              </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {isEditable && (
               <button
                 onClick={handleSave}
                 disabled={!hasChanges || isSaving}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${
                   !hasChanges || isSaving
-                    ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-500 hover:to-emerald-500 shadow-lg hover:shadow-xl'
+                    ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed'
+                    : 'bg-green-600/90 text-white hover:bg-green-500/90'
                 }`}
               >
                 {isSaving ? (
@@ -225,15 +240,15 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-500/20 rounded-xl transition-all duration-200"
+              className="p-2 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200"
             >
-              <IconX className="w-6 h-6" />
+              <IconX className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 bg-black/30 rounded-lg sm:rounded-xl p-3 sm:p-4 min-h-0 overflow-hidden">
+        {/* Content Area - Full Editor View */}
+        <div className="flex-1 bg-gradient-to-br from-gray-800/50 via-gray-700/40 to-gray-800/50 min-h-0 overflow-auto relative">
           {renderContent()}
         </div>
       </div>
