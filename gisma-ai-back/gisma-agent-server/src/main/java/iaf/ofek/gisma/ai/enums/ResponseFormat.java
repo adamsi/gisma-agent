@@ -12,10 +12,9 @@ public enum ResponseFormat {
         @Override
         public String getFormat(String schema) {
             return """
-            Respond in a friendly, well-structured style:
-            - For specific queries: provide concise, factual answers.
-            - For broad or open-ended queries: include a short overview with markdown sections (Overview, Example, Tip).
+            Friendly, well-structured style:
             - Use clear formatting and naturally include emojis to enhance readability.
+            - When returning fetched or structured data, present it in a well-formatted table.
             """;
         }
     },
@@ -24,8 +23,7 @@ public enum ResponseFormat {
         @Override
         public String getFormat(String schema) {
             return  """
-                    Only return valid JSON, nothing else.
-                    Do not prepend 'JSON:' or any extra text.
+                    Only return valid JSON, pretty printed inside json code block
                     """;
         }
     },
@@ -34,7 +32,7 @@ public enum ResponseFormat {
         @Override
         public String getFormat(String schema) {
             return  """
-                    Response should match the next JSON Schema: {schema_json}
+                    Response should match the next JSON Schema (pretty printed inside json code block): {schema_json} 
                     """
                     .replace(PromptFormat.SCHEMA_JSON, schema);
         }
