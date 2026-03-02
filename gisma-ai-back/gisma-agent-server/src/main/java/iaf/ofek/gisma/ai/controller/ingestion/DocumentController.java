@@ -8,7 +8,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,7 +31,7 @@ public class DocumentController {
                                                @RequestPart("parentFolderId") String parentFolderId, Principal user) {
         log.info("Uploading {} files.", files.size());
         String userId = user.getName();
-        List<S3Document> results = documentProcessor.saveNewDocuments(files, List.of(UUID.fromString(parentFolderId)), userId);
+        List<S3Document> results = documentProcessor.saveNewDocuments(files, UUID.fromString(parentFolderId), userId);
         log.info("Uploaded {} files successfully.", results.size());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(results);
